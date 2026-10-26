@@ -30,7 +30,8 @@ export async function getAuthenticatedTenantContext(
         name,
         slug,
         plan,
-        status
+        status,
+        settings
       )
     `)
     .eq('user_id', user.id)
@@ -53,6 +54,7 @@ export async function getAuthenticatedTenantContext(
       slug: string;
       plan: PlanType;
       status: string;
+      settings: Record<string, unknown> | null;
     } | null;
   }
 
@@ -75,6 +77,8 @@ export async function getAuthenticatedTenantContext(
     return null;
   }
 
+  const timezone = (selected.tenants.settings?.timezone as string) || 'America/Sao_Paulo';
+
   return {
     userId: user.id,
     tenantId: selected.tenants.id,
@@ -82,5 +86,6 @@ export async function getAuthenticatedTenantContext(
     tenantName: selected.tenants.name,
     role: selected.role,
     plan: selected.tenants.plan,
+    timezone,
   };
 }

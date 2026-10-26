@@ -43,4 +43,5 @@ export interface UserTenantContext {
   role: TenantRole;
   plan: PlanType;
   tenantName: string;
+  timezone?: string;
 }

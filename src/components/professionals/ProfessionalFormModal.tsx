@@ -1,0 +1,378 @@
+'use client';
+
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Professional, ProfessionalFormData, ProfessionalSchedule, DAYS_OF_WEEK } from '@/types/professionals';
+import { Service } from '@/types/services';
+import { saveProfessionalAction } from '@/lib/actions/professionals';
+import { maskPhone } from '@/lib/utils/masks';
+import { X, UserCheck, Clock, Scissors } from 'lucide-react';
+
+interface ProfessionalFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  tenantSlug: string;
+  professionalToEdit?: Professional | null;
+  availableServices: Service[];
+  onSaved: () => void;
+}
+
+const DEFAULT_SCHEDULES: ProfessionalSchedule[] = [
+  { day_of_week: 1, start_time: '09:00', end_time: '18:00', break_start: '12:00', break_end: '13:00', is_active: true },
+  { day_of_week: 2, start_time: '09:00', end_time: '18:00', break_start: '12:00', break_end: '13:00', is_active: true },
+  { day_of_week: 3, start_time: '09:00', end_time: '18:00', break_start: '12:00', break_end: '13:00', is_active: true },
+  { day_of_week: 4, start_time: '09:00', end_time: '18:00', break_start: '12:00', break_end: '13:00', is_active: true },
+  { day_of_week: 5, start_time: '09:00', end_time: '18:00', break_start: '12:00', break_end: '13:00', is_active: true },
+  { day_of_week: 6, start_time: '09:00', end_time: '14:00', break_start: null, break_end: null, is_active: true },
+  { day_of_week: 0, start_time: '09:00', end_time: '18:00', break_start: null, break_end: null, is_active: false },
+];
+
+export function ProfessionalFormModal({
+  isOpen,
+  onClose,
+  tenantSlug,
+  professionalToEdit,
+  availableServices,
+  onSaved,
+}: ProfessionalFormModalProps) {
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [whatsapp, setWhatsapp] = useState(maskPhone(professionalToEdit?.whatsapp || ''));
+  const [selectedServices, setSelectedServices] = useState<string[]>(
+    professionalToEdit?.service_ids || []
+  );
+
+  // Inicializa a grade de horários
+  const [schedules, setSchedules] = useState<ProfessionalSchedule[]>(() => {
+    if (professionalToEdit?.schedules && professionalToEdit.schedules.length > 0) {
+      return DAYS_OF_WEEK.map((day) => {
+        const found = professionalToEdit.schedules?.find((s) => s.day_of_week === day.value);
+        return (
+          found || {
+            day_of_week: day.value,
+            start_time: '09:00',
+            end_time: '18:00',
+            break_start: '12:00',
+            break_end: '13:00',
+            is_active: false,
+          }
+        );
+      });
+    }
+    return DEFAULT_SCHEDULES;
+  });
+
+  if (!isOpen) return null;
+
+  function toggleService(id: string) {
+    setSelectedServices((prev) =>
+      prev.includes(id) ? prev.filter((sId) => sId !== id) : [...prev, id]
+    );
+  }
+
+  function updateSchedule(dayOfWeek: number, field: keyof ProfessionalSchedule, value: unknown) {
+    setSchedules((prev) =>
+      prev.map((s) => (s.day_of_week === dayOfWeek ? { ...s, [field]: value } : s))
+    );
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setErrorMessage(null);
+    setLoading(true);
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    const payload: ProfessionalFormData = {
+      id: professionalToEdit?.id,
+      full_name: (formData.get('full_name') as string).trim(),
+      whatsapp: whatsapp,
+      email: (formData.get('email') as string)?.trim() || '',
+      specialty: (formData.get('specialty') as string)?.trim() || 'Geral',
+      bio: (formData.get('bio') as string)?.trim() || '',
+      status: (formData.get('status') as 'active' | 'inactive') || 'active',
+      service_ids: selectedServices,
+      schedules: schedules,
+    };
+
+    const res = await saveProfessionalAction(tenantSlug, payload);
+
+    if (res?.error) {
+      setErrorMessage(res.error);
+      setLoading(false);
+    } else {
+      setLoading(false);
+      onSaved();
+      onClose();
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+      <Card className="w-full max-w-3xl shadow-2xl relative my-8 animate-in fade-in-0 zoom-in-95">
+        <button
+          onClick={onClose}
+          type="button"
+          aria-label="Fechar"
+          className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <CardHeader>
+          <div className="flex items-center gap-2 text-rose-600 mb-1">
+            <UserCheck className="w-4 h-4" />
+            <span className="text-xs font-semibold uppercase tracking-wider">
+              {professionalToEdit ? 'Atualizar Profissional' : 'Novo Profissional'}
+            </span>
+          </div>
+          <CardTitle className="text-xl">
+            {professionalToEdit ? professionalToEdit.full_name : 'Cadastrar Profissional'}
+          </CardTitle>
+          <CardDescription>
+            Defina dados de contato, especialidade, serviços habilitados e grade de horários.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          {errorMessage && (
+            <div className="mb-4 p-3 text-xs rounded bg-red-50 border border-red-200 text-red-700 dark:bg-red-950/40 dark:border-red-900 dark:text-red-300">
+              {errorMessage}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Dados Pessoais e Função */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium mb-1" htmlFor="full_name">
+                  Nome Completo *
+                </label>
+                <input
+                  id="full_name"
+                  name="full_name"
+                  type="text"
+                  defaultValue={professionalToEdit?.full_name || ''}
+                  placeholder="Ex: Dra. Mariana Costa"
+                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="specialty">
+                  Especialidade / Função *
+                </label>
+                <input
+                  id="specialty"
+                  name="specialty"
+                  type="text"
+                  defaultValue={professionalToEdit?.specialty || ''}
+                  placeholder="Ex: Biomédica Esteta, Massoterapeuta"
+                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="whatsapp">
+                  WhatsApp Profissional
+                </label>
+                <input
+                  id="whatsapp"
+                  name="whatsapp"
+                  type="text"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(maskPhone(e.target.value))}
+                  placeholder="(11) 98765-4321"
+                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="email">
+                  E-mail
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  defaultValue={professionalToEdit?.email || ''}
+                  placeholder="mariana@clinica.com.br"
+                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="status">
+                  Status
+                </label>
+                <select
+                  id="status"
+                  name="status"
+                  defaultValue={professionalToEdit?.status || 'active'}
+                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                >
+                  <option value="active">Ativo (recebe agendamentos)</option>
+                  <option value="inactive">Inativo (pausado)</option>
+                </select>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium mb-1" htmlFor="bio">
+                  Breve Apresentação (Bio / Experiência)
+                </label>
+                <textarea
+                  id="bio"
+                  name="bio"
+                  rows={2}
+                  defaultValue={professionalToEdit?.bio || ''}
+                  placeholder="Ex: Especialista em harmonização e estética facial com 8 anos de experiência."
+                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
+                />
+              </div>
+            </div>
+
+            {/* Serviços Habilitados */}
+            <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800">
+              <div className="flex items-center gap-2 mb-2">
+                <Scissors className="w-4 h-4 text-rose-600" />
+                <h4 className="font-semibold text-sm">Serviços que o profissional realiza</h4>
+              </div>
+              <p className="text-xs text-zinc-500 mb-3">
+                Selecione os procedimentos disponíveis na agenda para este profissional:
+              </p>
+
+              {availableServices.length === 0 ? (
+                <p className="text-xs text-zinc-400 italic">
+                  Nenhum serviço cadastrado no catálogo. Cadastre serviços previamente.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-2 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+                  {availableServices.map((srv) => {
+                    const isSelected = selectedServices.includes(srv.id);
+                    return (
+                      <label
+                        key={srv.id}
+                        className={`flex items-center gap-2 p-2 rounded-md text-xs cursor-pointer border transition-colors ${
+                          isSelected
+                            ? 'bg-rose-50 border-rose-300 text-rose-900 dark:bg-rose-950/40 dark:border-rose-900 dark:text-rose-200'
+                            : 'border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleService(srv.id)}
+                          className="rounded text-rose-600 focus:ring-rose-500"
+                        />
+                        <span className="truncate font-medium">{srv.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Grade Habitual de Horários */}
+            <div className="pt-2 border-t border-zinc-200 dark:border-zinc-800">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-4 h-4 text-rose-600" />
+                <h4 className="font-semibold text-sm">Horários Habitual de Trabalho</h4>
+              </div>
+              <p className="text-xs text-zinc-500 mb-3">
+                Configure os dias da semana e turnos de expediente:
+              </p>
+
+              <div className="space-y-2">
+                {DAYS_OF_WEEK.map((day) => {
+                  const s = schedules.find((item) => item.day_of_week === day.value) || {
+                    day_of_week: day.value,
+                    start_time: '09:00',
+                    end_time: '18:00',
+                    break_start: null,
+                    break_end: null,
+                    is_active: false,
+                  };
+
+                  return (
+                    <div
+                      key={day.value}
+                      className={`flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg border text-xs transition-colors ${
+                        s.is_active
+                          ? 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'
+                          : 'bg-zinc-50/60 dark:bg-zinc-950/40 border-dashed border-zinc-200 dark:border-zinc-800/80 opacity-60'
+                      }`}
+                    >
+                      <label className="flex items-center gap-2 font-medium w-32 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={s.is_active}
+                          onChange={(e) => updateSchedule(day.value, 'is_active', e.target.checked)}
+                          className="rounded text-rose-600 focus:ring-rose-500"
+                        />
+                        <span>{day.label}</span>
+                      </label>
+
+                      {s.is_active ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <span className="text-zinc-400">Das</span>
+                            <input
+                              type="time"
+                              value={s.start_time}
+                              onChange={(e) => updateSchedule(day.value, 'start_time', e.target.value)}
+                              className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-transparent"
+                            />
+                            <span className="text-zinc-400">às</span>
+                            <input
+                              type="time"
+                              value={s.end_time}
+                              onChange={(e) => updateSchedule(day.value, 'end_time', e.target.value)}
+                              className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-transparent"
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-1 pl-2 border-l border-zinc-200 dark:border-zinc-800">
+                            <span className="text-zinc-400">Almoço:</span>
+                            <input
+                              type="time"
+                              value={s.break_start || ''}
+                              onChange={(e) => updateSchedule(day.value, 'break_start', e.target.value || null)}
+                              className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-transparent"
+                            />
+                            <span className="text-zinc-400">-</span>
+                            <input
+                              type="time"
+                              value={s.break_end || ''}
+                              onChange={(e) => updateSchedule(day.value, 'break_end', e.target.value || null)}
+                              className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-transparent"
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-zinc-400 italic">Não atende neste dia</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-4">
+              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Salvando...' : professionalToEdit ? 'Atualizar Profissional' : 'Cadastrar Profissional'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
