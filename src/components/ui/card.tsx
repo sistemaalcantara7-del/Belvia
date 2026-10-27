@@ -7,9 +7,10 @@ export function Card({ className, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        'rounded-xl border border-zinc-200 bg-white text-zinc-950 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50',
+        'rounded-xl border bg-[var(--belvia-card)] text-[var(--belvia-text)] shadow-sm',
         className
       )}
+      style={{ borderColor: 'var(--belvia-border)' }}
       {...props}
     />
   );
@@ -35,7 +36,8 @@ export function CardTitle({ className, children, ...props }: React.HTMLAttribute
 export function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
     <p
-      className={cn('text-sm text-zinc-500 dark:text-zinc-400', className)}
+      className={cn('text-sm', className)}
+      style={{ color: 'var(--belvia-muted)' }}
       {...props}
     />
   );

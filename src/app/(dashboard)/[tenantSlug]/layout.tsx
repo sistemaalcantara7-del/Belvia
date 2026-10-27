@@ -1,8 +1,6 @@
-import Link from 'next/link';
 import { getAuthenticatedTenantContext } from '@/lib/tenant/context';
 import { redirect } from 'next/navigation';
-import { Calendar, Users, Scissors, UserCheck, FileText, Settings, LogOut, DollarSign, TrendingUp } from 'lucide-react';
-import { signOutAction } from '@/lib/actions/auth';
+import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,89 +9,65 @@ interface DashboardLayoutProps {
   params: Promise<{ tenantSlug: string }>;
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  owner: 'Proprietário',
+  admin: 'Administrador',
+  receptionist: 'Recepcionista',
+  professional: 'Profissional',
+};
+
 export default async function DashboardLayout({
   children,
   params,
 }: DashboardLayoutProps) {
   const { tenantSlug } = await params;
 
-  // Validação estrita de contexto
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
     redirect('/login');
   }
 
+  // Lista com ícones e nomes conforme exatamente exibido no Mockup
   const navLinks = [
-    { href: `/${tenantSlug}/agenda`, label: 'Agenda', icon: Calendar },
-    { href: `/${tenantSlug}/servicos`, label: 'Serviços', icon: Scissors },
-    { href: `/${tenantSlug}/profissionais`, label: 'Profissionais', icon: UserCheck },
-    { href: `/${tenantSlug}/clientes`, label: 'Clientes', icon: Users },
-    { href: `/${tenantSlug}/anamnese`, label: 'Anamnese', icon: FileText },
+    { href: `/${tenantSlug}`, label: 'Dashboard', iconName: 'dashboard' },
+    { href: `/${tenantSlug}/agenda`, label: 'Agenda', iconName: 'agenda' },
+    { href: `/${tenantSlug}/clientes`, label: 'Clientes', iconName: 'clientes' },
+    { href: `/${tenantSlug}/servicos`, label: 'Serviços', iconName: 'servicos' },
+    { href: `/${tenantSlug}/profissionais`, label: 'Profissionais', iconName: 'profissionais' },
+    { href: `/${tenantSlug}/anamnese`, label: 'Anamnese', iconName: 'anamnese' },
     ...(context.role !== 'professional'
-      ? [{ href: `/${tenantSlug}/caixa`, label: 'Caixa Diário', icon: DollarSign }]
+      ? [{ href: `/${tenantSlug}/caixa`, label: 'Financeiro', iconName: 'financeiro' }]
       : []),
     ...(context.role !== 'receptionist'
-      ? [{ href: `/${tenantSlug}/comissoes`, label: 'Comissões', icon: TrendingUp }]
+      ? [{ href: `/${tenantSlug}/comissoes`, label: 'Comissões', iconName: 'comissoes' }]
       : []),
-    { href: `/${tenantSlug}/configuracoes`, label: 'Configurações', icon: Settings },
+    { href: `/${tenantSlug}/relatorios`, label: 'Relatórios', iconName: 'relatorios' },
+    { href: `/${tenantSlug}/configuracoes`, label: 'Configurações', iconName: 'configuracoes' },
   ];
 
+  const roleLabel = ROLE_LABELS[context.role] ?? context.role;
+
+  const initials = context.tenantName
+    ? context.tenantName.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
+    : 'Z';
+
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
-      {/* Sidebar Desktop / Topbar Mobile */}
-      <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col justify-between shrink-0">
-        <div>
-          {/* Header do Tenant */}
-          <div className="p-4 sm:p-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-            <div>
-              <span className="text-xl font-bold bg-gradient-to-r from-rose-600 to-amber-600 bg-clip-text text-transparent">
-                BELVIA
-              </span>
-              <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate max-w-[170px] mt-0.5">
-                {context.tenantName}
-              </p>
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
-              {context.role}
-            </span>
-          </div>
+    <div className="min-h-screen flex bg-[#FAF5F3] text-[#2C1810]">
+      {/* ── Sidebar ZELUNIA (Desktop Recolhível + Mobile Drawer) ───── */}
+      <DashboardSidebar
+        tenantSlug={tenantSlug}
+        tenantName={context.tenantName}
+        roleLabel={roleLabel}
+        initials={initials}
+        navLinks={navLinks}
+      />
 
-          {/* Navegação */}
-          <nav className="p-3 space-y-1">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
-                >
-                  <Icon className="w-4 h-4 text-rose-500" />
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Rodapé da Sidebar */}
-        <div className="p-4 border-t border-zinc-100 dark:border-zinc-800">
-          <form action={signOutAction}>
-            <button
-              type="submit"
-              className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-zinc-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              Sair da Conta
-            </button>
-          </form>
-        </div>
-      </aside>
-
-      {/* Conteúdo Principal */}
-      <main className="flex-1 overflow-y-auto">
-        {children}
-      </main>
+      {/* ── Área de Conteúdo Principal ─────────────────────────────── */}
+      <div className="flex-1 flex flex-col min-w-0 md:pl-64 transition-all duration-300">
+        <main className="flex-1 pt-16 md:pt-0 overflow-y-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

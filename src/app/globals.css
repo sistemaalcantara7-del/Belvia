@@ -1,26 +1,75 @@
 @import "tailwindcss";
 
+/* ─── BELVIA Design Tokens ─────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --belvia-sidebar:   #2D1F27;
+  --belvia-sidebar-border: #3D2A34;
+  --belvia-rose:      #C4837A;
+  --belvia-rose-dark: #A86B62;
+  --belvia-rose-light: #F2E0DC;
+  --belvia-beige:     #FAF6F3;
+  --belvia-nude:      #F5EDE8;
+  --belvia-cream:     #FDFAF8;
+  --belvia-wine:      #3D1F24;
+  --belvia-text:      #2C1810;
+  --belvia-muted:     #9B8985;
+  --belvia-border:    #EAD9D3;
+  --belvia-card:      #FFFFFF;
+  --belvia-success:   #5C8A5E;
+  --belvia-warning:   #C49A3A;
+  --belvia-danger:    #B85555;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-serif);
+
+  --color-sidebar:       var(--belvia-sidebar);
+  --color-sidebar-border: var(--belvia-sidebar-border);
+  --color-rose-belvia:   var(--belvia-rose);
+  --color-rose-dark:     var(--belvia-rose-dark);
+  --color-rose-light:    var(--belvia-rose-light);
+  --color-beige:         var(--belvia-beige);
+  --color-nude:          var(--belvia-nude);
+  --color-cream:         var(--belvia-cream);
+  --color-wine:          var(--belvia-wine);
+  --color-belvia-text:   var(--belvia-text);
+  --color-belvia-muted:  var(--belvia-muted);
+  --color-belvia-border: var(--belvia-border);
+  --color-card:          var(--belvia-card);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ─── Base ────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--belvia-beige);
+  color: var(--belvia-text);
+  font-family: var(--font-geist-sans, system-ui, sans-serif);
+  line-height: 1.6;
+}
+
+/* ─── Scrollbar ───────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--belvia-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--belvia-muted); }
+
+/* ─── Sidebar scrollbar (always dark) ─────────── */
+.belvia-sidebar ::-webkit-scrollbar-thumb { background: var(--belvia-sidebar-border); }
+
+/* ─── Print ───────────────────────────────────── */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; color: black; }
 }

@@ -1,7 +1,17 @@
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, Calendar, Users, ShieldCheck, Check } from 'lucide-react';
+import Image from 'next/image';
+import {
+  Calendar,
+  Users,
+  CreditCard,
+  TrendingUp,
+  ArrowRight,
+  Play,
+  ShieldCheck,
+  Headphones,
+  Sparkles,
+  Check,
+} from 'lucide-react';
 import { PLAN_CONFIGS } from '@/types/plans';
 
 export default function HomePage() {
@@ -9,178 +19,410 @@ export default function HomePage() {
   const smart = PLAN_CONFIGS.smart;
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
-      {/* Header */}
-      <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold bg-gradient-to-r from-rose-600 to-amber-600 bg-clip-text text-transparent">
-              BELVIA
-            </span>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
-              SaaS Estética
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link href="/login">
-              <Button variant="ghost">Entrar</Button>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--belvia-cream)' }}>
+      {/* ── 1. CABEÇALHO COM EFEITO FROSTED GLASS (TRANSLÚCIDO) ──── */}
+      <header className="w-full sticky top-0 z-50 bg-[#FAF4EE]/70 backdrop-blur-md border-b border-[#EAD9D3]/40 shadow-xs transition-all">
+        <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between">
+          {/* Logo & Marca */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <Image
+              src="/img/logoz2.png"
+              alt="ZELUNIA — Beleza · Gestão · Bem-estar"
+              width={260}
+              height={70}
+              priority
+              className="h-14 md:h-16 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+            />
+          </Link>
+
+          {/* Menu Central */}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#7D6B65]">
+            <Link
+              href="#inicio"
+              className="text-[#2C1810] font-semibold transition-colors hover:text-[#C4837A]"
+            >
+              Início
             </Link>
-            <Link href="/register">
-              <Button>Criar Minha Clínica</Button>
+            <Link
+              href="#solucoes"
+              className="hover:text-[#2C1810] transition-colors"
+            >
+              Soluções
+            </Link>
+            <Link
+              href="#planos"
+              className="hover:text-[#2C1810] transition-colors"
+            >
+              Planos
+            </Link>
+            <Link
+              href="#contato"
+              className="hover:text-[#2C1810] transition-colors"
+            >
+              Contato
+            </Link>
+          </nav>
+
+          {/* Botões Direita */}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="px-5 py-2 rounded-xl text-sm font-medium text-[#4A3B36] bg-white/80 backdrop-blur-xs border border-[#EAD9D3] hover:bg-white hover:border-[#C4837A] hover:text-[#2C1810] transition-all shadow-2xs"
+            >
+              Entrar
+            </Link>
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium text-white transition-all shadow-xs hover:opacity-95"
+              style={{ backgroundColor: 'var(--belvia-rose)' }}
+            >
+              <span>Começar agora</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="py-20 px-6 text-center max-w-4xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 dark:bg-rose-950/40 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs font-medium mb-6">
-          <Sparkles className="w-3.5 h-3.5" />
-          Plataforma Multi-Tenant para Estética, Beleza & Bem-Estar
-        </div>
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6">
-          Gestão inteligente para sua clínica de estética e salão
-        </h1>
-        <p className="text-lg text-zinc-600 dark:text-zinc-400 mb-8 max-w-2xl mx-auto">
-          Agenda sem conflitos, prontuários e fichas de anamnese em conformidade total com a LGPD, gestão de comissões e atendimento profissional em uma única plataforma.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          <Link href="/register">
-            <Button size="lg" className="h-12 px-8 text-base">
-              Experimentar Agora
-            </Button>
-          </Link>
-          <a href="#planos">
-            <Button size="lg" variant="outline" className="h-12 px-8 text-base">
-              Ver Planos
-            </Button>
-          </a>
+      {/* ── 2. HERO SECTION ────────────────────────────────────────── */}
+      <section
+        id="inicio"
+        className="relative w-full overflow-hidden bg-no-repeat bg-[#FAF4EE]"
+        style={{
+          backgroundImage: "url('/img/bg_hero.png')",
+          backgroundPosition: 'center center',
+          backgroundSize: 'cover',
+          minHeight: '800px',
+          height: '800px',
+        }}
+      >
+        {/* Gradiente suave apenas no mobile/tablet para leitura */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#FAF4EE] via-[#FAF4EE]/85 via-40% to-transparent pointer-events-none md:hidden" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full min-h-[800px] flex items-center">
+          {/* Coluna Esquerda: Texto e CTAs (deslocado para a esquerda para aproveitar melhor a área livre) */}
+          <div className="w-full md:max-w-lg lg:max-w-xl z-10 space-y-6 -ml-0 lg:-ml-4">
+            <div className="inline-block">
+              <span className="text-[11px] md:text-xs font-semibold tracking-[0.25em] uppercase text-[#9B8985] font-sans">
+                Mais organização para o seu negócio
+              </span>
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl lg:text-[46px] font-serif leading-[1.18] text-[#2C1810] font-normal tracking-tight">
+              Seu tempo vale mais para o que realmente{' '}
+              <span className="italic font-normal" style={{ color: 'var(--belvia-rose)' }}>
+                importa.
+              </span>
+            </h1>
+
+            <p className="text-sm md:text-base text-[#6B5A54] leading-relaxed max-w-lg font-sans">
+              O ZELUNIA é a plataforma completa para clínicas de estética, beleza e bem-estar. Organize sua agenda, seus clientes, seu financeiro e toda a rotina do seu estabelecimento em um só lugar.
+            </p>
+
+            {/* CTAs */}
+            <div className="pt-2 flex flex-wrap items-center gap-4">
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-2.5 px-6 py-3 rounded-xl text-sm font-medium text-white transition-all shadow-sm hover:opacity-95"
+                style={{ backgroundColor: 'var(--belvia-rose)' }}
+              >
+                <span>Começar agora</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+
+              <a
+                href="#solucoes"
+                className="inline-flex items-center gap-2.5 px-5 py-3 rounded-xl text-sm font-medium text-[#4A3B36] bg-white/70 hover:bg-white border border-[#EAD9D3] transition-all"
+              >
+                <div className="w-6 h-6 rounded-full flex items-center justify-center bg-[#F2E0DC] text-[#C4837A]">
+                  <Play className="w-3 h-3 fill-current ml-0.5" />
+                </div>
+                <span>Conheça os recursos</span>
+              </a>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="py-12 px-6 max-w-6xl mx-auto">
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <Calendar className="w-8 h-8 text-rose-600 mb-2" />
-              <CardTitle>Agenda Inteligente</CardTitle>
-              <CardDescription>
-                Organize atendimentos, bloqueie choques de horários e receba confirmações de clientes.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader>
-              <ShieldCheck className="w-8 h-8 text-rose-600 mb-2" />
-              <CardTitle>Anamnese & LGPD</CardTitle>
-              <CardDescription>
-                Fichas médicas e estéticas dinâmicas, fotos de antes/depois privadas e consentimento seguro.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader>
-              <Users className="w-8 h-8 text-rose-600 mb-2" />
-              <CardTitle>Multi-Tenant & Equipe</CardTitle>
-              <CardDescription>
-                Isolamento estrito de dados por clínica e níveis de acesso (Owner, Admin, Profissional, Recepcionista).
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="planos" className="py-16 px-6 max-w-5xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold tracking-tight mb-3">Planos transparentes para cada etapa</h2>
-          <p className="text-zinc-600 dark:text-zinc-400">Escolha o plano ideal para seu estúdio ou clínica.</p>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {/* Plano Essencial */}
-          <Card className="flex flex-col justify-between border-zinc-200 dark:border-zinc-800">
-            <CardHeader>
-              <CardTitle className="text-xl">{essential.name}</CardTitle>
-              <CardDescription>Ideal para profissionais autônomos e pequenos estúdios</CardDescription>
-              <div className="mt-4">
-                <span className="text-4xl font-extrabold">R$ 59,90</span>
-                <span className="text-zinc-500 text-sm"> / mês</span>
+      {/* ── 3. RECURSOS — SEÇÃO ENXUTA EM UMA FAIXA ELEGANTE ────────── */}
+      <section
+        id="solucoes"
+        className="w-full py-10 md:py-12 border-y border-[#EAD9D3]/70 bg-white"
+      >
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+            {/* 1. Agenda Inteligente */}
+            <div className="flex items-start gap-4 p-3 rounded-2xl hover:bg-[#FAF6F3] transition-colors">
+              <div className="w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center bg-[#F2E0DC] text-[#C4837A] border border-[#EAD9D3]/80">
+                <Calendar className="w-5 h-5" />
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-2.5 text-sm">
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>1 Profissional</span>
+              <div className="space-y-1">
+                <h3 className="font-semibold text-sm md:text-base text-[#2C1810]">
+                  Agenda Inteligente
+                </h3>
+                <p className="text-xs text-[#7D6B65] leading-relaxed">
+                  Organize seus atendimentos com praticidade.
+                </p>
+              </div>
+            </div>
+
+            {/* 2. Gestão de Clientes */}
+            <div className="flex items-start gap-4 p-3 rounded-2xl hover:bg-[#FAF6F3] transition-colors">
+              <div className="w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center bg-[#F2E0DC] text-[#C4837A] border border-[#EAD9D3]/80">
+                <Users className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-semibold text-sm md:text-base text-[#2C1810]">
+                  Gestão de Clientes
+                </h3>
+                <p className="text-xs text-[#7D6B65] leading-relaxed">
+                  Histórico completo e relacionamento em um só lugar.
+                </p>
+              </div>
+            </div>
+
+            {/* 3. Financeiro Integrado */}
+            <div className="flex items-start gap-4 p-3 rounded-2xl hover:bg-[#FAF6F3] transition-colors">
+              <div className="w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center bg-[#F2E0DC] text-[#C4837A] border border-[#EAD9D3]/80">
+                <CreditCard className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-semibold text-sm md:text-base text-[#2C1810]">
+                  Financeiro Integrado
+                </h3>
+                <p className="text-xs text-[#7D6B65] leading-relaxed">
+                  Caixa, comissões e relatórios em tempo real.
+                </p>
+              </div>
+            </div>
+
+            {/* 4. Mais Resultados */}
+            <div className="flex items-start gap-4 p-3 rounded-2xl hover:bg-[#FAF6F3] transition-colors">
+              <div className="w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center bg-[#F2E0DC] text-[#C4837A] border border-[#EAD9D3]/80">
+                <TrendingUp className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-semibold text-sm md:text-base text-[#2C1810]">
+                  Mais Resultados
+                </h3>
+                <p className="text-xs text-[#7D6B65] leading-relaxed">
+                  Tenha uma visão clara do crescimento do seu negócio.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 4. SEÇÃO INSTITUCIONAL FINAL ───────────────────────────── */}
+      <section className="relative w-full py-16 md:py-20 bg-gradient-to-b from-[#FDF9F6] to-[#FAF4EE] overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-10">
+            {/* Texto */}
+            <div className="max-w-2xl space-y-4">
+              <span className="text-[11px] font-semibold tracking-[0.25em] uppercase text-[#9B8985] font-sans">
+                Para profissionais que transformam vidas
+              </span>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-serif text-[#2C1810] leading-tight font-normal">
+                Mais que um sistema,
+                <br />
+                uma parceria para o seu crescimento.
+              </h2>
+              <p className="text-sm md:text-base text-[#6B5A54] leading-relaxed max-w-xl">
+                O ZELUNIA foi criado para simplificar a sua rotina e dar mais tempo para você cuidar do que realmente importa: as suas clientes.
+              </p>
+            </div>
+
+            {/* Ação e Diferenciais */}
+            <div className="flex flex-col sm:items-end gap-6 w-full lg:w-auto">
+              <a
+                href="#planos"
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl text-sm font-medium text-white transition-all shadow-sm hover:opacity-95"
+                style={{ backgroundColor: 'var(--belvia-rose)' }}
+              >
+                <span>Conheça nossos planos</span>
+                <ArrowRight className="w-4 h-4" />
+              </a>
+
+              {/* Selos discretos */}
+              <div className="flex flex-wrap items-center gap-6 pt-2 text-[#7D6B65]">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#C4837A]" />
+                  <span className="text-xs font-medium">Seguro e confiável</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Headphones className="w-4 h-4 text-[#C4837A]" />
+                  <span className="text-xs font-medium">Suporte humanizado</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#C4837A]" />
+                  <span className="text-xs font-medium">Em constante evolução</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 5. PLANOS E NAVEGAÇÃO ──────────────────────────────────── */}
+      <section id="planos" className="py-20 px-6 max-w-6xl mx-auto w-full">
+        <div className="text-center mb-14 space-y-2">
+          <span className="text-[11px] font-semibold tracking-[0.25em] uppercase text-[#9B8985]">
+            Planos transparentes
+          </span>
+          <h2 className="text-3xl md:text-4xl font-serif text-[#2C1810] font-normal">
+            Escolha o plano ideal para a sua fase
+          </h2>
+          <p className="text-sm text-[#7D6B65] max-w-md mx-auto">
+            Sem fidelidade ou surpresas. Evolua quando sua clínica precisar.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch">
+          {/* Plano Essencial */}
+          <div className="flex flex-col justify-between p-8 rounded-2xl bg-white border border-[#EAD9D3] shadow-xs hover:border-[#C4837A]/50 transition-all">
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-xl font-serif font-medium text-[#2C1810]">{essential.name}</h3>
+                <p className="text-xs text-[#9B8985] mt-1">
+                  Ideal para profissionais autônomos e pequenos estúdios
+                </p>
+              </div>
+
+              <div>
+                <span className="text-4xl font-serif font-medium text-[#2C1810]">R$ 59,90</span>
+                <span className="text-xs text-[#9B8985]"> / mês</span>
+              </div>
+
+              <ul className="space-y-3 pt-2 text-xs md:text-sm text-[#5D4E48]">
+                <li className="flex items-center gap-2.5">
+                  <div className="w-4 h-4 rounded-full bg-[#FAF0ED] text-[#C4837A] flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
+                  <span>1 Profissional atendendo</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Agenda completa & Clientes (até 500)</span>
+                <li className="flex items-center gap-2.5">
+                  <div className="w-4 h-4 rounded-full bg-[#FAF0ED] text-[#C4837A] flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
+                  <span>Agenda completa & Histórico de Clientes</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                <li className="flex items-center gap-2.5">
+                  <div className="w-4 h-4 rounded-full bg-[#FAF0ED] text-[#C4837A] flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
                   <span>Fichas de anamnese padrão</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Histórico de atendimentos</span>
+                <li className="flex items-center gap-2.5">
+                  <div className="w-4 h-4 rounded-full bg-[#FAF0ED] text-[#C4837A] flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
+                  <span>Controle de Caixa Diário</span>
                 </li>
               </ul>
-              <Link href="/register?plan=essential" className="block pt-4">
-                <Button variant="outline" className="w-full">Assinar Essencial</Button>
+            </div>
+
+            <div className="pt-8">
+              <Link
+                href="/register?plan=essential"
+                className="w-full inline-flex items-center justify-center py-2.5 px-4 rounded-xl text-sm font-medium text-[#2C1810] bg-[#FAF6F3] border border-[#EAD9D3] hover:bg-white hover:border-[#C4837A] transition-all"
+              >
+                Começar no Essencial
               </Link>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Plano Inteligente */}
-          <Card className="flex flex-col justify-between border-rose-500 shadow-md relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-rose-600 text-white text-xs font-bold px-3 py-1 rounded-bl">
+          <div className="relative flex flex-col justify-between p-8 rounded-2xl bg-white border-2 border-[#C4837A] shadow-md">
+            <div className="absolute -top-3 right-6 bg-[#C4837A] text-white text-[10px] font-bold tracking-wider uppercase px-3 py-1 rounded-full shadow-2xs">
               Mais Escolhido
             </div>
-            <CardHeader>
-              <CardTitle className="text-xl">{smart.name}</CardTitle>
-              <CardDescription>Para clínicas consolidadas e equipes em crescimento</CardDescription>
-              <div className="mt-4">
-                <span className="text-4xl font-extrabold">R$ 99,90</span>
-                <span className="text-zinc-500 text-sm"> / mês</span>
+
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-xl font-serif font-medium text-[#2C1810]">{smart.name}</h3>
+                <p className="text-xs text-[#9B8985] mt-1">
+                  Para clínicas consolidadas e equipes em crescimento
+                </p>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-2.5 text-sm">
-                <li className="flex items-center gap-2 font-medium">
-                  <Check className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>Até 10 Profissionais simultâneos</span>
+
+              <div>
+                <span className="text-4xl font-serif font-medium text-[#2C1810]">R$ 99,90</span>
+                <span className="text-xs text-[#9B8985]"> / mês</span>
+              </div>
+
+              <ul className="space-y-3 pt-2 text-xs md:text-sm text-[#5D4E48]">
+                <li className="flex items-center gap-2.5">
+                  <div className="w-4 h-4 rounded-full bg-[#C4837A] text-white flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
+                  <span className="font-medium text-[#2C1810]">Até 10 profissionais na equipe</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>Encaixes inteligentes na agenda</span>
+                <li className="flex items-center gap-2.5">
+                  <div className="w-4 h-4 rounded-full bg-[#C4837A] text-white flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
+                  <span>Agendamentos com encaixes e bloqueios flexíveis</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>Fichas de anamnese 100% personalizáveis</span>
+                <li className="flex items-center gap-2.5">
+                  <div className="w-4 h-4 rounded-full bg-[#C4837A] text-white flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
+                  <span>Anamnese avançada e acompanhamento clínico</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>Histórico fotográfico de evolução clínica</span>
+                <li className="flex items-center gap-2.5">
+                  <div className="w-4 h-4 rounded-full bg-[#C4837A] text-white flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
+                  <span>Comissões automáticas de profissionais</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>DRE e comissões automáticas de profissionais</span>
+                <li className="flex items-center gap-2.5">
+                  <div className="w-4 h-4 rounded-full bg-[#C4837A] text-white flex items-center justify-center shrink-0">
+                    <Check className="w-3 h-3 stroke-[3]" />
+                  </div>
+                  <span>Histórico 360º de Clientes completo</span>
                 </li>
               </ul>
-              <Link href="/register?plan=smart" className="block pt-4">
-                <Button className="w-full">Assinar Inteligente</Button>
+            </div>
+
+            <div className="pt-8">
+              <Link
+                href="/register?plan=smart"
+                className="w-full inline-flex items-center justify-center py-2.5 px-4 rounded-xl text-sm font-medium text-white transition-all shadow-xs hover:opacity-95"
+                style={{ backgroundColor: 'var(--belvia-rose)' }}
+              >
+                Assinar Inteligente
               </Link>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-zinc-200 dark:border-zinc-800 py-8 text-center text-sm text-zinc-500">
-        <p>© 2026 BELVIA. Todos os direitos reservados. Plataforma em conformidade com a LGPD.</p>
+      {/* ── 6. RODAPÉ INSTITUCIONAL ─────────────────────────────────── */}
+      <footer id="contato" className="border-t border-[#EAD9D3] bg-[#FAF6F3] py-14 text-sm text-[#7D6B65]">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <Image
+              src="/img/logoz.png"
+              alt="ZELUNIA"
+              width={400}
+              height={110}
+              className="h-20 md:h-24 w-auto object-contain"
+            />
+          </div>
+
+          <p className="text-xs text-[#9B8985]">
+            © {new Date().getFullYear()} ZELUNIA. Todos os direitos reservados. Plataforma em conformidade com a LGPD.
+          </p>
+
+          <div className="flex items-center gap-6 text-xs text-[#7D6B65]">
+            <Link href="/login" className="hover:text-[#2C1810] transition-colors">
+              Acessar Clínica
+            </Link>
+            <Link href="/register" className="hover:text-[#2C1810] transition-colors">
+              Cadastrar
+            </Link>
+          </div>
+        </div>
       </footer>
     </div>
   );

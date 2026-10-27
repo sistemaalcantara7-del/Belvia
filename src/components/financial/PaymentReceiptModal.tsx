@@ -166,7 +166,7 @@ export function PaymentReceiptModal({
           {/* Rodapé do Recibo */}
           <div className="text-center pt-4 border-t border-dashed border-zinc-200 dark:border-zinc-700 space-y-1">
             <p className="text-[11px] text-zinc-500">Obrigado pela preferência!</p>
-            <p className="text-[10px] text-zinc-400">BELVIA Clinic Management • Documento interno não fiscal</p>
+            <p className="text-[10px] text-zinc-400">ZELUNIA Clinic Management • Documento interno não fiscal</p>
           </div>
         </div>
 
