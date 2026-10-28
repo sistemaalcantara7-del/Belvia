@@ -208,9 +208,16 @@ export function AnamnesisManager({
                     </div>
                   </div>
 
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 shrink-0">
-                    v{form.version}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {form.status === 'partial' && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                        Parcial (IA)
+                      </span>
+                    )}
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                      v{form.version}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Exibição condicional de Alergias e Condições */}

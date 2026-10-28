@@ -31,11 +31,16 @@ import {
   ExternalLink,
   MapPin,
   MessageCircle,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import { WhatsAppModal } from './WhatsAppModal';
+import { ConfirmationsCenterModal } from './ConfirmationsCenterModal';
+import { WaitingListModal } from './WaitingListModal';
 import { ReceivePaymentModal } from '@/components/financial/ReceivePaymentModal';
 import { PAYMENT_ORDER_STATUS_MAP } from '@/types/financial';
+import { WhatsAppInboundMessage } from '@/types/whatsapp';
+import { WaitingListItem } from '@/types/waitingList';
 
 interface AgendaManagerProps {
   initialAppointments: Appointment[];
@@ -47,6 +52,8 @@ interface AgendaManagerProps {
   tenantName: string;
   userRole: string;
   timezone?: string;
+  initialInboundMessages?: WhatsAppInboundMessage[];
+  initialWaitingList?: WaitingListItem[];
 }
 
 type ViewMode = 'day' | 'week' | 'month';
@@ -61,9 +68,13 @@ export function AgendaManager({
   tenantName,
   userRole,
   timezone = 'America/Sao_Paulo',
+  initialInboundMessages = [],
+  initialWaitingList = [],
 }: AgendaManagerProps) {
   const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments);
   const [timeBlocks, setTimeBlocks] = useState<ProfessionalTimeBlock[]>(initialTimeBlocks);
+  const [inboundMessages] = useState<WhatsAppInboundMessage[]>(initialInboundMessages);
+  const [waitingList, setWaitingList] = useState<WaitingListItem[]>(initialWaitingList);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('day');
   const [selectedProfFilter, setSelectedProfFilter] = useState<string>('ALL');
@@ -72,6 +83,12 @@ export function AgendaManager({
   // Modais de Agendamento
   const [modalOpen, setModalOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+
+  // Modal Central de Confirmações WhatsApp (Fase 5.7)
+  const [confirmationsModalOpen, setConfirmationsModalOpen] = useState(false);
+
+  // Modal Lista de Espera Inteligente (Fase 5.8)
+  const [waitingListModalOpen, setWaitingListModalOpen] = useState(false);
 
   // Modal de WhatsApp
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
@@ -371,6 +388,38 @@ export function AgendaManager({
             </button>
           </div>
 
+          {canCreate && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setWaitingListModalOpen(true)}
+                className="border-amber-200 text-amber-800 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/40 h-9 px-3 text-xs font-semibold relative"
+              >
+                <Sparkles className="w-3.5 h-3.5 mr-1.5 text-amber-600" />
+                <span>Lista de Espera</span>
+                {waitingList.filter((w) => w.status === 'waiting').length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 text-amber-800 font-bold border border-amber-300">
+                    {waitingList.filter((w) => w.status === 'waiting').length}
+                  </span>
+                )}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => setConfirmationsModalOpen(true)}
+                className="border-emerald-200 text-emerald-800 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40 h-9 px-3 text-xs font-semibold relative"
+              >
+                <MessageCircle className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+                <span>Central de Confirmações</span>
+                {inboundMessages.some((m) =>
+                  ['AMBIGUOUS', 'NO_CONTEXT', 'CLIENT_NOT_FOUND'].includes(m.action_taken)
+                ) && (
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse ml-1.5" />
+                )}
+              </Button>
+            </>
+          )}
+
           {canManageBlocks && (
             <Button
               variant="outline"
@@ -639,6 +688,21 @@ export function AgendaManager({
                     </span>
 
                     <div className="flex items-center gap-1">
+                      {/* Indicador de Confirmação pelo WhatsApp (Fase 5.6) */}
+                      {appt.confirmed_via_whatsapp && appt.status !== 'completed' && (
+                        <span
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-800 flex items-center gap-1 shadow-2xs"
+                          title={`Confirmado via WhatsApp em ${
+                            appt.confirmed_at
+                              ? new Date(appt.confirmed_at).toLocaleString('pt-BR')
+                              : 'registro oficial'
+                          }`}
+                        >
+                          <MessageCircle className="w-3 h-3 text-emerald-600 fill-emerald-100 dark:fill-emerald-950" />
+                          <span>WhatsApp</span>
+                        </span>
+                      )}
+
                       {appt.checked_in_at && appt.status !== 'completed' && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1" title={`Presença confirmada às ${new Date(appt.checked_in_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}>
                           <MapPin className="w-2.5 h-2.5 text-emerald-600" />
@@ -934,6 +998,48 @@ export function AgendaManager({
         onPaymentSuccess={() => {
           // Atualiza dados na tela sem perder estado
           window.location.reload();
+        }}
+      />
+
+      {/* Central de Confirmações WhatsApp (Fase 5.7) */}
+      <ConfirmationsCenterModal
+        isOpen={confirmationsModalOpen}
+        onClose={() => setConfirmationsModalOpen(false)}
+        tenantSlug={tenantSlug}
+        initialInbounds={inboundMessages}
+        pendingAppointments={appointments.filter((a) => a.status === 'scheduled')}
+        onAppointmentConfirmed={(confirmedId) => {
+          // Atualiza o agendamento correspondente no estado local sem recarregar a tela
+          setAppointments((prev) =>
+            prev.map((a) =>
+              a.id === confirmedId
+                ? {
+                    ...a,
+                    status: 'confirmed',
+                    confirmed_via_whatsapp: true,
+                    confirmed_at: new Date().toISOString(),
+                  }
+                : a
+            )
+          );
+        }}
+      />
+
+      {/* Lista de Espera Inteligente (Fase 5.8) */}
+      <WaitingListModal
+        isOpen={waitingListModalOpen}
+        onClose={() => setWaitingListModalOpen(false)}
+        tenantSlug={tenantSlug}
+        tenantName={tenantName}
+        clients={clients}
+        services={services}
+        professionals={professionals}
+        initialWaitingList={waitingList}
+        onAppointmentBooked={(newApptId) => {
+          // Atualiza a contagem local marcando a solicitação atendida
+          setWaitingList((prev) =>
+            prev.map((w) => (w.id === newApptId ? { ...w, status: 'booked' } : w))
+          );
         }}
       />
     </div>

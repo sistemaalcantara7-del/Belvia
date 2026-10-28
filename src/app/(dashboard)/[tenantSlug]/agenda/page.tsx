@@ -7,6 +7,9 @@ import { Professional, ProfessionalTimeBlock } from '@/types/professionals';
 import { Client } from '@/types/clients';
 import { PaymentOrder } from '@/types/financial';
 import { AgendaManager } from '@/components/agenda/AgendaManager';
+import { getWhatsAppInboundMessagesAction } from '@/lib/actions/whatsapp';
+import { getWaitingListEntriesAction } from '@/lib/actions/waitingList';
+import { WaitingListItem } from '@/types/waitingList';
 
 interface AgendaPageProps {
   params: Promise<{ tenantSlug: string }>;
@@ -38,6 +41,9 @@ export default async function AgendaPage({ params }: AgendaPageProps) {
       status,
       notes,
       checked_in_at,
+      confirmed_via_whatsapp,
+      confirmed_at,
+      confirmation_source,
       created_at,
       updated_at,
       client:client_id (
@@ -202,6 +208,12 @@ export default async function AgendaPage({ params }: AgendaPageProps) {
             badgeBg = 'bg-amber-50 dark:bg-amber-950/40';
             badgeText = 'text-amber-700 dark:text-amber-300';
             badgeBorder = 'border-amber-200 dark:border-amber-800';
+          } else if (item.status === 'partial') {
+            statusKey = 'pending';
+            label = 'Anamnese Parcial (IA)';
+            badgeBg = 'bg-purple-50 dark:bg-purple-950/40';
+            badgeText = 'text-purple-700 dark:text-purple-300';
+            badgeBorder = 'border-purple-200 dark:border-purple-800';
           } else if (!isCompleted) {
             statusKey = 'pending';
             label = 'Pendente de Conclusão';
@@ -244,6 +256,18 @@ export default async function AgendaPage({ params }: AgendaPageProps) {
     };
   });
 
+  // 7. Busca mensagens da Central de Confirmações e Lista de Espera (apenas owner/admin/receptionist)
+  let initialInbounds: import('@/types/whatsapp').WhatsAppInboundMessage[] = [];
+  let initialWaitingList: WaitingListItem[] = [];
+  if (['owner', 'admin', 'receptionist'].includes(context.role)) {
+    const [inboundsRes, waitRes] = await Promise.all([
+      getWhatsAppInboundMessagesAction(tenantSlug, { limit: 50 }),
+      getWaitingListEntriesAction(tenantSlug),
+    ]);
+    initialInbounds = inboundsRes.data || [];
+    initialWaitingList = waitRes.data || [];
+  }
+
   return (
     <div className="min-h-screen bg-zinc-50/50 dark:bg-zinc-950 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
@@ -257,6 +281,8 @@ export default async function AgendaPage({ params }: AgendaPageProps) {
           tenantName={context.tenantName}
           userRole={context.role}
           timezone={context.timezone}
+          initialInboundMessages={initialInbounds}
+          initialWaitingList={initialWaitingList}
         />
       </div>
     </div>

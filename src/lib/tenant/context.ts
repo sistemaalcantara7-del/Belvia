@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { UserTenantContext, TenantRole, PlanType } from '@/types/tenant';
+import { UserTenantContext, TenantRole, PlanType, TenantStatus } from '@/types/tenant';
 
 /**
  * Obtém e valida o contexto multi-tenant do usuário autenticado no servidor.
@@ -73,7 +73,10 @@ export async function getAuthenticatedTenantContext(
     selected = matched;
   }
 
-  if (!selected.tenants || selected.tenants.status !== 'active') {
+  // Permite acesso normal se estiver 'active' ou 'trial'
+  // Se estiver 'suspended' (por inadimplência), permite prosseguir apenas para que o layout
+  // apresente a tela de regularização / configurações da assinatura, preservando os dados.
+  if (!selected.tenants || (selected.tenants.status !== 'active' && selected.tenants.status !== 'trial' && selected.tenants.status !== 'suspended')) {
     return null;
   }
 
@@ -86,6 +89,7 @@ export async function getAuthenticatedTenantContext(
     tenantName: selected.tenants.name,
     role: selected.role,
     plan: selected.tenants.plan,
+    tenantStatus: selected.tenants.status as TenantStatus,
     timezone,
   };
 }

@@ -1,5 +1,5 @@
 export type AnamnesisQuestionType = 'text' | 'single_choice' | 'multiple_choice' | 'boolean' | 'date';
-export type AnamnesisFormStatus = 'draft' | 'completed' | 'archived';
+export type AnamnesisFormStatus = 'draft' | 'partial' | 'completed' | 'archived';
 export type LgpdLegalBasis = 'consent' | 'health_protection' | 'contract_execution' | 'legal_obligation';
 
 export interface AnamnesisTemplate {

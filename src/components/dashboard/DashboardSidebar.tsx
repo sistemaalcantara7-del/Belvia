@@ -13,24 +13,43 @@ import {
 } from 'lucide-react';
 import { signOutAction } from '@/lib/actions/auth';
 import { ActiveNavLink } from '@/components/ui/ActiveNavLink';
+import { PlanType } from '@/types/tenant';
+
+interface NavItem {
+  href: string;
+  label: string;
+  iconName: string;
+}
 
 interface DashboardSidebarProps {
   tenantSlug: string;
   tenantName: string;
   roleLabel: string;
+  plan?: PlanType;
   initials: string;
-  navLinks: Array<{ href: string; label: string; iconName: string }>;
+  navLinks?: NavItem[]; // retrocompatibilidade caso passe direto
+  primaryLinks?: NavItem[];
+  secondaryLinks?: NavItem[];
 }
 
 export function DashboardSidebar({
   tenantSlug,
   tenantName,
   roleLabel,
+  plan = 'smart',
   initials,
   navLinks,
+  primaryLinks = [],
+  secondaryLinks = [],
 }: DashboardSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Se foram passados grupos estruturados, use-os. Senão, use navLinks como principal.
+  const mainItems = primaryLinks.length > 0 ? primaryLinks : (navLinks ?? []);
+  const extraItems = secondaryLinks;
+
+  const isEssential = plan === 'essential';
 
   return (
     <>
@@ -56,8 +75,12 @@ export function DashboardSidebar({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#B87070] text-white">
-            {roleLabel}
+          <span
+            className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+              isEssential ? 'bg-[#5A454D] text-[#E0D0D5]' : 'bg-[#B87070] text-white'
+            }`}
+          >
+            {isEssential ? 'Essencial' : 'Inteligente'}
           </span>
         </div>
       </div>
@@ -111,32 +134,78 @@ export function DashboardSidebar({
         </div>
 
         {/* Links de Navegação */}
-        <nav className="flex-1 overflow-y-auto px-3.5 py-4 space-y-1">
-          {navLinks.map((link) => (
-            <div key={link.href} onClick={() => setMobileOpen(false)}>
-              <ActiveNavLink
-                href={link.href}
-                label={collapsed ? '' : link.label}
-                iconName={link.iconName}
-              />
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
+          {/* Seção 1: Rotina Operacional Diária */}
+          <div>
+            {!collapsed && (
+              <p className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#9E8580]">
+                Operacional
+              </p>
+            )}
+            <div className="space-y-1">
+              {mainItems.map((link) => (
+                <div key={link.href} onClick={() => setMobileOpen(false)}>
+                  <ActiveNavLink
+                    href={link.href}
+                    label={collapsed ? '' : link.label}
+                    iconName={link.iconName}
+                  />
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* Seção 2: Gestão & Configurações */}
+          {extraItems.length > 0 && (
+            <div className="pt-2 border-t border-[#433139]/50">
+              {!collapsed && (
+                <p className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#9E8580]">
+                  Gestão & Avançado
+                </p>
+              )}
+              <div className="space-y-1">
+                {extraItems.map((link) => (
+                  <div key={link.href} onClick={() => setMobileOpen(false)}>
+                    <ActiveNavLink
+                      href={link.href}
+                      label={collapsed ? '' : link.label}
+                      iconName={link.iconName}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </nav>
 
         {/* Rodapé: Perfil da Clínica / Estabelecimento e Logout */}
-        <div className="p-3.5 border-t border-[#433139]/80 shrink-0 space-y-2 bg-[#2E2126]">
+        <div className="p-3.5 border-t border-[#433139]/80 shrink-0 space-y-2.5 bg-[#2E2126]">
           <div className={`flex items-center gap-3 p-2 rounded-xl ${collapsed ? 'justify-center' : ''}`}>
             <div className="w-9 h-9 rounded-full bg-[#B87070] flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm">
               {initials}
             </div>
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-[#F7ECE8] truncate">
-                  {tenantName}
-                </p>
-                <p className="text-[11px] text-[#A8948D] truncate">
-                  {roleLabel}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-semibold text-[#F7ECE8] truncate">
+                    {tenantName}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] text-[#A8948D] truncate">
+                    {roleLabel}
+                  </span>
+                  <span className="text-[#6D5A61] text-[10px]">•</span>
+                  <span
+                    className={`text-[9px] font-semibold px-1.5 py-0.2 rounded ${
+                      isEssential
+                        ? 'bg-[#433139] text-[#DEC5BC]'
+                        : 'bg-[#B87070]/30 text-[#FFD6D6]'
+                    }`}
+                  >
+                    {isEssential ? 'Essencial' : 'Inteligente'}
+                  </span>
+                </div>
               </div>
             )}
             {!collapsed && (

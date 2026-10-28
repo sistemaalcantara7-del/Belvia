@@ -27,17 +27,21 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
-  // Lista com ícones e nomes conforme exatamente exibido no Mockup
-  const navLinks = [
+  // FASE 7.1 — SIMPLIFICAÇÃO E USABILIDADE:
+  // Reorganizar a experiência priorizando a rotina diária e separando Gestão & Configuração
+  const primaryLinks = [
     { href: `/${tenantSlug}`, label: 'Dashboard', iconName: 'dashboard' },
     { href: `/${tenantSlug}/agenda`, label: 'Agenda', iconName: 'agenda' },
     { href: `/${tenantSlug}/clientes`, label: 'Clientes', iconName: 'clientes' },
     { href: `/${tenantSlug}/servicos`, label: 'Serviços', iconName: 'servicos' },
-    { href: `/${tenantSlug}/profissionais`, label: 'Profissionais', iconName: 'profissionais' },
-    { href: `/${tenantSlug}/anamnese`, label: 'Anamnese', iconName: 'anamnese' },
+    { href: `/${tenantSlug}/anamnese`, label: 'Atendimento & Anamnese', iconName: 'anamnese' },
     ...(context.role !== 'professional'
       ? [{ href: `/${tenantSlug}/caixa`, label: 'Financeiro', iconName: 'financeiro' }]
       : []),
+  ];
+
+  const secondaryLinks = [
+    { href: `/${tenantSlug}/profissionais`, label: 'Profissionais', iconName: 'profissionais' },
     ...(context.role !== 'receptionist'
       ? [{ href: `/${tenantSlug}/comissoes`, label: 'Comissões', iconName: 'comissoes' }]
       : []),
@@ -58,12 +62,27 @@ export default async function DashboardLayout({
         tenantSlug={tenantSlug}
         tenantName={context.tenantName}
         roleLabel={roleLabel}
+        plan={context.plan}
         initials={initials}
-        navLinks={navLinks}
+        primaryLinks={primaryLinks}
+        secondaryLinks={secondaryLinks}
       />
 
       {/* ── Área de Conteúdo Principal ─────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0 md:pl-64 transition-all duration-300">
+        {context.tenantStatus === 'suspended' && (
+          <div className="bg-amber-600 text-white px-4 py-2.5 text-xs sm:text-sm font-semibold flex items-center justify-between shadow-xs z-30">
+            <span>
+              ⚠️ Assinatura em atraso: O estabelecimento está temporariamente suspenso. Seus dados estão preservados.
+            </span>
+            <a
+              href={`/${tenantSlug}/configuracoes`}
+              className="underline font-bold hover:text-amber-100 ml-4 shrink-0"
+            >
+              Regularizar Minha Assinatura →
+            </a>
+          </div>
+        )}
         <main className="flex-1 pt-16 md:pt-0 overflow-y-auto">
           {children}
         </main>

@@ -44,15 +44,20 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Rotas públicas que não exigem autenticação
-  const isPublicRoute =
-    pathname === '/' ||
-    pathname.startsWith('/login') ||
-    pathname.startsWith('/register') ||
-    pathname.startsWith('/auth') ||
-    pathname.startsWith('/agendar');
+  // Rotas protegidas específicas do painel administrativo
+  const isDashboardRoute =
+    pathname.includes('/agenda') ||
+    pathname.includes('/clientes') ||
+    pathname.includes('/servicos') ||
+    pathname.includes('/profissionais') ||
+    pathname.includes('/anamnese') ||
+    pathname.includes('/caixa') ||
+    pathname.includes('/comissoes') ||
+    pathname.includes('/relatorios') ||
+    pathname.includes('/configuracoes');
 
-  if (!user && !isPublicRoute) {
+  // Redireciona usuários não autenticados que tentam acessar rotas protegidas
+  if (!user && isDashboardRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);

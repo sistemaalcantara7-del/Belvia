@@ -120,9 +120,178 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
 
   const totalToday = typedToday.length;
   const completedToday = typedToday.filter((a) => a.status === 'completed').length;
-  const revenueToday = typedToday
-    .filter((a) => a.status === 'completed')
-    .reduce((sum, a) => sum + a.price, 0);
+
+  // ── 3. Receita Efetiva do Dia (Liquidação Real via payment_transactions) ─
+  // Regra Contábil ZELUNIA:
+  // - Soma pagamentos confirmados (status = 'confirmed') recebidos hoje (paid_at no intervalo de hoje)
+  // - Desconta estornos ocorridos hoje (status = 'refunded' e refunded_at no intervalo de hoje)
+  // - Se o usuário não tiver permissão financeira (ex: professional), revenueToday permanece 0 e é mascarado
+  let revenueToday = 0;
+
+  // ── 4. Limites dos últimos 7 dias no fuso horário do tenant ────────────
+  // Calcula o início do dia de 6 dias atrás às 00:00:00 no fuso local
+  const past6DaysDate = new Date(now);
+  past6DaysDate.setDate(past6DaysDate.getDate() - 6);
+  const start7DaysDateStr = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(past6DaysDate);
+
+  const start7DaysUtc = new Date(
+    Date.UTC(
+      parseInt(start7DaysDateStr.slice(0, 4)),
+      parseInt(start7DaysDateStr.slice(5, 7)) - 1,
+      parseInt(start7DaysDateStr.slice(8, 10)),
+      0, 0, 0
+    ) - localOffsetMinutes * 60000
+  ).toISOString();
+
+  // Array estruturado para os 7 dias
+  const revenueWeek: { dateStr: string; label: string; amount: number }[] = [];
+  const dayNetMap: Record<string, number> = {};
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dateStr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(d);
+
+    const dayLabel = new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      timeZone: timezone,
+    }).format(d);
+
+    dayNetMap[dateStr] = 0;
+    revenueWeek.push({
+      dateStr,
+      label: dayLabel,
+      amount: 0,
+    });
+  }
+
+  // Apuração de Entradas e Estornos (Lançamentos Compensatórios e Transações Legadas)
+  // - Toda entrada de dinheiro é computada no dia de paid_at (mesmo se estornada depois)
+  // - Estornos são computados como saídas na data de refunded_at
+  // - Zero dupla contabilização: se houver payment_refunds, usa os registros formais; caso contrário, usa status legados
+  if (canViewFinancial) {
+    // 1. Busca transações pagas nos últimos 7 dias
+    const { data: weekTransactions } = await supabase
+      .from('payment_transactions')
+      .select('id, amount, status, paid_at, refunded_at')
+      .eq('tenant_id', context.tenantId)
+      .gte('paid_at', start7DaysUtc)
+      .lte('paid_at', endUtc)
+      .limit(1000);
+
+    // 2. Busca estornos compensatórios formais nos últimos 7 dias
+    const { data: weekRefunds } = await supabase
+      .from('payment_refunds')
+      .select('id, payment_transaction_id, amount, refunded_at')
+      .eq('tenant_id', context.tenantId)
+      .gte('refunded_at', start7DaysUtc)
+      .lte('refunded_at', endUtc)
+      .limit(1000);
+
+    // Mapeia IDs de transações que já possuem estornos registrados no novo modelo
+    const refundedTxIdsWithNewModel = new Set<string>();
+    (weekRefunds || []).forEach((r) => {
+      refundedTxIdsWithNewModel.add(r.payment_transaction_id);
+    });
+
+    // 3. Processa Entradas (paid_at)
+    interface TxRow {
+      id: string;
+      amount: number | string;
+      status: 'confirmed' | 'refunded';
+      paid_at: string;
+      refunded_at: string | null;
+    }
+
+    for (const tx of ((weekTransactions ?? []) as unknown as TxRow[])) {
+      const amt = Number(tx.amount) || 0;
+      const txLocalDateStr = new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date(tx.paid_at));
+
+      if (dayNetMap[txLocalDateStr] !== undefined) {
+        dayNetMap[txLocalDateStr] += amt;
+      }
+      if (tx.paid_at >= startUtc && tx.paid_at <= endUtc) {
+        revenueToday += amt;
+      }
+    }
+
+    // 4. Processa Estornos Formais (payment_refunds)
+    interface RefundRow {
+      id: string;
+      payment_transaction_id: string;
+      amount: number | string;
+      refunded_at: string;
+    }
+
+    for (const ref of ((weekRefunds ?? []) as unknown as RefundRow[])) {
+      const amt = Number(ref.amount) || 0;
+      const refLocalDateStr = new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date(ref.refunded_at));
+
+      if (dayNetMap[refLocalDateStr] !== undefined) {
+        dayNetMap[refLocalDateStr] -= amt;
+      }
+      if (ref.refunded_at >= startUtc && ref.refunded_at <= endUtc) {
+        revenueToday -= amt;
+      }
+    }
+
+    // 5. Processa Estornos Legados (apenas se a transação não estiver coberta por payment_refunds)
+    const { data: legacyRefunded } = await supabase
+      .from('payment_transactions')
+      .select('id, amount, status, refunded_at')
+      .eq('tenant_id', context.tenantId)
+      .eq('status', 'refunded')
+      .gte('refunded_at', start7DaysUtc)
+      .lte('refunded_at', endUtc)
+      .limit(500);
+
+    for (const leg of ((legacyRefunded ?? []) as unknown as TxRow[])) {
+      if (!leg.refunded_at || refundedTxIdsWithNewModel.has(leg.id)) {
+        continue; // Ignora para evitar dupla contabilização
+      }
+      const amt = Number(leg.amount) || 0;
+      const legLocalDateStr = new Intl.DateTimeFormat('en-CA', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date(leg.refunded_at));
+
+      if (dayNetMap[legLocalDateStr] !== undefined) {
+        dayNetMap[legLocalDateStr] -= amt;
+      }
+      if (leg.refunded_at >= startUtc && leg.refunded_at <= endUtc) {
+        revenueToday -= amt;
+      }
+    }
+
+    // Permite saldo líquido diário negativo real (sem piso artificial)
+    for (const item of revenueWeek) {
+      item.amount = Number((dayNetMap[item.dateStr] || 0).toFixed(2));
+    }
+    revenueToday = Number(revenueToday.toFixed(2));
+  }
 
   // ── 3. Clientes ativos ────────────────────────────────────────────────
   const { count: activeClientsCount } = await supabase
@@ -173,52 +342,6 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
   const topServices = Object.values(serviceCountMap)
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
-
-  // ── 6. Receita real dos últimos 7 dias ─────────────────────────────────
-  const sevenDaysAgoUtc = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: weekCompleted } = await supabase
-    .from('appointments')
-    .select('start_time, price')
-    .eq('tenant_id', context.tenantId)
-    .eq('status', 'completed')
-    .gte('start_time', sevenDaysAgoUtc)
-    .limit(200);
-
-  // Montar array dos últimos 7 dias
-  const revenueWeek = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const dateStr = new Intl.DateTimeFormat('en-CA', {
-      timeZone: timezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    }).format(d);
-
-    const dayLabel = new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      timeZone: timezone,
-    }).format(d);
-
-    // Soma valor dos atendimentos que começaram nesta data local
-    const dayAmount = (weekCompleted ?? []).reduce((sum, item) => {
-      const itemDateStr = new Intl.DateTimeFormat('en-CA', {
-        timeZone: timezone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).format(new Date(item.start_time));
-      return itemDateStr === dateStr ? sum + (Number(item.price) || 0) : sum;
-    }, 0);
-
-    revenueWeek.push({
-      dateStr,
-      label: dayLabel,
-      amount: dayAmount,
-    });
-  }
 
   const roleLabel = ROLE_LABELS[role] ?? role;
   const initials = context.tenantName

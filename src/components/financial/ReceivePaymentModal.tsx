@@ -4,6 +4,7 @@ import React, { useState, useEffect, useTransition } from 'react';
 import { Appointment } from '@/types/appointments';
 import {
   PaymentOrder,
+  PaymentTransaction,
   PaymentMethodType,
   CashRegister,
   PAYMENT_METHOD_LABELS,
@@ -15,6 +16,7 @@ import {
   SplitPaymentItem,
 } from '@/lib/actions/financial';
 import { PaymentReceiptModal } from './PaymentReceiptModal';
+import { RefundPaymentModal } from './RefundPaymentModal';
 import {
   X,
   CreditCard,
@@ -24,6 +26,7 @@ import {
   Receipt,
   CheckCircle2,
   Clock,
+  RotateCcw,
 } from 'lucide-react';
 
 interface ReceivePaymentModalProps {
@@ -61,6 +64,7 @@ export function ReceivePaymentModal({
 
   // Recibo Não Fiscal
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [selectedTxForRefund, setSelectedTxForRefund] = useState<PaymentTransaction | null>(null);
 
   const canManage = ['owner', 'admin', 'receptionist'].includes(userRole);
 
@@ -329,24 +333,59 @@ export function ReceivePaymentModal({
                       Pagamentos Já Confirmados ({order.transactions.length})
                     </span>
                     <div className="divide-y divide-zinc-100 dark:divide-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
-                      {order.transactions.map((t) => (
-                        <div key={t.id} className="p-3 flex items-center justify-between text-xs bg-white dark:bg-zinc-900">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                            <div>
-                              <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                                {PAYMENT_METHOD_LABELS[t.method]}
-                              </span>
-                              <span className="text-[10px] text-zinc-400 block">
-                                Pago em {new Date(t.paid_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                              </span>
+                      {order.transactions.map((t) => {
+                        const totalRefundedOnTx = (t.refunds || []).reduce((acc, r) => acc + Number(r.amount), 0);
+                        const isFullyRefunded = t.status === 'refunded' || totalRefundedOnTx >= Number(t.amount);
+
+                        return (
+                          <div key={t.id} className="p-3 text-xs bg-white dark:bg-zinc-900 space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle2 className={`w-3.5 h-3.5 ${isFullyRefunded ? 'text-zinc-400' : 'text-emerald-500'}`} />
+                                <div>
+                                  <span className={`font-semibold ${isFullyRefunded ? 'line-through text-zinc-400' : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                    {PAYMENT_METHOD_LABELS[t.method]}
+                                  </span>
+                                  <span className="text-[10px] text-zinc-400 block">
+                                    Pago em {new Date(t.paid_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`font-mono font-bold ${isFullyRefunded ? 'line-through text-zinc-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                  R$ {Number(t.amount).toFixed(2)}
+                                </span>
+                                {['owner', 'admin'].includes(userRole) && !isFullyRefunded && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedTxForRefund(t)}
+                                    className="p-1 px-2 text-[11px] font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/70 border border-red-200 dark:border-red-900 rounded-lg flex items-center gap-1 transition-colors"
+                                    title="Estornar valor"
+                                  >
+                                    <RotateCcw className="w-3 h-3" />
+                                    <span>Estornar</span>
+                                  </button>
+                                )}
+                              </div>
                             </div>
+
+                            {/* Histórico de estornos compensatórios vinculados a esta transação */}
+                            {t.refunds && t.refunds.length > 0 && (
+                              <div className="pl-5 pt-1 space-y-1 border-t border-zinc-100 dark:border-zinc-800/60">
+                                {t.refunds.map((ref) => (
+                                  <div key={ref.id} className="flex items-center justify-between text-[11px] text-red-600 dark:text-red-400">
+                                    <span className="flex items-center gap-1">
+                                      <RotateCcw className="w-2.5 h-2.5 shrink-0" />
+                                      Estorno ({PAYMENT_METHOD_LABELS[ref.method]}): {ref.reason}
+                                    </span>
+                                    <span className="font-mono font-bold">- R$ {Number(ref.amount).toFixed(2)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                            R$ {Number(t.amount).toFixed(2)}
-                          </span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -506,6 +545,21 @@ export function ReceivePaymentModal({
           order={order}
           appointment={appointment}
           tenantName={tenantName}
+        />
+      )}
+
+      {/* Modal de Estorno de Pagamento */}
+      {selectedTxForRefund && (
+        <RefundPaymentModal
+          tenantSlug={tenantSlug}
+          transaction={selectedTxForRefund}
+          isOpen={Boolean(selectedTxForRefund)}
+          onClose={() => setSelectedTxForRefund(null)}
+          onSuccess={() => {
+            setSelectedTxForRefund(null);
+            onPaymentSuccess?.();
+          }}
+          activeCashRegisterId={activeCashRegister?.id}
         />
       )}
     </>

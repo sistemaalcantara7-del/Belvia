@@ -1,8 +1,8 @@
 import { getAuthenticatedTenantContext } from '@/lib/tenant/context';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { CashRegister, CashMovement } from '@/types/financial';
-import { CashRegisterManager } from '@/components/financial/CashRegisterManager';
+import { CashRegister, CashMovement, OperatingExpense } from '@/types/financial';
+import { FinanceiroTabsView } from '@/components/financial/FinanceiroTabsView';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,9 +99,24 @@ export default async function CaixaPage({ params }: CaixaPageProps) {
 
   const closedRegisters = (closedData || []) as CashRegister[];
 
+  // 4. Buscar Despesas Operacionais (Contas a Pagar)
+  let initialExpenses: OperatingExpense[] = [];
+  try {
+    const { data: expensesData } = await supabase
+      .from('operating_expenses')
+      .select('*')
+      .eq('tenant_id', context.tenantId)
+      .order('due_date', { ascending: false })
+      .limit(100);
+
+    initialExpenses = (expensesData || []) as OperatingExpense[];
+  } catch (err) {
+    console.warn('Tabela operating_expenses ainda aguardando migration no banco:', err);
+  }
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
-      <CashRegisterManager
+      <FinanceiroTabsView
         tenantSlug={tenantSlug}
         userRole={context.role}
         plan={context.plan || 'essential'}
@@ -119,6 +134,7 @@ export default async function CaixaPage({ params }: CaixaPageProps) {
           totalCardReceived,
           totalOtherReceived,
         }}
+        initialExpenses={initialExpenses}
       />
     </div>
   );

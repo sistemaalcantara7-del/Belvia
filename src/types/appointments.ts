@@ -38,6 +38,10 @@ export interface Appointment {
   status: AppointmentStatus;
   notes: string | null;
   checked_in_at?: string | null;
+  confirmed_via_whatsapp?: boolean;
+  confirmed_at?: string | null;
+  confirmation_source?: string | null;
+  confirmation_metadata?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
   client?: Client;

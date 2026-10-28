@@ -7,7 +7,8 @@ export type FeatureFlag =
   | 'photo_history'             // Histórico fotográfico antes/depois
   | 'financial_reports'         // DRE simplificado e comissões
   | 'custom_domain'             // Subdomínio/domínio personalizado
-  | 'automated_notifications';  // WhatsApp / SMS automatizados
+  | 'automated_notifications'   // WhatsApp / SMS automatizados
+  | 'generative_ai_reception';  // Recepcionista Virtual com IA Generativa (OpenAI/Gemini)
 
 export interface PlanConfig {
   id: PlanType;
@@ -18,6 +19,7 @@ export interface PlanConfig {
     maxProfessionals: number;
     maxClients: number;
     storageMb: number;
+    aiMonthlyTokens: number;
   };
 }
 
@@ -34,11 +36,13 @@ export const PLAN_CONFIGS: Record<PlanType, PlanConfig> = {
       financial_reports: false,
       custom_domain: false,
       automated_notifications: false,
+      generative_ai_reception: false,
     },
     limits: {
       maxProfessionals: 1,
       maxClients: 500,
       storageMb: 500,
+      aiMonthlyTokens: 0, // Plano Essencial utiliza atendimento determinístico seguro sem IA generativa
     },
   },
   smart: {
@@ -53,11 +57,13 @@ export const PLAN_CONFIGS: Record<PlanType, PlanConfig> = {
       financial_reports: true,
       custom_domain: true,
       automated_notifications: true,
+      generative_ai_reception: true,
     },
     limits: {
       maxProfessionals: 10,
       maxClients: 10000,
       storageMb: 10000,
+      aiMonthlyTokens: 300000, // Franquia mensal padrão de 300k tokens
     },
   },
 };

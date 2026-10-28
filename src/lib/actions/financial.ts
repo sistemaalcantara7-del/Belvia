@@ -12,6 +12,9 @@ import {
   PaymentMethodType,
   ProfessionalCommission,
   CommissionStatus,
+  OperatingExpense,
+  OperatingExpenseStatus,
+  ExpensePaymentSource,
 } from '@/types/financial';
 import { revalidatePath } from 'next/cache';
 
@@ -458,7 +461,7 @@ export async function getOrCreatePaymentOrderForAppointmentAction(
     }
   }
 
-  // 3. Carrega transações confirmadas vinculadas à ordem
+  // 3. Carrega transações vinculadas à ordem e seus respectivos estornos
   const { data: transactions } = await supabase
     .from('payment_transactions')
     .select(`
@@ -474,7 +477,22 @@ export async function getOrCreatePaymentOrderForAppointmentAction(
       refund_reason,
       received_by,
       paid_at,
-      created_at
+      created_at,
+      refunds:payment_refunds (
+        id,
+        tenant_id,
+        payment_transaction_id,
+        payment_order_id,
+        cash_register_id,
+        idempotency_key,
+        amount,
+        method,
+        reason,
+        reopen_balance_due,
+        refunded_by,
+        refunded_at,
+        created_at
+      )
     `)
     .eq('payment_order_id', orderRecord.id)
     .eq('tenant_id', context.tenantId)
@@ -994,5 +1012,387 @@ export async function getCommissionsAction(
         totalCanceled: Number(totalCanceled.toFixed(2)),
       },
     },
+  };
+}
+
+export interface RefundPaymentInput {
+  transactionId: string;
+  amount: number;
+  reason: string;
+  method: PaymentMethodType;
+  reopenBalanceDue: boolean;
+  cashRegisterId?: string | null;
+  idempotencyKey?: string;
+}
+
+/**
+ * Executa estorno (parcial ou integral) compensatório via RPC PostgreSQL atômica.
+ * Alçada: apenas 'owner' e 'admin'.
+ */
+export async function refundPaymentTransactionAction(
+  tenantSlug: string,
+  input: RefundPaymentInput
+): Promise<FinancialActionResponse<{ refundId: string; amountRefunded: number; remainingRefundable: number }>> {
+  const context = await getAuthenticatedTenantContext(tenantSlug);
+  if (!context) {
+    return { error: 'Acesso negado. Usuário não autenticado.' };
+  }
+
+  if (!['owner', 'admin'].includes(context.role)) {
+    return { error: 'Apenas proprietários e administradores possuem alçada para emitir estornos.' };
+  }
+
+  if (!input.transactionId) {
+    return { error: 'ID da transação não fornecido.' };
+  }
+
+  if (!input.amount || input.amount <= 0) {
+    return { error: 'Valor de estorno deve ser maior que zero.' };
+  }
+
+  if (!input.reason || input.reason.trim().length < 3) {
+    return { error: 'Informe um motivo claro e auditável para o estorno.' };
+  }
+
+  const supabase = await createClient();
+
+  const idempotencyKey = input.idempotencyKey || `refund_${input.transactionId}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+  // Invoca a RPC atômica process_payment_refund
+  const { data: rpcResult, error: rpcError } = await supabase.rpc('process_payment_refund', {
+    p_tenant_id: context.tenantId,
+    p_transaction_id: input.transactionId,
+    p_amount: Number(input.amount),
+    p_reason: input.reason.trim(),
+    p_method: input.method,
+    p_reopen_balance_due: Boolean(input.reopenBalanceDue),
+    p_idempotency_key: idempotencyKey,
+    p_cash_register_id: input.method === 'cash' ? (input.cashRegisterId || null) : null,
+  });
+
+  if (rpcError) {
+    console.error('Erro na RPC de estorno:', rpcError);
+    return { error: rpcError.message || 'Falha ao processar estorno no banco de dados.' };
+  }
+
+  interface RpcRefundResponse {
+    success: boolean;
+    refund_id: string;
+    amount_refunded: number;
+    remaining_refundable: number;
+    message?: string;
+  }
+
+  const res = rpcResult as unknown as RpcRefundResponse;
+
+  revalidatePath(`/${tenantSlug}/caixa`);
+  revalidatePath(`/${tenantSlug}/agenda`);
+  revalidatePath(`/${tenantSlug}`);
+
+  return {
+    success: true,
+    data: {
+      refundId: res.refund_id,
+      amountRefunded: Number(res.amount_refunded),
+      remainingRefundable: Number(res.remaining_refundable),
+    },
+  };
+}
+
+export interface CreateOperatingExpenseInput {
+  category: string;
+  description: string;
+  amount: number;
+  dueDate: string;
+  competenceDate: string;
+  paymentSource: ExpensePaymentSource;
+  status?: OperatingExpenseStatus;
+  paymentMethod?: string;
+  recipient?: string;
+  notes?: string;
+  cashRegisterId?: string | null;
+}
+
+/**
+ * Cria ou agenda uma despesa operacional (Contas a Pagar).
+ * Alçada: apenas 'owner' e 'admin'.
+ */
+export async function createOperatingExpenseAction(
+  tenantSlug: string,
+  input: CreateOperatingExpenseInput
+): Promise<FinancialActionResponse<OperatingExpense>> {
+  const context = await getAuthenticatedTenantContext(tenantSlug);
+  if (!context) {
+    return { error: 'Acesso negado. Usuário não autenticado.' };
+  }
+
+  if (!['owner', 'admin'].includes(context.role)) {
+    return { error: 'Apenas proprietários e administradores podem cadastrar despesas.' };
+  }
+
+  if (!input.description || input.description.trim().length < 3) {
+    return { error: 'Informe uma descrição detalhada para a despesa.' };
+  }
+
+  if (!input.amount || input.amount <= 0) {
+    return { error: 'O valor da despesa deve ser maior que zero.' };
+  }
+
+  if (!input.dueDate) {
+    return { error: 'A data de vencimento é obrigatória.' };
+  }
+
+  const supabase = await createClient();
+  const isPaid = input.status === 'paid';
+
+  // Se paga imediatamente em espécie pelo caixa físico: EXCLUSIVAMENTE via RPC atômica
+  if (isPaid && input.paymentSource === 'cash_register') {
+    if (!input.cashRegisterId) {
+      return { error: 'Para despesas pagas em espécie, selecione o Caixa Diário aberto.' };
+    }
+
+    const { data: rpcRes, error: rpcErr } = await supabase.rpc('create_paid_operating_expense', {
+      p_tenant_id: context.tenantId,
+      p_category: input.category || 'Outras Despesas Operacionais',
+      p_description: input.description.trim(),
+      p_amount: Number(input.amount),
+      p_payment_source: input.paymentSource,
+      p_due_date: input.dueDate,
+      p_competence_date: input.competenceDate || input.dueDate,
+      p_payment_method: input.paymentMethod || null,
+      p_recipient: input.recipient?.trim() || null,
+      p_notes: input.notes?.trim() || null,
+      p_cash_register_id: input.cashRegisterId,
+    });
+
+    if (rpcErr || !rpcRes?.expense_id) {
+      return {
+        error: `Falha no processamento atômico da despesa em espécie: ${
+          rpcErr?.message || 'A função de transação create_paid_operating_expense falhou ou não está disponível.'
+        }`,
+      };
+    }
+
+    const { data: createdExp } = await supabase
+      .from('operating_expenses')
+      .select('*')
+      .eq('id', rpcRes.expense_id)
+      .eq('tenant_id', context.tenantId)
+      .single();
+
+    revalidatePath(`/${tenantSlug}/caixa`);
+    revalidatePath(`/${tenantSlug}/relatorios`);
+
+    return {
+      success: true,
+      data: (createdExp || { id: rpcRes.expense_id }) as OperatingExpense,
+    };
+  }
+
+  // Demais despesas (contas a pagar pendentes ou pagamentos bancários/cartão)
+  const { data: expense, error: expErr } = await supabase
+    .from('operating_expenses')
+    .insert({
+      tenant_id: context.tenantId,
+      category: input.category || 'Outras Despesas Operacionais',
+      description: input.description.trim(),
+      amount: Number(input.amount),
+      payment_source: input.paymentSource,
+      status: input.status || 'pending',
+      due_date: input.dueDate,
+      competence_date: input.competenceDate || input.dueDate,
+      paid_at: isPaid ? new Date().toISOString() : null,
+      payment_method: input.paymentMethod || null,
+      recipient: input.recipient?.trim() || null,
+      cash_movement_id: null,
+      notes: input.notes?.trim() || null,
+      registered_by: context.userId,
+    })
+    .select()
+    .single();
+
+  if (expErr) {
+    return { error: `Erro ao gravar despesa: ${expErr.message}` };
+  }
+
+  revalidatePath(`/${tenantSlug}/caixa`);
+  revalidatePath(`/${tenantSlug}/relatorios`);
+
+  return {
+    success: true,
+    data: expense as OperatingExpense,
+  };
+}
+
+export interface SettleOperatingExpenseInput {
+  expenseId: string;
+  paymentSource: ExpensePaymentSource;
+  paymentMethod?: string;
+  paidAt?: string;
+  cashRegisterId?: string | null;
+}
+
+/**
+ * Realiza a baixa (pagamento/liquidação) de uma despesa pendente.
+ */
+export async function settleOperatingExpenseAction(
+  tenantSlug: string,
+  input: SettleOperatingExpenseInput
+): Promise<FinancialActionResponse<OperatingExpense>> {
+  const context = await getAuthenticatedTenantContext(tenantSlug);
+  if (!context) {
+    return { error: 'Acesso negado.' };
+  }
+
+  if (!['owner', 'admin'].includes(context.role)) {
+    return { error: 'Apenas proprietários e administradores podem liquidar despesas.' };
+  }
+
+  const supabase = await createClient();
+
+  // Se a liquidação for em espécie (Caixa Diário): EXCLUSIVAMENTE via RPC atômica com lock pessimista (FOR UPDATE)
+  if (input.paymentSource === 'cash_register') {
+    if (!input.cashRegisterId) {
+      return { error: 'Selecione o Caixa Diário aberto para realizar o pagamento em espécie.' };
+    }
+
+    const { data: rpcRes, error: rpcErr } = await supabase.rpc('settle_operating_expense', {
+      p_tenant_id: context.tenantId,
+      p_expense_id: input.expenseId,
+      p_payment_source: input.paymentSource,
+      p_payment_method: input.paymentMethod || null,
+      p_paid_at: input.paidAt ? new Date(input.paidAt).toISOString() : new Date().toISOString(),
+      p_cash_register_id: input.cashRegisterId,
+    });
+
+    if (rpcErr || !rpcRes?.success) {
+      return {
+        error: `Falha na liquidação atômica em dinheiro: ${
+          rpcErr?.message || 'A função de transação settle_operating_expense falhou ou não está disponível.'
+        }`,
+      };
+    }
+
+    const { data: updatedExp } = await supabase
+      .from('operating_expenses')
+      .select('*')
+      .eq('id', input.expenseId)
+      .eq('tenant_id', context.tenantId)
+      .single();
+
+    revalidatePath(`/${tenantSlug}/caixa`);
+    revalidatePath(`/${tenantSlug}/relatorios`);
+
+    return {
+      success: true,
+      data: updatedExp as OperatingExpense,
+    };
+  }
+
+  // Liquidação de despesa via Conta Bancária / Cartão / Outro Meio (sem débito na gaveta)
+  const { data: exp, error: fetchErr } = await supabase
+    .from('operating_expenses')
+    .select('*')
+    .eq('id', input.expenseId)
+    .eq('tenant_id', context.tenantId)
+    .single();
+
+  if (fetchErr || !exp) {
+    return { error: 'Despesa não localizada no estabelecimento.' };
+  }
+
+  if (exp.status === 'paid') {
+    return { error: 'Esta despesa já foi liquidada anteriormente.' };
+  }
+
+  if (exp.status === 'canceled') {
+    return { error: 'Não é possível liquidar uma despesa cancelada.' };
+  }
+
+  const paidDateIso = input.paidAt ? new Date(input.paidAt).toISOString() : new Date().toISOString();
+
+  const { data: updatedExp, error: updateErr } = await supabase
+    .from('operating_expenses')
+    .update({
+      status: 'paid',
+      paid_at: paidDateIso,
+      payment_source: input.paymentSource,
+      payment_method: input.paymentMethod || exp.payment_method,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.expenseId)
+    .eq('tenant_id', context.tenantId)
+    .select()
+    .single();
+
+  if (updateErr) {
+    return { error: `Erro ao liquidar despesa: ${updateErr.message}` };
+  }
+
+  revalidatePath(`/${tenantSlug}/caixa`);
+  revalidatePath(`/${tenantSlug}/relatorios`);
+
+  return {
+    success: true,
+    data: updatedExp as OperatingExpense,
+  };
+}
+
+/**
+ * Cancela uma despesa pendente (sem deletar fisicamente o registro).
+ */
+export async function cancelOperatingExpenseAction(
+  tenantSlug: string,
+  expenseId: string,
+  reason?: string
+): Promise<FinancialActionResponse<OperatingExpense>> {
+  const context = await getAuthenticatedTenantContext(tenantSlug);
+  if (!context) {
+    return { error: 'Acesso negado.' };
+  }
+
+  if (!['owner', 'admin'].includes(context.role)) {
+    return { error: 'Apenas proprietários e administradores podem cancelar despesas.' };
+  }
+
+  const supabase = await createClient();
+
+  const { data: exp, error: fetchErr } = await supabase
+    .from('operating_expenses')
+    .select('*')
+    .eq('id', expenseId)
+    .eq('tenant_id', context.tenantId)
+    .single();
+
+  if (fetchErr || !exp) {
+    return { error: 'Despesa não localizada.' };
+  }
+
+  if (exp.status === 'paid') {
+    return { error: 'Despesas já pagas não podem ser canceladas diretamente. Utilize estorno/compensação.' };
+  }
+
+  const { data: updatedExp, error: updateErr } = await supabase
+    .from('operating_expenses')
+    .update({
+      status: 'canceled',
+      notes: reason ? `${exp.notes ? exp.notes + ' | ' : ''}Cancelamento: ${reason}` : exp.notes,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', expenseId)
+    .eq('tenant_id', context.tenantId)
+    .select()
+    .single();
+
+  if (updateErr) {
+    return { error: `Erro ao cancelar despesa: ${updateErr.message}` };
+  }
+
+  revalidatePath(`/${tenantSlug}/caixa`);
+  revalidatePath(`/${tenantSlug}/relatorios`);
+
+  return {
+    success: true,
+    data: updatedExp as OperatingExpense,
   };
 }

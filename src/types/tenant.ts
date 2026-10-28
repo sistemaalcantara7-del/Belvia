@@ -42,6 +42,7 @@ export interface UserTenantContext {
   tenantSlug: string;
   role: TenantRole;
   plan: PlanType;
+  tenantStatus?: TenantStatus;
   tenantName: string;
   timezone?: string;
 }

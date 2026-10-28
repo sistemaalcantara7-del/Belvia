@@ -199,14 +199,14 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* ── 2. CABEÇALHO DO DASHBOARD (TÍTULO + DATA PICKER + NOVO AGENDAMENTO) ── */}
+      {/* ── 2. CABEÇALHO DO DASHBOARD + AÇÕES RÁPIDAS (FASE 7.1) ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1E1115]">
             Dashboard
           </h1>
           <p className="text-xs sm:text-sm text-[#7D6B65] mt-1 font-normal">
-            Aqui está um resumo da sua clínica hoje.
+            Aqui está um resumo da rotina da sua clínica hoje.
           </p>
         </div>
 
@@ -214,18 +214,76 @@ export function DashboardView({
           <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-[#EADBCE] text-xs font-medium text-[#4A3B36] shadow-2xs">
             <CalendarDays className="w-4 h-4 text-[#B87070]" />
             <span className="capitalize">{todayFormatted}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-[#8C7A74] ml-1" />
           </div>
 
           <Link
             href={`/${tenantSlug}/agenda`}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white transition-all shadow-sm hover:opacity-95"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white transition-all shadow-sm hover:opacity-95"
             style={{ backgroundColor: '#B87070' }}
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Novo Agendamento</span>
           </Link>
         </div>
+      </div>
+
+      {/* ── BARRA DE AÇÕES RÁPIDAS DA ROTINA (FASE 7.1) ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Link
+          href={`/${tenantSlug}/agenda`}
+          className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-[#EADBCE]/80 hover:border-[#B87070] hover:shadow-xs transition-all group"
+        >
+          <div className="w-9 h-9 rounded-lg bg-[#FCEFEB] text-[#B87070] group-hover:bg-[#B87070] group-hover:text-white transition-colors flex items-center justify-center shrink-0">
+            <CalendarIcon className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-[#2C1810] truncate">Novo Agendamento</p>
+            <p className="text-[11px] text-[#8C7A74] truncate">Abrir agenda / marcar</p>
+          </div>
+        </Link>
+
+        <Link
+          href={`/${tenantSlug}/clientes`}
+          className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-[#EADBCE]/80 hover:border-[#B87070] hover:shadow-xs transition-all group"
+        >
+          <div className="w-9 h-9 rounded-lg bg-[#F3EFEF] text-[#4A3B36] group-hover:bg-[#B87070] group-hover:text-white transition-colors flex items-center justify-center shrink-0">
+            <UserPlus className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-[#2C1810] truncate">Cadastrar Cliente</p>
+            <p className="text-[11px] text-[#8C7A74] truncate">Novo cadastro rápido</p>
+          </div>
+        </Link>
+
+        <Link
+          href={`/${tenantSlug}/anamnese`}
+          className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-[#EADBCE]/80 hover:border-[#B87070] hover:shadow-xs transition-all group"
+        >
+          <div className="w-9 h-9 rounded-lg bg-[#EAF7EE] text-[#1B873F] group-hover:bg-[#1B873F] group-hover:text-white transition-colors flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-[#2C1810] truncate">Atendimento</p>
+            <p className="text-[11px] text-[#8C7A74] truncate">Anamnese e prontuário</p>
+          </div>
+        </Link>
+
+        <Link
+          href={canViewFinancial ? `/${tenantSlug}/caixa` : `/${tenantSlug}/agenda`}
+          className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-[#EADBCE]/80 hover:border-[#B87070] hover:shadow-xs transition-all group"
+        >
+          <div className="w-9 h-9 rounded-lg bg-[#EBF3FC] text-[#2B72D4] group-hover:bg-[#2B72D4] group-hover:text-white transition-colors flex items-center justify-center shrink-0">
+            <DollarSign className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-[#2C1810] truncate">
+              {canViewFinancial ? 'Lançar Pagamento' : 'Consultar Agenda'}
+            </p>
+            <p className="text-[11px] text-[#8C7A74] truncate">
+              {canViewFinancial ? 'Fluxo de caixa' : 'Horários do dia'}
+            </p>
+          </div>
+        </Link>
       </div>
 
       {/* ── 3. QUATRO INDICADORES SUPERIORES (KPIS IDÊNTICOS AO MOCKUP) ── */}

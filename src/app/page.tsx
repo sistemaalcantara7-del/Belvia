@@ -99,7 +99,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-r from-[#FAF4EE] via-[#FAF4EE]/85 via-40% to-transparent pointer-events-none md:hidden" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full min-h-[800px] flex items-center">
-          {/* Coluna Esquerda: Texto e CTAs (deslocado para a esquerda para aproveitar melhor a área livre) */}
+          {/* Coluna Esquerda: Texto e CTAs */}
           <div className="w-full md:max-w-lg lg:max-w-xl z-10 space-y-6 -ml-0 lg:-ml-4">
             <div className="inline-block">
               <span className="text-[11px] md:text-xs font-semibold tracking-[0.25em] uppercase text-[#9B8985] font-sans">
@@ -114,8 +114,10 @@ export default function HomePage() {
               </span>
             </h1>
 
-            <p className="text-sm md:text-base text-[#6B5A54] leading-relaxed max-w-lg font-sans">
-              O ZELUNIA é a plataforma completa para clínicas de estética, beleza e bem-estar. Organize sua agenda, seus clientes, seu financeiro e toda a rotina do seu estabelecimento em um só lugar.
+            <p className="text-sm md:text-base text-[#6B5A54] leading-relaxed max-w-[380px] lg:max-w-[400px] font-sans">
+              O ZELUNIA é a plataforma completa para clínicas de estética, beleza e bem-estar.
+              <br className="hidden sm:inline" />
+              Organize sua agenda, seus clientes, seu financeiro e toda a rotina do seu estabelecimento em um só lugar.
             </p>
 
             {/* CTAs */}

@@ -110,7 +110,28 @@ export interface PaymentTransaction {
   received_by: string;
   paid_at: string;
   created_at: string;
+  refunds?: PaymentRefund[];
   receiver?: {
+    id: string;
+    full_name: string;
+  };
+}
+
+export interface PaymentRefund {
+  id: string;
+  tenant_id: string;
+  payment_transaction_id: string;
+  payment_order_id: string;
+  cash_register_id: string | null;
+  idempotency_key: string;
+  amount: number;
+  method: PaymentMethodType;
+  reason: string;
+  reopen_balance_due: boolean;
+  refunded_by: string;
+  refunded_at: string;
+  created_at: string;
+  refunder?: {
     id: string;
     full_name: string;
   };
@@ -213,3 +234,45 @@ export interface CashRegisterSummary {
   totalCardReceived: number;
   totalOtherReceived: number;
 }
+
+export type ExpensePaymentSource = 'bank_account' | 'cash_register' | 'credit_card' | 'other';
+export type OperatingExpenseStatus = 'pending' | 'paid' | 'canceled';
+
+export interface OperatingExpense {
+  id: string;
+  tenant_id: string;
+  category: string;
+  description: string;
+  amount: number;
+  payment_source: ExpensePaymentSource;
+  status: OperatingExpenseStatus;
+  due_date: string;
+  competence_date: string;
+  paid_at: string | null;
+  payment_method: string | null;
+  recipient: string | null;
+  cash_movement_id: string | null;
+  notes: string | null;
+  registered_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const EXPENSE_CATEGORIES = [
+  'Insumos & Descartáveis',
+  'Aluguel & Condomínio',
+  'Energia & Água',
+  'Software & TI',
+  'Marketing & Publicidade',
+  'Folha & Pró-labore',
+  'Manutenção & Limpeza',
+  'Tributos & Taxas',
+  'Outras Despesas Operacionais',
+] as const;
+
+export const EXPENSE_PAYMENT_SOURCES: Record<ExpensePaymentSource, string> = {
+  bank_account: 'Conta Bancária (Pix/Boleto/Débito)',
+  cash_register: 'Caixa Diário (Espécie)',
+  credit_card: 'Cartão de Crédito',
+  other: 'Outro Meio',
+};

@@ -420,6 +420,9 @@ export async function getClient360HistoryAction(
     } else if (isExpired) {
       anamnesisBadgeStatus = 'expired';
       anamnesisBadgeLabel = 'Anamnese Expirada';
+    } else if (latest.status === 'partial') {
+      anamnesisBadgeStatus = 'pending';
+      anamnesisBadgeLabel = 'Anamnese Parcial (IA)';
     } else {
       anamnesisBadgeStatus = 'up_to_date';
       anamnesisBadgeLabel = 'Anamnese em Dia';
