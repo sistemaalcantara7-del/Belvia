@@ -3,10 +3,16 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
 // Cliente administrativo para processamento assíncrono de eventos de Webhook da Meta
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+function getAdminSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !serviceKey) {
+    throw new Error('Configurações de banco ausentes para o webhook Meta.');
+  }
+
+  return createClient(supabaseUrl, serviceKey);
+}
 
 /**
  * Validação de Assinatura HMAC-SHA256 da Meta (Header X-Hub-Signature-256).
@@ -44,6 +50,7 @@ export async function GET(request: NextRequest) {
   const challenge = searchParams.get('hub.challenge');
 
   if (mode === 'subscribe' && token) {
+    const supabaseAdmin = getAdminSupabaseClient();
     // Consulta se o verify_token pertence a algum estabelecimento ativo
     const { data: config } = await supabaseAdmin
       .from('tenant_whatsapp_configs')
@@ -136,6 +143,8 @@ export async function POST(request: NextRequest) {
     if (bodyJson.object !== 'whatsapp_business_account') {
       return NextResponse.json({ status: 'ignored' }, { status: 200 });
     }
+
+    const supabaseAdmin = getAdminSupabaseClient();
 
     const entries = bodyJson.entry || [];
     for (const entry of entries) {
