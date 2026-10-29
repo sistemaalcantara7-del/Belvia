@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Client } from '@/types/clients';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,8 @@ export function ClientsManager({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
+  const router = useRouter();
+  const [, startTransition] = useTransition();
 
   // Modais
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -412,8 +415,17 @@ export function ClientsManager({
         onClose={() => setFormModalOpen(false)}
         tenantSlug={tenantSlug}
         clientToEdit={editingClient}
-        onSaved={() => {
-          window.location.reload();
+        onSaved={(savedClient) => {
+          setClients((prev) => {
+            const exists = prev.some((c) => c.id === savedClient.id);
+            if (exists) {
+              return prev.map((c) => (c.id === savedClient.id ? savedClient : c));
+            }
+            return [savedClient, ...prev];
+          });
+          startTransition(() => {
+            router.refresh();
+          });
         }}
       />
 

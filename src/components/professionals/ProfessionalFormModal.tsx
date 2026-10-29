@@ -15,7 +15,7 @@ interface ProfessionalFormModalProps {
   tenantSlug: string;
   professionalToEdit?: Professional | null;
   availableServices: Service[];
-  onSaved: () => void;
+  onSaved: (professional: Professional) => void;
 }
 
 const DEFAULT_SCHEDULES: ProfessionalSchedule[] = [
@@ -103,9 +103,12 @@ export function ProfessionalFormModal({
     if (res?.error) {
       setErrorMessage(res.error);
       setLoading(false);
+    } else if (res?.professional) {
+      setLoading(false);
+      onSaved(res.professional);
+      onClose();
     } else {
       setLoading(false);
-      onSaved();
       onClose();
     }
   }

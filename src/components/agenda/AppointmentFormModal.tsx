@@ -19,7 +19,7 @@ interface AppointmentFormModalProps {
   professionals: Professional[];
   appointmentToEdit?: Appointment | null;
   defaultDate?: string;
-  onSaved: () => void;
+  onSaved: (appointment?: Appointment) => void;
   onOpenWhatsApp?: (appt: Appointment) => void;
 }
 
@@ -109,7 +109,7 @@ export function AppointmentFormModal({
       setLoading(false);
     } else {
       setLoading(false);
-      onSaved();
+      onSaved(res?.appointment);
       onClose();
     }
   }

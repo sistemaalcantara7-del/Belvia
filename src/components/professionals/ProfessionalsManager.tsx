@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Professional, DAYS_OF_WEEK } from '@/types/professionals';
 import { Service } from '@/types/services';
 import { Button } from '@/components/ui/button';
@@ -51,6 +52,8 @@ export function ProfessionalsManager({
   const [editingProfessional, setEditingProfessional] = useState<Professional | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const router = useRouter();
+  const [, startTransition] = useTransition();
 
   // Apenas owner ou admin podem gerenciar
   const canManage = userRole === 'owner' || userRole === 'admin';
@@ -408,8 +411,17 @@ export function ProfessionalsManager({
         tenantSlug={tenantSlug}
         professionalToEdit={editingProfessional}
         availableServices={availableServices}
-        onSaved={() => {
-          window.location.reload();
+        onSaved={(savedProf) => {
+          setProfessionals((prev) => {
+            const exists = prev.some((p) => p.id === savedProf.id);
+            if (exists) {
+              return prev.map((p) => (p.id === savedProf.id ? savedProf : p));
+            }
+            return [savedProf, ...prev];
+          });
+          startTransition(() => {
+            router.refresh();
+          });
         }}
       />
     </div>

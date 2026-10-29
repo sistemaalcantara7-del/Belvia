@@ -41,7 +41,7 @@ export function ServicesManager({
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const canManage = userRole === 'owner' || userRole === 'admin';
 

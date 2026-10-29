@@ -176,7 +176,25 @@ export async function saveProfessionalAction(
   }
 
   revalidatePath(`/${tenantSlug}/profissionais`);
-  return { success: true };
+  return {
+    success: true,
+    professional: {
+      id: profId as string,
+      tenant_id: context.tenantId,
+      user_id: null,
+      full_name: fullName,
+      whatsapp: rawWhatsapp || null,
+      email: email,
+      specialty: specialty,
+      bio: bio,
+      avatar_url: null,
+      status: status,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      service_ids: formData.service_ids || [],
+      schedules: formData.schedules || [],
+    },
+  };
 }
 
 /**

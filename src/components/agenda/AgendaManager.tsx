@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Appointment, AppointmentStatus, APPOINTMENT_STATUS_MAP } from '@/types/appointments';
 import { Service } from '@/types/services';
 import { Professional, ProfessionalTimeBlock } from '@/types/professionals';
@@ -74,6 +75,8 @@ export function AgendaManager({
   const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments);
   const [timeBlocks, setTimeBlocks] = useState<ProfessionalTimeBlock[]>(initialTimeBlocks);
   const [inboundMessages] = useState<WhatsAppInboundMessage[]>(initialInboundMessages);
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   const [waitingList, setWaitingList] = useState<WaitingListItem[]>(initialWaitingList);
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('day');
@@ -293,8 +296,19 @@ export function AgendaManager({
     }
   }
 
-  function handleAppointmentSaved() {
-    window.location.reload();
+  function handleAppointmentSaved(savedAppt?: Appointment) {
+    if (savedAppt) {
+      setAppointments((prev) => {
+        const exists = prev.some((a) => a.id === savedAppt.id);
+        if (exists) {
+          return prev.map((a) => (a.id === savedAppt.id ? savedAppt : a));
+        }
+        return [...prev, savedAppt];
+      });
+    }
+    startTransition(() => {
+      router.refresh();
+    });
   }
 
   // Título dinâmico do período
@@ -996,8 +1010,10 @@ export function AgendaManager({
           setSelectedPaymentAppt(null);
         }}
         onPaymentSuccess={() => {
-          // Atualiza dados na tela sem perder estado
-          window.location.reload();
+          // Atualiza dados na tela via RSC em background sem forçar hard reload
+          startTransition(() => {
+            router.refresh();
+          });
         }}
       />
 

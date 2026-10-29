@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -64,6 +65,8 @@ export function WhatsAppOfficialManager({
 
   const [config, setConfig] = useState<TenantWhatsAppConfig>(initialConfig);
   const [templates] = useState<WhatsAppOfficialTemplate[]>(initialTemplates);
+  const router = useRouter();
+  const [, startTransition] = useTransition();
 
   // Estados de Ativação e Homologação
   const [checklist, setChecklist] = useState<WhatsAppPreActivationChecklist | null>(null);
@@ -170,7 +173,9 @@ export function WhatsAppOfficialManager({
           type: 'success',
           message: 'Templates oficiais homologados pelo ZELUNIA foram sincronizados!',
         });
-        window.location.reload();
+        startTransition(() => {
+          router.refresh();
+        });
       }
     } catch (err) {
       console.error(err);

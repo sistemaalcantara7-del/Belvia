@@ -13,7 +13,7 @@ interface ClientFormModalProps {
   onClose: () => void;
   tenantSlug: string;
   clientToEdit?: Client | null;
-  onSaved: () => void;
+  onSaved: (client: Client) => void;
 }
 
 export function ClientFormModal({
@@ -67,9 +67,12 @@ export function ClientFormModal({
     if (res?.error) {
       setErrorMessage(res.error);
       setLoading(false);
+    } else if (res?.client) {
+      setLoading(false);
+      onSaved(res.client);
+      onClose();
     } else {
       setLoading(false);
-      onSaved();
       onClose();
     }
   }
