@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { openCashRegisterAction } from '@/lib/actions/financial';
-import { X, DollarSign, AlertCircle } from 'lucide-react';
+import { X, DollarSign } from 'lucide-react';
+import { ActionFeedbackAlert } from '@/components/ui/ActionFeedbackAlert';
 
 interface OpenCashModalProps {
   tenantSlug: string;
@@ -80,10 +81,11 @@ export function OpenCashModal({ tenantSlug, isOpen, onClose, onSuccess }: OpenCa
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4">
           {errorMessage && (
-            <div className="flex items-start gap-2 p-3 text-sm text-red-600 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 rounded-lg">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{errorMessage}</span>
-            </div>
+            <ActionFeedbackAlert
+              error={errorMessage}
+              tenantSlug={tenantSlug}
+              onDismiss={() => setErrorMessage(null)}
+            />
           )}
 
           <div>

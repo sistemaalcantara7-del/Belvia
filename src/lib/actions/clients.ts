@@ -14,6 +14,7 @@ import {
 import { PaymentOrder } from '@/types/financial';
 import { Appointment } from '@/types/appointments';
 import { sanitizeDigits, isValidCPF } from '@/lib/utils/masks';
+import { getPlanLimits } from '@/lib/plans/entitlements';
 import { revalidatePath } from 'next/cache';
 
 export interface ClientActionResponse {
@@ -75,6 +76,21 @@ export async function saveClientAction(
   }
 
   const supabase = await createClient();
+
+  // Verificação de Limites do Plano (Essencial = até 500 clientes, Inteligente = até 10.000)
+  if (!formData.id) {
+    const limits = getPlanLimits(context.plan);
+    const { count, error: countErr } = await supabase
+      .from('clients')
+      .select('id', { count: 'exact', head: true })
+      .eq('tenant_id', context.tenantId);
+
+    if (!countErr && typeof count === 'number' && count >= limits.maxClients) {
+      return {
+        error: `Limite do seu plano atingido (${limits.maxClients} clientes). Faça upgrade para o Plano Inteligente para continuar cadastrando.`,
+      };
+    }
+  }
 
   // Verifica unicidade de CPF dentro do mesmo tenant
   if (rawCpf) {

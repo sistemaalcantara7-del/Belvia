@@ -7,6 +7,7 @@ import { Client } from '@/types/clients';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ClientFormModal } from './ClientFormModal';
+import { ActionFeedbackAlert } from '@/components/ui/ActionFeedbackAlert';
 import { ClientDetailModal } from './ClientDetailModal';
 import { toggleClientStatusAction } from '@/lib/actions/clients';
 import { maskPhone, maskCPFPartial, buildWhatsAppLink } from '@/lib/utils/masks';
@@ -25,6 +26,9 @@ import {
   ChevronRight,
   Phone,
   History,
+  Sparkles,
+  ArrowUpRight,
+  Lock,
 } from 'lucide-react';
 
 interface ClientsManagerProps {
@@ -32,6 +36,8 @@ interface ClientsManagerProps {
   tenantSlug: string;
   tenantName: string;
   userRole: string;
+  planName?: string;
+  maxClients?: number;
 }
 
 const ITEMS_PER_PAGE = 8;
@@ -41,6 +47,8 @@ export function ClientsManager({
   tenantSlug,
   tenantName,
   userRole,
+  planName = 'Essencial',
+  maxClients = 500,
 }: ClientsManagerProps) {
   const [clients, setClients] = useState<Client[]>(initialClients);
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,6 +63,7 @@ export function ClientsManager({
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [viewingClient, setViewingClient] = useState<Client | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Permissão: owner, admin e receptionist podem criar e editar
   const canManage = ['owner', 'admin', 'receptionist'].includes(userRole);
@@ -63,6 +72,7 @@ export function ClientsManager({
   const totalCount = clients.length;
   const activeCount = clients.filter((c) => c.status === 'active').length;
   const inactiveCount = totalCount - activeCount;
+  const isAtLimit = totalCount >= maxClients;
 
   // Filtragem
   const filteredClients = clients.filter((client) => {
@@ -125,7 +135,9 @@ export function ClientsManager({
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
               {tenantName}
             </span>
-            <span className="text-xs text-zinc-500">Base de Clientes</span>
+            <span className="text-xs text-zinc-500">
+              Plano {planName} (Capacidade: {totalCount}/{maxClients} clientes)
+            </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
             Cadastro de Clientes
@@ -136,12 +148,87 @@ export function ClientsManager({
         </div>
 
         {canManage && (
-          <Button onClick={handleOpenCreate} className="shadow-md h-10 px-4 self-start md:self-auto">
-            <UserPlus className="w-4 h-4 mr-2" />
-            Novo Cliente
-          </Button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 self-start md:self-auto">
+            {isAtLimit && (
+              <Link
+                href={`/${tenantSlug}/configuracoes`}
+                className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                Aumentar limite para 10.000
+                <ArrowUpRight className="w-3.5 h-3.5 ml-0.5" />
+              </Link>
+            )}
+            <Button
+              onClick={handleOpenCreate}
+              disabled={isAtLimit}
+              variant={isAtLimit ? 'outline' : 'default'}
+              className={`shadow-md h-10 px-4 transition-all ${
+                isAtLimit
+                  ? 'border-amber-300 bg-amber-50/50 text-amber-800 hover:bg-amber-100/70 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300 cursor-not-allowed opacity-80'
+                  : ''
+              }`}
+              title={
+                isAtLimit
+                  ? `Limite de ${maxClients} clientes atingido no plano ${planName}. Faça upgrade para adicionar mais.`
+                  : 'Cadastrar novo cliente'
+              }
+            >
+              {isAtLimit ? (
+                <>
+                  <Lock className="w-4 h-4 mr-2 text-amber-600 dark:text-amber-400" />
+                  Limite Atingido ({totalCount}/{maxClients})
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Novo Cliente
+                </>
+              )}
+            </Button>
+          </div>
         )}
       </div>
+
+      {/* Banner de Aviso de Limite do Plano */}
+      {isAtLimit && (
+        <div className="p-4 rounded-xl border border-amber-300 bg-gradient-to-r from-amber-50 via-orange-50/50 to-amber-50/20 dark:from-amber-950/40 dark:via-orange-950/20 dark:to-transparent dark:border-amber-800/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-bold text-amber-950 dark:text-amber-100">
+                  Capacidade de Clientes Atingida ({totalCount}/{maxClients})
+                </h4>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200">
+                  Plano {planName}
+                </span>
+              </div>
+              <p className="text-xs text-amber-900/80 dark:text-amber-300/80 mt-1 max-w-2xl leading-relaxed">
+                Você pode continuar consultando e editando os clientes já cadastrados. Para expandir a capacidade para <strong>até 10.000 clientes</strong> com IA generativa e relatórios completos, faça upgrade para o Plano Inteligente.
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href={`/${tenantSlug}/configuracoes`}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition-colors shrink-0 self-end md:self-auto"
+          >
+            Conhecer Plano Inteligente
+            <ArrowUpRight className="w-4 h-4" />
+          </Link>
+        </div>
+      )}
+
+      {actionError && (
+        <ActionFeedbackAlert
+          error={actionError}
+          tenantSlug={tenantSlug}
+          onDismiss={() => setActionError(null)}
+        />
+      )}
 
       {/* Cards Indicadores */}
       <div className="grid grid-cols-3 gap-3 sm:gap-4">

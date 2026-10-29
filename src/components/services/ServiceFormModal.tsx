@@ -6,6 +6,7 @@ import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import { Service, ServiceFormData, DEFAULT_SERVICE_CATEGORIES } from '@/types/services';
 import { saveServiceAction } from '@/lib/actions/services';
 import { X, Sparkles } from 'lucide-react';
+import { ActionFeedbackAlert } from '@/components/ui/ActionFeedbackAlert';
 
 interface ServiceFormModalProps {
   isOpen: boolean;
@@ -90,8 +91,12 @@ export function ServiceFormModal({
         {/* Corpo com Rolagem Interna */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {errorMessage && (
-            <div className="mb-4 p-3 text-xs rounded bg-red-50 border border-red-200 text-red-700 dark:bg-red-950/40 dark:border-red-900 dark:text-red-300">
-              {errorMessage}
+            <div className="mb-4">
+              <ActionFeedbackAlert
+                error={errorMessage}
+                tenantSlug={tenantSlug}
+                onDismiss={() => setErrorMessage(null)}
+              />
             </div>
           )}
 

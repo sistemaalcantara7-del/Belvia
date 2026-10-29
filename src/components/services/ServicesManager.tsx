@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ServiceFormModal } from './ServiceFormModal';
 import { toggleServiceStatusAction } from '@/lib/actions/services';
+import { ActionFeedbackAlert } from '@/components/ui/ActionFeedbackAlert';
 import {
   Plus,
   Search,
@@ -40,6 +41,7 @@ export function ServicesManager({
   const [modalOpen, setModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const router = useRouter();
   const [, startTransition] = useTransition();
 
@@ -67,12 +69,15 @@ export function ServicesManager({
 
   async function handleToggleStatus(service: Service) {
     if (!canManage) return;
+    setActionError(null);
     setUpdatingId(service.id);
 
     const nextStatus = service.status === 'active' ? 'inactive' : 'active';
     const res = await toggleServiceStatusAction(tenantSlug, service.id, service.status);
 
-    if (res?.success) {
+    if (res?.error) {
+      setActionError(res.error);
+    } else if (res?.success) {
       setServices((prev) =>
         prev.map((s) => (s.id === service.id ? { ...s, status: nextStatus } : s))
       );
@@ -116,6 +121,14 @@ export function ServicesManager({
           </Button>
         )}
       </div>
+
+      {actionError && (
+        <ActionFeedbackAlert
+          error={actionError}
+          tenantSlug={tenantSlug}
+          onDismiss={() => setActionError(null)}
+        />
+      )}
 
       {/* Cards Indicadores */}
       <div className="grid grid-cols-3 gap-3 sm:gap-4">

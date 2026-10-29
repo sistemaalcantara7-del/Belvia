@@ -6,6 +6,7 @@ import { AnamnesisTemplate, AnamnesisForm, AnamnesisFormData, LgpdLegalBasis } f
 import { Client } from '@/types/clients';
 import { Professional } from '@/types/professionals';
 import { saveAnamnesisFormAction } from '@/lib/actions/anamnesis';
+import { ActionFeedbackAlert } from '@/components/ui/ActionFeedbackAlert';
 import { X, ShieldAlert, CheckSquare, Loader2, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 

@@ -2,11 +2,13 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Professional, DAYS_OF_WEEK } from '@/types/professionals';
 import { Service } from '@/types/services';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ProfessionalFormModal } from './ProfessionalFormModal';
+import { ActionFeedbackAlert } from '@/components/ui/ActionFeedbackAlert';
 import { toggleProfessionalStatusAction } from '@/lib/actions/professionals';
 import { maskPhone, buildWhatsAppLink } from '@/lib/utils/masks';
 import {
@@ -21,6 +23,10 @@ import {
   Clock,
   Scissors,
   Filter,
+  Sparkles,
+  AlertTriangle,
+  ArrowUpRight,
+  Lock,
 } from 'lucide-react';
 
 interface ProfessionalsManagerProps {
@@ -62,6 +68,7 @@ export function ProfessionalsManager({
   const totalCount = professionals.length;
   const activeCount = professionals.filter((p) => p.status === 'active').length;
   const inactiveCount = totalCount - activeCount;
+  const isAtLimit = activeCount >= maxProfessionals;
 
   // Lista de especialidades únicas para filtro
   const specialties = Array.from(new Set(professionals.map((p) => p.specialty).filter(Boolean)));
@@ -103,6 +110,12 @@ export function ProfessionalsManager({
 
   function handleOpenCreate() {
     setActionError(null);
+    if (isAtLimit) {
+      setActionError(
+        `Limite do plano ${planName} atingido (${activeCount}/${maxProfessionals} vagas ativas ocupadas). Faça upgrade para o Plano Inteligente para adicionar mais profissionais.`
+      );
+      return;
+    }
     setEditingProfessional(null);
     setModalOpen(true);
   }
@@ -135,20 +148,86 @@ export function ProfessionalsManager({
         </div>
 
         {canManage && (
-          <Button onClick={handleOpenCreate} className="shadow-md h-10 px-4 self-start md:self-auto">
-            <UserPlus className="w-4 h-4 mr-2" />
-            Novo Profissional
-          </Button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 self-start md:self-auto">
+            {isAtLimit && (
+              <Link
+                href={`/${tenantSlug}/configuracoes`}
+                className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 transition-colors"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                Liberar mais vagas
+                <ArrowUpRight className="w-3.5 h-3.5 ml-0.5" />
+              </Link>
+            )}
+            <Button
+              onClick={handleOpenCreate}
+              disabled={isAtLimit}
+              variant={isAtLimit ? 'outline' : 'default'}
+              className={`shadow-md h-10 px-4 transition-all ${
+                isAtLimit
+                  ? 'border-amber-300 bg-amber-50/50 text-amber-800 hover:bg-amber-100/70 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300 cursor-not-allowed opacity-80'
+                  : ''
+              }`}
+              title={
+                isAtLimit
+                  ? `Limite de ${maxProfessionals} profissional(is) ativos atingido no plano ${planName}. Faça upgrade para adicionar mais vagas.`
+                  : 'Cadastrar novo profissional'
+              }
+            >
+              {isAtLimit ? (
+                <>
+                  <Lock className="w-4 h-4 mr-2 text-amber-600 dark:text-amber-400" />
+                  Limite Atingido ({activeCount}/{maxProfessionals})
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Novo Profissional
+                </>
+              )}
+            </Button>
+          </div>
         )}
       </div>
 
-      {actionError && (
-        <div className="p-3 text-xs rounded bg-red-50 border border-red-200 text-red-700 dark:bg-red-950/40 dark:border-red-900 dark:text-red-300 flex items-center justify-between">
-          <span>{actionError}</span>
-          <button onClick={() => setActionError(null)} className="text-xs underline font-medium">
-            Fechar
-          </button>
+      {/* Banner de Aviso de Limite do Plano */}
+      {isAtLimit && (
+        <div className="p-4 rounded-xl border border-amber-300 bg-gradient-to-r from-amber-50 via-orange-50/50 to-amber-50/20 dark:from-amber-950/40 dark:via-orange-950/20 dark:to-transparent dark:border-amber-800/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-bold text-amber-950 dark:text-amber-100">
+                  Todas as {maxProfessionals} {maxProfessionals === 1 ? 'vaga' : 'vagas'} do seu plano estão ativas
+                </h4>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 dark:bg-amber-900 dark:text-amber-200">
+                  Plano {planName}
+                </span>
+              </div>
+              <p className="text-xs text-amber-900/80 dark:text-amber-300/80 mt-1 max-w-2xl leading-relaxed">
+                Você pode continuar editando, visualizando ou desativando qualquer membro da equipe. Para adicionar novos especialistas e habilitar múltiplos atendimentos simultâneos, faça upgrade para o <strong>Plano Inteligente (até 10 profissionais)</strong>.
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href={`/${tenantSlug}/configuracoes`}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs transition-colors shrink-0 self-end md:self-auto"
+          >
+            Conhecer Plano Inteligente
+            <ArrowUpRight className="w-4 h-4" />
+          </Link>
         </div>
+      )}
+
+      {actionError && (
+        <ActionFeedbackAlert
+          error={actionError}
+          tenantSlug={tenantSlug}
+          onDismiss={() => setActionError(null)}
+        />
       )}
 
       {/* Cards Indicadores */}

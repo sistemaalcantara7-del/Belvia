@@ -2,6 +2,8 @@ import { getAuthenticatedTenantContext } from '@/lib/tenant/context';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Client } from '@/types/clients';
+import { getPlanLimits } from '@/lib/plans/entitlements';
+import { PLAN_CONFIGS } from '@/types/plans';
 import { ClientsManager } from '@/components/clients/ClientsManager';
 
 interface ClientsPageProps {
@@ -31,6 +33,8 @@ export default async function ClientsPage({ params }: ClientsPageProps) {
   }
 
   const typedClients = (clients || []) as Client[];
+  const planLimits = getPlanLimits(context.plan);
+  const planInfo = PLAN_CONFIGS[context.plan];
 
   return (
     <div className="min-h-screen bg-zinc-50/50 dark:bg-zinc-950 p-4 sm:p-6 lg:p-8">
@@ -40,6 +44,8 @@ export default async function ClientsPage({ params }: ClientsPageProps) {
           tenantSlug={context.tenantSlug}
           tenantName={context.tenantName}
           userRole={context.role}
+          planName={planInfo.name}
+          maxClients={planLimits.maxClients}
         />
       </div>
     </div>

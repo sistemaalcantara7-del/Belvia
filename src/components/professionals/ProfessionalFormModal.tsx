@@ -7,6 +7,7 @@ import { Professional, ProfessionalFormData, ProfessionalSchedule, DAYS_OF_WEEK 
 import { Service } from '@/types/services';
 import { saveProfessionalAction } from '@/lib/actions/professionals';
 import { maskPhone } from '@/lib/utils/masks';
+import { ActionFeedbackAlert } from '@/components/ui/ActionFeedbackAlert';
 import { X, UserCheck, Clock, Scissors } from 'lucide-react';
 
 interface ProfessionalFormModalProps {
@@ -145,8 +146,12 @@ export function ProfessionalFormModal({
         {/* Corpo com Rolagem Interna */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {errorMessage && (
-            <div className="mb-4 p-3 text-xs rounded bg-red-50 border border-red-200 text-red-700 dark:bg-red-950/40 dark:border-red-900 dark:text-red-300">
-              {errorMessage}
+            <div className="mb-4">
+              <ActionFeedbackAlert
+                error={errorMessage}
+                tenantSlug={tenantSlug}
+                onDismiss={() => setErrorMessage(null)}
+              />
             </div>
           )}
 
