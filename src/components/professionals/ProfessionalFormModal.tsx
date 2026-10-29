@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import { Professional, ProfessionalFormData, ProfessionalSchedule, DAYS_OF_WEEK } from '@/types/professionals';
 import { Service } from '@/types/services';
 import { saveProfessionalAction } from '@/lib/actions/professionals';
@@ -114,40 +114,43 @@ export function ProfessionalFormModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <Card className="w-full max-w-3xl shadow-2xl relative my-8 animate-in fade-in-0 zoom-in-95">
-        <button
-          onClick={onClose}
-          type="button"
-          aria-label="Fechar"
-          className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <CardHeader>
-          <div className="flex items-center gap-2 text-rose-600 mb-1">
-            <UserCheck className="w-4 h-4" />
-            <span className="text-xs font-semibold uppercase tracking-wider">
-              {professionalToEdit ? 'Atualizar Profissional' : 'Novo Profissional'}
-            </span>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4">
+      <Card className="w-full sm:max-w-3xl h-full sm:h-auto sm:max-h-[92vh] flex flex-col shadow-2xl relative rounded-none sm:rounded-2xl border-0 sm:border animate-in fade-in-0 zoom-in-95 overflow-hidden">
+        {/* Cabeçalho Fixo */}
+        <div className="p-4 sm:p-6 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 flex items-start justify-between relative">
+          <div>
+            <div className="flex items-center gap-2 text-rose-600 mb-1">
+              <UserCheck className="w-4 h-4 shrink-0" />
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                {professionalToEdit ? 'Atualizar Profissional' : 'Novo Profissional'}
+              </span>
+            </div>
+            <CardTitle className="text-lg sm:text-xl">
+              {professionalToEdit ? professionalToEdit.full_name : 'Cadastrar Profissional'}
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm mt-0.5">
+              Defina dados de contato, especialidade, serviços habilitados e grade de horários.
+            </CardDescription>
           </div>
-          <CardTitle className="text-xl">
-            {professionalToEdit ? professionalToEdit.full_name : 'Cadastrar Profissional'}
-          </CardTitle>
-          <CardDescription>
-            Defina dados de contato, especialidade, serviços habilitados e grade de horários.
-          </CardDescription>
-        </CardHeader>
+          <button
+            onClick={onClose}
+            type="button"
+            aria-label="Fechar"
+            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors p-1 rounded-lg"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-        <CardContent>
+        {/* Corpo com Rolagem Interna */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {errorMessage && (
             <div className="mb-4 p-3 text-xs rounded bg-red-50 border border-red-200 text-red-700 dark:bg-red-950/40 dark:border-red-900 dark:text-red-300">
               {errorMessage}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form id="professional-form" onSubmit={handleSubmit} className="space-y-6">
             {/* Dados Pessoais e Função */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
@@ -321,60 +324,61 @@ export function ProfessionalFormModal({
                       </label>
 
                       {s.is_active ? (
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="flex items-center gap-1">
-                            <span className="text-zinc-400">Das</span>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto mt-1 sm:mt-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-zinc-500 text-[11px]">Turno:</span>
                             <input
                               type="time"
                               value={s.start_time}
                               onChange={(e) => updateSchedule(day.value, 'start_time', e.target.value)}
-                              className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-transparent"
+                              className="px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs"
                             />
                             <span className="text-zinc-400">às</span>
                             <input
                               type="time"
                               value={s.end_time}
                               onChange={(e) => updateSchedule(day.value, 'end_time', e.target.value)}
-                              className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-transparent"
+                              className="px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs"
                             />
                           </div>
 
-                          <div className="flex items-center gap-1 pl-2 border-l border-zinc-200 dark:border-zinc-800">
-                            <span className="text-zinc-400">Almoço:</span>
+                          <div className="flex items-center gap-1.5 sm:pl-2 sm:border-l border-zinc-200 dark:border-zinc-800">
+                            <span className="text-zinc-500 text-[11px]">Intervalo:</span>
                             <input
                               type="time"
                               value={s.break_start || ''}
                               onChange={(e) => updateSchedule(day.value, 'break_start', e.target.value || null)}
-                              className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-transparent"
+                              className="px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs"
                             />
                             <span className="text-zinc-400">-</span>
                             <input
                               type="time"
                               value={s.break_end || ''}
                               onChange={(e) => updateSchedule(day.value, 'break_end', e.target.value || null)}
-                              className="px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 bg-transparent"
+                              className="px-2 py-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs"
                             />
                           </div>
                         </div>
                       ) : (
-                        <span className="text-zinc-400 italic">Não atende neste dia</span>
+                        <span className="text-zinc-400 italic text-[11px]">Não atende neste dia</span>
                       )}
                     </div>
                   );
                 })}
               </div>
             </div>
-
-            <div className="flex items-center justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Salvando...' : professionalToEdit ? 'Atualizar Profissional' : 'Cadastrar Profissional'}
-              </Button>
-            </div>
           </form>
-        </CardContent>
+        </div>
+
+        {/* Rodapé Fixo */}
+        <div className="p-4 sm:p-5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/80 shrink-0 flex items-center justify-end gap-3">
+          <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="text-xs sm:text-sm">
+            Cancelar
+          </Button>
+          <Button type="submit" form="professional-form" disabled={loading} className="text-xs sm:text-sm shadow-sm bg-rose-600 hover:bg-rose-700 text-white">
+            {loading ? 'Salvando...' : professionalToEdit ? 'Atualizar Profissional' : 'Cadastrar Profissional'}
+          </Button>
+        </div>
       </Card>
     </div>
   );

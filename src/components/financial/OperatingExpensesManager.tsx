@@ -422,11 +422,11 @@ export function OperatingExpensesManager({
 
       {/* ── MODAL 1: CADASTRAR NOVA DESPESA ──────────────────────────── */}
       {isNewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-[#EADBCE] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-[#F0E5DF] bg-[#FAF5F3]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs">
+          <div className="relative w-full sm:max-w-lg h-full sm:h-auto sm:max-h-[92vh] flex flex-col bg-white rounded-none sm:rounded-2xl shadow-2xl border-0 sm:border border-[#EADBCE] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-[#F0E5DF] bg-[#FAF5F3] shrink-0">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#FAF0EC] text-[#B87070] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-[#FAF0EC] text-[#B87070] flex items-center justify-center shrink-0">
                   <Plus className="w-4 h-4" />
                 </div>
                 <h3 className="text-sm font-bold text-[#1E1115]">Cadastrar Despesa / Conta a Pagar</h3>
@@ -440,7 +440,8 @@ export function OperatingExpensesManager({
               </button>
             </div>
 
-            <form onSubmit={handleCreateExpense} className="p-5 space-y-4">
+            <form onSubmit={handleCreateExpense} className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {formError && (
                 <div className="p-3 text-xs bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -580,8 +581,9 @@ export function OperatingExpensesManager({
                   className="rounded text-[#B87070] focus:ring-[#B87070] w-4 h-4"
                 />
               </div>
+              </div>
 
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex items-center gap-2 p-4 border-t border-[#F0E5DF] bg-[#FAF5F3] shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsNewModalOpen(false)}
@@ -605,11 +607,11 @@ export function OperatingExpensesManager({
 
       {/* ── MODAL 2: DAR BAIXA EM DESPESA PENDENTE ───────────────────── */}
       {settleModalExpense && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-[#EADBCE] overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-[#F0E5DF] bg-[#FAF5F3]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs">
+          <div className="relative w-full sm:max-w-md h-full sm:h-auto sm:max-h-[92vh] flex flex-col bg-white rounded-none sm:rounded-2xl shadow-2xl border-0 sm:border border-[#EADBCE] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-[#F0E5DF] bg-[#FAF5F3] shrink-0">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-[#EBF7F0] text-[#1B873F] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-[#EBF7F0] text-[#1B873F] flex items-center justify-center shrink-0">
                   <CheckCircle2 className="w-4 h-4" />
                 </div>
                 <h3 className="text-sm font-bold text-[#1E1115]">Liquidar Despesa (Dar Baixa)</h3>
@@ -623,7 +625,8 @@ export function OperatingExpensesManager({
               </button>
             </div>
 
-            <form onSubmit={handleSettleExpense} className="p-5 space-y-4">
+            <form onSubmit={handleSettleExpense} className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {settleError && (
                 <div className="p-3 text-xs bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -683,8 +686,9 @@ export function OperatingExpensesManager({
                   />
                 </div>
               </div>
+              </div>
 
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex items-center gap-2 p-4 border-t border-[#F0E5DF] bg-[#FAF5F3] shrink-0">
                 <button
                   type="button"
                   onClick={() => setSettleModalExpense(null)}

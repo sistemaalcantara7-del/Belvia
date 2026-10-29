@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import { Client, ClientFormData } from '@/types/clients';
 import { saveClientAction } from '@/lib/actions/clients';
 import { maskPhone, maskCPF } from '@/lib/utils/masks';
@@ -78,40 +78,43 @@ export function ClientFormModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <Card className="w-full max-w-2xl shadow-2xl relative my-8 animate-in fade-in-0 zoom-in-95">
-        <button
-          onClick={onClose}
-          type="button"
-          aria-label="Fechar"
-          className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <CardHeader>
-          <div className="flex items-center gap-2 text-rose-600 mb-1">
-            <UserPlus className="w-4 h-4" />
-            <span className="text-xs font-semibold uppercase tracking-wider">
-              {clientToEdit ? 'Atualizar Cliente' : 'Novo Cliente'}
-            </span>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4">
+      <Card className="w-full sm:max-w-2xl h-full sm:h-auto sm:max-h-[92vh] flex flex-col shadow-2xl relative rounded-none sm:rounded-2xl border-0 sm:border animate-in fade-in-0 zoom-in-95 overflow-hidden">
+        {/* Cabeçalho Fixo */}
+        <div className="p-4 sm:p-6 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 flex items-start justify-between relative">
+          <div>
+            <div className="flex items-center gap-2 text-rose-600 mb-1">
+              <UserPlus className="w-4 h-4 shrink-0" />
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                {clientToEdit ? 'Atualizar Cliente' : 'Novo Cliente'}
+              </span>
+            </div>
+            <CardTitle className="text-lg sm:text-xl">
+              {clientToEdit ? clientToEdit.full_name : 'Cadastrar Cliente'}
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm mt-0.5">
+              Informações cadastrais e canais de contato preferenciais.
+            </CardDescription>
           </div>
-          <CardTitle className="text-xl">
-            {clientToEdit ? clientToEdit.full_name : 'Cadastrar Cliente'}
-          </CardTitle>
-          <CardDescription>
-            Informações cadastrais e canais de contato preferenciais.
-          </CardDescription>
-        </CardHeader>
+          <button
+            onClick={onClose}
+            type="button"
+            aria-label="Fechar"
+            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors p-1 rounded-lg"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-        <CardContent>
+        {/* Corpo com Rolagem Interna */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {errorMessage && (
             <div className="mb-4 p-3 text-xs rounded bg-red-50 border border-red-200 text-red-700 dark:bg-red-950/40 dark:border-red-900 dark:text-red-300">
               {errorMessage}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="client-form" onSubmit={handleSubmit} className="space-y-4">
             {/* Dados Principais */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
@@ -285,17 +288,18 @@ export function ClientFormModal({
                 className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
               />
             </div>
-
-            <div className="flex items-center justify-end gap-3 pt-3">
-              <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Salvando...' : clientToEdit ? 'Atualizar Cliente' : 'Cadastrar Cliente'}
-              </Button>
-            </div>
           </form>
-        </CardContent>
+        </div>
+
+        {/* Rodapé Fixo */}
+        <div className="p-4 sm:p-5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/80 shrink-0 flex items-center justify-end gap-3">
+          <Button type="button" variant="outline" onClick={onClose} disabled={loading} className="text-xs sm:text-sm">
+            Cancelar
+          </Button>
+          <Button type="submit" form="client-form" disabled={loading} className="text-xs sm:text-sm shadow-sm bg-rose-600 hover:bg-rose-700 text-white">
+            {loading ? 'Salvando...' : clientToEdit ? 'Atualizar Cliente' : 'Cadastrar Cliente'}
+          </Button>
+        </div>
       </Card>
     </div>
   );

@@ -103,12 +103,12 @@ export function RefundPaymentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-      <div className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-        {/* Cabeçalho */}
-        <div className="flex items-center justify-between p-4 border-b border-zinc-100 dark:border-zinc-800 bg-[#FAF4EE] dark:bg-zinc-800/40">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs">
+      <div className="relative w-full sm:max-w-md h-full sm:h-auto sm:max-h-[92vh] flex flex-col bg-white dark:bg-zinc-900 rounded-none sm:rounded-2xl shadow-2xl border-0 sm:border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+        {/* Cabeçalho Fixo */}
+        <div className="flex items-center justify-between p-4 border-b border-zinc-100 dark:border-zinc-800 bg-[#FAF4EE] dark:bg-zinc-800/40 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/60 text-red-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-950/60 text-red-600 flex items-center justify-center shrink-0">
               <RotateCcw className="w-4 h-4" />
             </div>
             <div>
@@ -128,7 +128,9 @@ export function RefundPaymentModal({
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        {/* Formulário com Scroll Interno */}
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {errorMessage && (
             <div className="p-3 text-xs bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 rounded-xl flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -165,7 +167,7 @@ export function RefundPaymentModal({
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-4">
             {/* Valor do Estorno */}
             <div>
               <div className="flex items-center justify-between mb-1">
@@ -246,28 +248,29 @@ export function RefundPaymentModal({
                 Marque apenas se o serviço foi mantido e o cliente ainda precisará pagar por outro meio. Deixe desmarcado em caso de desistência/cancelamento definitivo.
               </p>
             </div>
+          </div>
+          </div>
 
-            {/* Botões */}
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isPending}
-                className="flex-1 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 rounded-xl"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={isPending || maxRefundable <= 0}
-                className="flex-1 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                {isPending ? 'Estornando...' : 'Confirmar Estorno'}
-              </button>
-            </div>
-          </form>
-        </div>
+          {/* Botões Fixos no Rodapé */}
+          <div className="flex items-center gap-2 p-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/80 shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isPending}
+              className="flex-1 py-2 text-xs font-medium text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 rounded-xl"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isPending || maxRefundable <= 0}
+              className="flex-1 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              {isPending ? 'Estornando...' : 'Confirmar Estorno'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

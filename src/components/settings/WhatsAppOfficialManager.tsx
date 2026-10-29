@@ -632,9 +632,9 @@ export function WhatsAppOfficialManager({
 
       {/* MODAL DE CONFIRMAÇÃO EXPLÍCITA DE ATIVAÇÃO REAL */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-[#EADBCE]">
-            <div className="flex items-center gap-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4">
+          <div className="bg-white rounded-none sm:rounded-2xl max-w-lg w-full h-full sm:h-auto sm:max-h-[92vh] flex flex-col p-5 sm:p-6 shadow-xl border-0 sm:border border-[#EADBCE] overflow-hidden">
+            <div className="flex items-center gap-3 shrink-0 pb-3 border-b border-[#F0E5DF]">
               <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                 <Flame className="w-5 h-5" />
               </div>
@@ -648,20 +648,22 @@ export function WhatsAppOfficialManager({
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-2 leading-relaxed">
-              <p className="font-bold flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4 text-amber-700" />
-                Atenção às Regras de Segurança:
-              </p>
-              <ul className="list-disc pl-4 space-y-1">
-                <li>Mensagens anteriores já simuladas <strong>NUNCA</strong> serão disparadas automaticamente.</li>
-                <li>Apenas agendamentos futuros com <strong>consentimento explícito (opt-in)</strong> serão notificados.</li>
-                <li>Custos da Meta Cloud API serão debitados da sua conta Meta Business vinculada.</li>
-                <li>Você poderá pausar ou desativar a qualquer momento com efeito imediato.</li>
-              </ul>
+            <div className="flex-1 overflow-y-auto py-4 space-y-4">
+              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-2 leading-relaxed">
+                <p className="font-bold flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-700" />
+                  Atenção às Regras de Segurança:
+                </p>
+                <ul className="list-disc pl-4 space-y-1">
+                  <li>Mensagens anteriores já simuladas <strong>NUNCA</strong> serão disparadas automaticamente.</li>
+                  <li>Apenas agendamentos futuros com <strong>consentimento explícito (opt-in)</strong> serão notificados.</li>
+                  <li>Custos da Meta Cloud API serão debitados da sua conta Meta Business vinculada.</li>
+                  <li>Você poderá pausar ou desativar a qualquer momento com efeito imediato.</li>
+                </ul>
+              </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#F0E5DF] shrink-0">
               <button
                 type="button"
                 onClick={() => setShowConfirmModal(false)}

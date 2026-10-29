@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import { Professional, ProfessionalTimeBlock, TimeBlockFormData } from '@/types/professionals';
 import { saveTimeBlockAction, deleteTimeBlockAction } from '@/lib/actions/time-blocks';
 import { X, Clock, UserCheck, ShieldAlert, Trash2 } from 'lucide-react';
@@ -110,12 +110,13 @@ export function TimeBlockModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <Card className="w-full max-w-md shadow-2xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-        <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <Card className="w-full sm:max-w-md h-full sm:h-auto sm:max-h-[92vh] flex flex-col shadow-2xl rounded-none sm:rounded-2xl border-0 sm:border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+        {/* Cabeçalho Fixo */}
+        <div className="flex flex-row items-center justify-between p-4 sm:p-5 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
           <div>
-            <CardTitle className="text-lg font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 text-amber-500" />
+            <CardTitle className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 shrink-0" />
               {blockToEdit ? 'Editar Bloqueio de Horário' : 'Novo Bloqueio de Horário'}
             </CardTitle>
             <CardDescription className="text-xs text-zinc-500 mt-0.5">
@@ -125,15 +126,17 @@ export function TimeBlockModal({
           <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-zinc-400 hover:text-zinc-700">
             <X className="w-4 h-4" />
           </Button>
-        </CardHeader>
+        </div>
 
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4 pt-4">
-            {errorMessage && (
-              <div className="p-3 text-xs rounded-md bg-red-50 border border-red-200 text-red-700 dark:bg-red-950/40 dark:border-red-900 dark:text-red-300">
-                {errorMessage}
-              </div>
-            )}
+        {/* Corpo com Rolagem Interna */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+          {errorMessage && (
+            <div className="p-3 text-xs rounded-md bg-red-50 border border-red-200 text-red-700 dark:bg-red-950/40 dark:border-red-900 dark:text-red-300">
+              {errorMessage}
+            </div>
+          )}
+
+          <form id="time-block-form" onSubmit={handleSubmit} className="space-y-4">
 
             {/* Profissional */}
             <div>
@@ -221,35 +224,36 @@ export function TimeBlockModal({
                 className="w-full h-10 px-3 text-xs rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-rose-500"
               />
             </div>
-          </CardContent>
+          </form>
+        </div>
 
-          <div className="flex items-center justify-between p-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50">
-            {blockToEdit?.id ? (
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                disabled={deleting || loading}
-                onClick={handleDelete}
-                className="text-xs h-9 px-3"
-              >
-                <Trash2 className="w-3.5 h-3.5 mr-1" />
-                {deleting ? 'Excluindo...' : 'Excluir'}
-              </Button>
-            ) : (
-              <div />
-            )}
+        {/* Rodapé Fixo */}
+        <div className="flex items-center justify-between p-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50 shrink-0">
+          {blockToEdit?.id ? (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={deleting || loading}
+              onClick={handleDelete}
+              className="text-xs h-9 px-3"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1" />
+              {deleting ? 'Excluindo...' : 'Excluir'}
+            </Button>
+          ) : (
+            <div />
+          )}
 
-            <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={loading || deleting} className="text-xs h-9">
-                Cancelar
-              </Button>
-              <Button type="submit" size="sm" disabled={loading || deleting} className="text-xs h-9 px-4">
-                {loading ? 'Salvando...' : blockToEdit ? 'Atualizar Bloqueio' : 'Criar Bloqueio'}
-              </Button>
-            </div>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={loading || deleting} className="text-xs h-9">
+              Cancelar
+            </Button>
+            <Button type="submit" form="time-block-form" size="sm" disabled={loading || deleting} className="text-xs h-9 px-4 bg-rose-600 hover:bg-rose-700 text-white">
+              {loading ? 'Salvando...' : blockToEdit ? 'Atualizar Bloqueio' : 'Criar Bloqueio'}
+            </Button>
           </div>
-        </form>
+        </div>
       </Card>
     </div>
   );

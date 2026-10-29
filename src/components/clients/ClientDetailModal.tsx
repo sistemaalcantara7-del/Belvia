@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Client } from '@/types/clients';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { maskPhone, maskCPFPartial, buildWhatsAppLink } from '@/lib/utils/masks';
 import { X, MessageSquare, Phone, MapPin, FileText, CheckCircle2, XCircle, Edit2, History } from 'lucide-react';
@@ -30,39 +30,42 @@ export function ClientDetailModal({
   const waLink = buildWhatsAppLink(contactForWa, `Olá, ${client.full_name}! Falamos da clínica.`);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <Card className="w-full max-w-lg shadow-2xl relative my-8 animate-in fade-in-0 zoom-in-95">
-        <button
-          onClick={onClose}
-          type="button"
-          aria-label="Fechar"
-          className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <CardHeader>
-          <div className="flex items-center gap-2 mb-1">
-            <span
-              className={`text-[11px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                isActive
-                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                  : 'bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
-              }`}
-            >
-              {isActive ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-              {isActive ? 'Cliente Ativo' : 'Cliente Inativo'}
-            </span>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-0 sm:p-4">
+      <Card className="w-full sm:max-w-lg h-full sm:h-auto sm:max-h-[92vh] flex flex-col shadow-2xl relative rounded-none sm:rounded-2xl border-0 sm:border animate-in fade-in-0 zoom-in-95 overflow-hidden">
+        {/* Cabeçalho Fixo */}
+        <div className="p-4 sm:p-6 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 flex items-start justify-between relative">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span
+                className={`text-[11px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                  isActive
+                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                    : 'bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
+                }`}
+              >
+                {isActive ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                {isActive ? 'Cliente Ativo' : 'Cliente Inativo'}
+              </span>
+            </div>
+            <CardTitle className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-zinc-50">
+              {client.full_name}
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm mt-0.5">
+              Cadastrado em {new Date(client.created_at).toLocaleDateString('pt-BR')}
+            </CardDescription>
           </div>
-          <CardTitle className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
-            {client.full_name}
-          </CardTitle>
-          <CardDescription>
-            Cadastrado em {new Date(client.created_at).toLocaleDateString('pt-BR')}
-          </CardDescription>
-        </CardHeader>
+          <button
+            onClick={onClose}
+            type="button"
+            aria-label="Fechar"
+            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors p-1 rounded-lg"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-        <CardContent className="space-y-4">
+        {/* Corpo com Rolagem Interna */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
           {/* Ações Rápidas de Contato */}
           <div className="flex flex-wrap gap-2 pt-1">
             {waLink && (
@@ -160,43 +163,44 @@ export function ClientDetailModal({
               </p>
             </div>
           )}
+        </div>
 
-          {/* Rodapé com botão de edição e histórico 360 */}
-          <div className="flex items-center justify-between pt-2">
-            <div>
-              {tenantSlug ? (
-                <Link
-                  href={`/${tenantSlug}/clientes/${client.id}`}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/60 px-3 py-1.5 rounded-lg border border-rose-200 dark:border-rose-900 transition-colors"
-                >
-                  <History className="w-3.5 h-3.5" />
-                  Abrir Histórico 360º
-                </Link>
-              ) : (
-                <span className="text-[11px] text-zinc-400">
-                  Atualizado: {new Date(client.updated_at).toLocaleDateString('pt-BR')}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={onClose}>
-                Fechar
-              </Button>
-              {canManage && (
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    onClose();
-                    onEdit(client);
-                  }}
-                >
-                  <Edit2 className="w-3.5 h-3.5 mr-1" />
-                  Editar
-                </Button>
-              )}
-            </div>
+        {/* Rodapé Fixo */}
+        <div className="p-4 sm:p-5 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/80 shrink-0 flex items-center justify-between">
+          <div>
+            {tenantSlug ? (
+              <Link
+                href={`/${tenantSlug}/clientes/${client.id}`}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/60 px-3 py-1.5 rounded-lg border border-rose-200 dark:border-rose-900 transition-colors"
+              >
+                <History className="w-3.5 h-3.5" />
+                Histórico 360º
+              </Link>
+            ) : (
+              <span className="text-[11px] text-zinc-400">
+                Atualizado: {new Date(client.updated_at).toLocaleDateString('pt-BR')}
+              </span>
+            )}
           </div>
-        </CardContent>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={onClose} className="text-xs">
+              Fechar
+            </Button>
+            {canManage && (
+              <Button
+                size="sm"
+                onClick={() => {
+                  onClose();
+                  onEdit(client);
+                }}
+                className="text-xs bg-rose-600 hover:bg-rose-700 text-white"
+              >
+                <Edit2 className="w-3.5 h-3.5 mr-1" />
+                Editar
+              </Button>
+            )}
+          </div>
+        </div>
       </Card>
     </div>
   );

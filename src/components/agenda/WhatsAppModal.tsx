@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Appointment } from '@/types/appointments';
 import { generateAppointmentWhatsAppTemplates, WhatsAppMessageType } from '@/lib/utils/whatsapp';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardTitle } from '@/components/ui/card';
 import {
   X,
   MessageCircle,
@@ -56,11 +56,12 @@ export function WhatsAppModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <Card className="w-full max-w-lg bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+      <Card className="w-full sm:max-w-lg h-full sm:h-auto sm:max-h-[92vh] flex flex-col bg-white dark:bg-zinc-900 border-0 sm:border border-zinc-200 dark:border-zinc-800 rounded-none sm:rounded-2xl shadow-2xl overflow-hidden">
+        {/* Cabeçalho Fixo */}
+        <div className="flex flex-row items-center justify-between p-4 sm:p-5 border-b border-zinc-100 dark:border-zinc-800 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
               <MessageCircle className="w-5 h-5" />
             </div>
             <div>
@@ -80,9 +81,10 @@ export function WhatsAppModal({
           >
             <X className="w-4 h-4" />
           </Button>
-        </CardHeader>
+        </div>
 
-        <CardContent className="p-4 sm:p-5 space-y-4">
+        {/* Corpo com Rolagem Interna */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
           {/* Informações Rápidas do Destinatário */}
           <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800 text-xs">
             <div className="flex items-center gap-2">
@@ -180,29 +182,29 @@ export function WhatsAppModal({
               Nenhum dado clínico, anamnese ou sensível é exposto. A abertura do link não altera o status do agendamento nem registra confirmação automática.
             </p>
           </div>
+        </div>
 
-          {/* Ações do Modal */}
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-            <Button variant="outline" size="sm" onClick={onClose} className="text-xs">
-              Fechar
-            </Button>
+        {/* Ações do Modal Fixo no Rodapé */}
+        <div className="flex items-center justify-end gap-2 p-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/80 shrink-0">
+          <Button variant="outline" size="sm" onClick={onClose} className="text-xs">
+            Fechar
+          </Button>
 
-            <Button
-              size="sm"
-              disabled={!isValidPhone}
-              onClick={handleOpenWhatsApp}
-              className={`text-xs gap-1.5 font-semibold ${
-                isValidPhone
-                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                  : 'bg-zinc-300 dark:bg-zinc-800 text-zinc-500 cursor-not-allowed'
-              }`}
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              Abrir no WhatsApp
-              <ExternalLink className="w-3 h-3 ml-0.5 opacity-80" />
-            </Button>
-          </div>
-        </CardContent>
+          <Button
+            size="sm"
+            disabled={!isValidPhone}
+            onClick={handleOpenWhatsApp}
+            className={`text-xs gap-1.5 font-semibold ${
+              isValidPhone
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                : 'bg-zinc-300 dark:bg-zinc-800 text-zinc-500 cursor-not-allowed'
+            }`}
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            Abrir no WhatsApp
+            <ExternalLink className="w-3 h-3 ml-0.5 opacity-80" />
+          </Button>
+        </div>
       </Card>
     </div>
   );
