@@ -38,11 +38,15 @@ interface ActiveNavLinkProps {
 
 export function ActiveNavLink({ href, label, iconName }: ActiveNavLinkProps) {
   const pathname = usePathname();
-  // Exact match for dashboard root, prefix match for other routes
+  // Exact match for dashboard root (e.g. "/mais-saude" has 1 segment after root), prefix match for other routes
+  const normalizedHref = href.replace(/\/$/, '');
+  const normalizedPathname = pathname.replace(/\/$/, '');
+  const segments = normalizedHref.split('/').filter(Boolean);
+
   const isActive =
-    href.split('/').length <= 2
-      ? pathname === href
-      : pathname === href || pathname.startsWith(href + '/');
+    segments.length <= 1
+      ? normalizedPathname === normalizedHref
+      : normalizedPathname === normalizedHref || normalizedPathname.startsWith(normalizedHref + '/');
 
   const Icon = ICON_MAP[iconName] || LayoutDashboard;
 

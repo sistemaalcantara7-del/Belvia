@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         const typedMemberships = memberships as unknown as MembershipRow[];
 
         if (typedMemberships && typedMemberships.length > 0 && typedMemberships[0].tenants) {
-          return NextResponse.redirect(`${origin}/${typedMemberships[0].tenants.slug}/agenda`);
+          return NextResponse.redirect(`${origin}/${typedMemberships[0].tenants.slug}`);
         }
 
         // Se não possui tenant ainda, cria utilizando os metadados preservados no momento do cadastro
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
           });
 
           if (!rpcError) {
-            return NextResponse.redirect(`${origin}/${clinicSlug}/agenda`);
+            return NextResponse.redirect(`${origin}/${clinicSlug}`);
           }
         }
       }

@@ -47,7 +47,7 @@ export async function loginAction(formData: FormData): Promise<AuthActionRespons
     const typedMemberships = memberships as unknown as MembershipRow[];
 
     if (typedMemberships && typedMemberships.length > 0 && typedMemberships[0].tenants) {
-      redirect(`/${typedMemberships[0].tenants.slug}/agenda`);
+      redirect(`/${typedMemberships[0].tenants.slug}`);
     }
 
     // Se o usuário logou mas ainda não tem tenant (ex: confirmou email recentemente),
@@ -64,7 +64,7 @@ export async function loginAction(formData: FormData): Promise<AuthActionRespons
       });
 
       if (!rpcError) {
-        redirect(`/${pendingSlug}/agenda`);
+        redirect(`/${pendingSlug}`);
       }
     }
   }
@@ -132,7 +132,7 @@ export async function registerTenantAction(formData: FormData): Promise<AuthActi
     return { error: `Conta criada, mas ocorreu um erro ao registrar a clínica: ${rpcError.message}` };
   }
 
-  redirect(`/${slug}/agenda`);
+  redirect(`/${slug}`);
 }
 
 export async function signOutAction() {

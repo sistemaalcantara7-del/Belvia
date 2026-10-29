@@ -9,7 +9,6 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
 } from 'lucide-react';
 import { signOutAction } from '@/lib/actions/auth';
 import { ActiveNavLink } from '@/components/ui/ActiveNavLink';
@@ -34,10 +33,7 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({
   tenantSlug,
-  tenantName,
-  roleLabel,
   plan = 'smart',
-  initials,
   navLinks,
   primaryLinks = [],
   secondaryLinks = [],
@@ -178,50 +174,17 @@ export function DashboardSidebar({
           )}
         </nav>
 
-        {/* Rodapé: Perfil da Clínica / Estabelecimento e Logout */}
-        <div className="p-3.5 border-t border-[#433139]/80 shrink-0 space-y-2.5 bg-[#2E2126]">
-          <div className={`flex items-center gap-3 p-2 rounded-xl ${collapsed ? 'justify-center' : ''}`}>
-            <div className="w-9 h-9 rounded-full bg-[#B87070] flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-sm">
-              {initials}
-            </div>
-            {!collapsed && (
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-xs font-semibold text-[#F7ECE8] truncate">
-                    {tenantName}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-[10px] text-[#A8948D] truncate">
-                    {roleLabel}
-                  </span>
-                  <span className="text-[#6D5A61] text-[10px]">•</span>
-                  <span
-                    className={`text-[9px] font-semibold px-1.5 py-0.2 rounded ${
-                      isEssential
-                        ? 'bg-[#433139] text-[#DEC5BC]'
-                        : 'bg-[#B87070]/30 text-[#FFD6D6]'
-                    }`}
-                  >
-                    {isEssential ? 'Essencial' : 'Inteligente'}
-                  </span>
-                </div>
-              </div>
-            )}
-            {!collapsed && (
-              <ChevronDown className="w-4 h-4 text-[#A8948D] shrink-0" />
-            )}
-          </div>
-
+        {/* Rodapé: Apenas Sair da Conta com espaçamento harmonioso */}
+        <div className="p-3.5 border-t border-[#433139]/80 shrink-0 bg-[#2E2126]">
           <form action={signOutAction}>
             <button
               type="submit"
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-[#A8948D] hover:text-red-300 hover:bg-red-950/25 transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium text-[#D8C4BC] hover:text-red-200 hover:bg-red-950/30 transition-all cursor-pointer ${
                 collapsed ? 'justify-center' : ''
               }`}
               title="Sair da Conta"
             >
-              <LogOut className="w-4 h-4 shrink-0" />
+              <LogOut className="w-4 h-4 shrink-0 text-[#C4837A]" />
               {!collapsed && <span>Sair da Conta</span>}
             </button>
           </form>
