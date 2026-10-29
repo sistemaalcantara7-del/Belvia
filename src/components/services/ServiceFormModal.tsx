@@ -12,7 +12,7 @@ interface ServiceFormModalProps {
   onClose: () => void;
   tenantSlug: string;
   serviceToEdit?: Service | null;
-  onSaved: () => void;
+  onSaved: (savedService: Service) => void;
 }
 
 export function ServiceFormModal({
@@ -53,7 +53,7 @@ export function ServiceFormModal({
       setLoading(false);
     } else {
       setLoading(false);
-      onSaved();
+      if (res.service) { onSaved(res.service); }
       onClose();
     }
   }

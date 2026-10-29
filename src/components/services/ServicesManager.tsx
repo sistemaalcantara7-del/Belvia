@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Service, DEFAULT_SERVICE_CATEGORIES } from '@/types/services';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -39,6 +40,8 @@ export function ServicesManager({
   const [modalOpen, setModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   const canManage = userRole === 'owner' || userRole === 'admin';
 
@@ -325,9 +328,19 @@ export function ServicesManager({
         onClose={() => setModalOpen(false)}
         tenantSlug={tenantSlug}
         serviceToEdit={editingService}
-        onSaved={() => {
-          // A revalidação automática de rota já cuida dos dados no servidor
-          window.location.reload();
+        onSaved={(savedService) => {
+          // Atualiza o estado local imediatamente sem interrupção de streaming HTTP/2
+          setServices((prev) => {
+            const exists = prev.some((s) => s.id === savedService.id);
+            if (exists) {
+              return prev.map((s) => (s.id === savedService.id ? savedService : s));
+            }
+            return [savedService, ...prev];
+          });
+          // Sincroniza o cache do servidor em background via RSC sem forçar hard reload
+          startTransition(() => {
+            router.refresh();
+          });
         }}
       />
     </div>
