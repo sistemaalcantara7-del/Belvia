@@ -14,6 +14,13 @@ import {
   createPublicBookingAction,
 } from '@/lib/actions/publicBooking';
 import { sanitizeDigits } from '@/lib/utils/masks';
+import {
+  detectAllMatchingServices,
+  detectProfessionalInConversation,
+  detectDateInConversation,
+  detectUnmatchedServiceIntent,
+  normalizeNlpText,
+} from '@/lib/ai/nlpMatcher';
 
 function getPublicSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -389,108 +396,119 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
       }
     }
 
-    // 6. MOTOR DETERMINÍSTICO SEGURO DE CONTINGÊNCIA (Fallback nativo quando sem chave externa)
-    // Garante que mesmo sem chaves externas de API, o chat responda com inteligência contextual real
-    const lower = cleanUserMessage.toLowerCase();
+    // 6. MOTOR DETERMINÍSTICO DE CONTINGÊNCIA & LINGUAGEM NATURAL (PLANO ESSENCIAL OU FALLBACK)
+    // Conduz o cliente na esteira: Intenção -> Serviço -> Profissional -> Data -> Horários Reais -> Confirmação
+    const normMsg = normalizeNlpText(cleanUserMessage);
     let reply = '';
     let suggestedSlotsData: AIChatMessage['suggestedSlots'] = undefined;
 
-    // Detecção de serviço citado diretamente pelo cliente no texto ou no histórico
-    const serviceMentioned = services.find((s) => {
-      const sName = s.name.toLowerCase();
-      return lower.includes(sName) || sName.includes(lower);
-    });
+    // A. Detecta se serviços foram mencionados (diretamente ou por sinônimo/intenção natural como "cortar o cabelo")
+    const { matches: matchedServices } = detectAllMatchingServices(
+      cleanUserMessage,
+      services,
+      history
+    );
 
-    // Detecção de intenção: Perguntou de preços ou serviços
-    if (
-      lower.includes('serviço') ||
-      lower.includes('preco') ||
-      lower.includes('preço') ||
-      lower.includes('quanto custa') ||
-      lower.includes('valor') ||
-      lower.includes('tratamento')
-    ) {
-      if (serviceMentioned) {
-        reply = `O procedimento **${serviceMentioned.name}** custa **R$ ${Number(serviceMentioned.price).toFixed(2)}** com duração de aproximadamente **${serviceMentioned.duration_minutes} minutos**.\n\nDeseja que eu consulte os horários disponíveis para agendarmos?`;
+    // B. Detecta se um profissional foi mencionado nominalmente ou preservado do histórico
+    const matchedProfessional = detectProfessionalInConversation(cleanUserMessage, professionals, history);
+
+    // C. Detecta a data desejada (hoje, amanhã ou data explícita) preservando do histórico
+    const targetDate = detectDateInConversation(cleanUserMessage, todayStr, history);
+    const isTomorrow = targetDate > todayStr;
+    const dateLabel = isTomorrow ? 'amanhã' : 'hoje';
+
+    // D. Checa se o cliente está perguntando de preços ou catálogo geral
+    const isPriceOrListInquiry =
+      normMsg.includes('preco') ||
+      normMsg.includes('quanto custa') ||
+      normMsg.includes('valor') ||
+      normMsg.includes('tabela') ||
+      normMsg.includes('cardapio') ||
+      (normMsg.includes('servico') && !normMsg.includes('agendar'));
+
+    // E. Checa se perguntou sobre a equipe de especialistas
+    const isTeamInquiry =
+      normMsg.includes('profissional') ||
+      normMsg.includes('equipe') ||
+      normMsg.includes('atendente') ||
+      normMsg.includes('quem atende') ||
+      normMsg.includes('especialista');
+
+    // F. Checa se o usuário teve intenção explícita de serviço inexistente no catálogo
+    const hasUnmatchedIntent = matchedServices.length === 0 && detectUnmatchedServiceIntent(cleanUserMessage);
+
+    // G. CENÁRIO 1: AMBIGUIDADE (múltiplos serviços compatíveis com a intenção, ex: "Corte Feminino" e "Corte Masculino")
+    if (matchedServices.length > 1 && !isPriceOrListInquiry) {
+      reply = `Temos mais de uma opção para o que você procura em **${businessName}**! Qual destas você prefere agendar?\n\n` +
+        matchedServices
+          .map((s) => `• **${s.name}**: R$ ${Number(s.price).toFixed(2)} (${s.duration_minutes} min)`)
+          .join('\n') +
+        `\n\nBasta me responder com o nome da opção desejada para consultarmos os horários livres!`;
+    } else if (isPriceOrListInquiry) {
+      if (matchedServices.length === 1) {
+        const s = matchedServices[0];
+        reply = `O procedimento **${s.name}** custa **R$ ${Number(s.price).toFixed(2)}** com duração estimada de **${s.duration_minutes} minutos**.\n\nDeseja verificar os horários disponíveis para agendarmos?`;
+      } else if (matchedServices.length > 1) {
+        reply = `Aqui estão os valores para as opções disponíveis:\n\n` +
+          matchedServices
+            .map((s) => `• **${s.name}**: R$ ${Number(s.price).toFixed(2)} (${s.duration_minutes} min)`)
+            .join('\n') +
+          `\n\nQual dessas você gostaria de agendar?`;
       } else {
         const sampleServices = services.slice(0, 5);
-        reply = `Temos opções incríveis em ${businessName}! Veja alguns dos nossos principais procedimentos:\n\n` +
+        reply = `Temos opções incríveis em **${businessName}**! Veja alguns dos nossos principais procedimentos:\n\n` +
           sampleServices
             .map((s) => `• **${s.name}**: R$ ${Number(s.price).toFixed(2)} (${s.duration_minutes} min)`)
             .join('\n') +
-          `\n\nQual desses você gostaria de agendar? Basta me informar o nome ou a data desejada!`;
+          `\n\nQual desses você gostaria de agendar? Basta me dizer o procedimento ou o dia de sua preferência!`;
       }
-    }
-    // Detecção de intenção: Profissionais
-    else if (
-      lower.includes('profissional') ||
-      lower.includes('equipe') ||
-      lower.includes('atendente') ||
-      lower.includes('quem atende')
-    ) {
-      reply = `Nossa equipe especializada conta com:\n\n` +
+    } else if (isTeamInquiry) {
+      reply = `Nossa equipe em **${businessName}** conta com especialistas qualificados:\n\n` +
         professionals.map((p) => `• **${p.full_name}** — ${p.specialty}`).join('\n') +
-        `\n\nVocê tem preferência por algum profissional ou prefere o primeiro horário disponível?`;
-    }
-    // Detecção de intenção: Horários, Agendamento ou menção direta de um Serviço do catálogo (ex: "corte", "limpeza", etc.)
-    else if (
-      serviceMentioned ||
-      lower.includes('horario') ||
-      lower.includes('horário') ||
-      lower.includes('agendar') ||
-      lower.includes('marcar') ||
-      lower.includes('vaga') ||
-      lower.includes('amanha') ||
-      lower.includes('amanhã') ||
-      lower.includes('hoje')
-    ) {
-      // Localiza o serviço citado na mensagem ou recupera do histórico recente
-      let matchedService = serviceMentioned;
-      if (!matchedService) {
-        for (let i = history.length - 1; i >= 0; i--) {
-          const hText = history[i].content.toLowerCase();
-          const found = services.find((s) => hText.includes(s.name.toLowerCase()));
-          if (found) {
-            matchedService = found;
-            break;
-          }
-        }
-      }
-      if (!matchedService) {
-        matchedService = services[0];
-      }
+        `\n\nVocê tem preferência por algum especialista ou deseja consultar o primeiro horário livre com qualquer um deles?`;
+    } else if (matchedServices.length === 1) {
+      // CENÁRIO 2: SERVIÇO ÚNICO COMPATÍVEL
+      const chosenService = matchedServices[0];
 
-      if (matchedService) {
-        // Consulta slots reais
-        const slotsRes = await getPublicAvailableSlotsAction(
-          tenant.id,
-          matchedService.id,
-          null,
-          todayStr
-        );
+      // Consulta horários estritamente reais na agenda
+      const slotsRes = await getPublicAvailableSlotsAction(
+        tenant.id,
+        chosenService.id,
+        matchedProfessional ? matchedProfessional.id : null,
+        targetDate
+      );
 
-        if (slotsRes.success && slotsRes.slots && slotsRes.slots.length > 0) {
-          const topSlots = slotsRes.slots.slice(0, 4);
-          suggestedSlotsData = topSlots.map((s) => ({
-            time: s.slot_time,
-            professionalName: s.professional_name,
-            professionalId: s.professional_id,
-            date: todayStr,
-          }));
+      const hasSlots = slotsRes.success && slotsRes.slots && slotsRes.slots.length > 0;
 
-          reply = `Perfeito! Para **${matchedService.name}**, consultei a nossa agenda em tempo real e temos estes horários livres hoje:\n\n` +
-            topSlots.map((s) => `🕒 **${s.slot_time}** com ${s.professional_name}`).join('\n') +
-            `\n\nQual desses horários fica melhor para você? Ou se preferir outra data, basta me dizer o dia!`;
-        } else {
-          reply = `Entendido! Para **${matchedService.name}**, no momento não temos mais vagas disponíveis para hoje. Gostaria de verificar para amanhã ou prefere escolher outra data? Você também pode clicar no botão **Agendar Horário** para escolher com calma.`;
-        }
+      if (hasSlots) {
+        const topSlots = (slotsRes.slots || []).slice(0, 4);
+        suggestedSlotsData = topSlots.map((s) => ({
+          time: s.slot_time,
+          professionalName: s.professional_name,
+          professionalId: s.professional_id,
+          date: targetDate,
+        }));
+
+        const profMentionStr = matchedProfessional ? ` com ${matchedProfessional.full_name}` : '';
+        reply = `Perfeito! Para **${chosenService.name}**${profMentionStr}, consultei nossa agenda em tempo real e temos estes horários livres para **${dateLabel}**:\n\n` +
+          topSlots.map((s) => `🕒 **${s.slot_time}** com ${s.professional_name}`).join('\n') +
+          `\n\nQual desses horários você prefere? Você pode clicar no horário desejado acima para concluir seu agendamento em instantes!`;
       } else {
-        reply = `Com certeza! Qual serviço você gostaria de agendar? (Ex: Corte, Manicure, Limpeza de Pele...)`;
+        const profNotice = matchedProfessional ? ` com ${matchedProfessional.full_name}` : '';
+        reply = `Para **${chosenService.name}**${profNotice}, não encontrei horários livres para **${dateLabel}** na agenda online. Gostaria de consultar para outro dia, ou prefere falar diretamente conosco pelo WhatsApp?`;
       }
-    }
-    // Saudação padrão
-    else {
-      reply = `Olá! Posso te apresentar os serviços da **${businessName}**, informar valores ou consultar horários livres para seu atendimento. O que você gostaria de saber?`;
+    } else if (hasUnmatchedIntent) {
+      // CENÁRIO 3: INTENÇÃO SEM CORRESPONDÊNCIA NO CATÁLOGO
+      const availableCategories = Array.from(new Set(services.map((s) => s.category).filter(Boolean)));
+      const sampleNames = services.slice(0, 4).map((s) => s.name).join(', ');
+
+      reply = `No momento não temos esse procedimento específico cadastrado em nosso catálogo oficial da **${businessName}**.\n\nNossos serviços disponíveis incluem: **${sampleNames}**${
+        availableCategories.length > 0 ? ` (categorias: ${availableCategories.join(', ')})` : ''
+      }.\n\nDeseja agendar algum desses ou tirar alguma dúvida?`;
+    } else {
+      // Saudação prestativa de boas-vindas orientando o cliente sobre o catálogo
+      const sample = services.slice(0, 3).map((s) => s.name).join(', ');
+      reply = `Olá! Sou a assistente virtual da **${businessName}**. Posso te apresentar nossos serviços (como ${sample}), informar valores ou consultar horários livres para seu atendimento. O que você gostaria de agendar hoje?`;
     }
 
     const assistantMsg: AIChatMessage = {

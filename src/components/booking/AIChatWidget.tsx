@@ -19,6 +19,7 @@ import {
 } from '@/lib/actions/aiReceptionist';
 import { PublicCatalogData } from '@/types/publicBooking';
 import Link from 'next/link';
+import { MarkdownMessage } from './MarkdownMessage';
 
 interface AIChatWidgetProps {
   catalog: PublicCatalogData;
@@ -305,14 +306,14 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
                   className={`flex flex-col ${isAssistant ? 'items-start' : 'items-end'}`}
                 >
                   <div
-                    className={`max-w-[85%] p-3 rounded-2xl whitespace-pre-wrap leading-relaxed ${
+                    className={`max-w-[85%] p-3 rounded-2xl leading-relaxed ${
                       isAssistant
                         ? 'bg-white text-[#2C1810] border border-[#EADBCE] rounded-tl-xs shadow-2xs'
                         : 'text-white rounded-tr-xs shadow-2xs'
                     }`}
                     style={!isAssistant ? { backgroundColor: primaryColor } : undefined}
                   >
-                    {msg.content}
+                    <MarkdownMessage content={msg.content} />
                   </div>
 
                   {/* Sugestões de slots clicáveis retornados pela IA */}
