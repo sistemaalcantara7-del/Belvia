@@ -32,11 +32,17 @@ import { formatAppointmentDate, formatAppointmentTime } from '@/lib/utils/timezo
 
 interface PublicBookingFlowProps {
   catalog: PublicCatalogData;
+  initialServiceId?: string;
+  initialProfessionalId?: string;
 }
 
 type Step = 'service' | 'professional' | 'datetime' | 'details' | 'success';
 
-export function PublicBookingFlow({ catalog }: PublicBookingFlowProps) {
+export function PublicBookingFlow({
+  catalog,
+  initialServiceId,
+  initialProfessionalId,
+}: PublicBookingFlowProps) {
   const { tenant, services, professionals } = catalog;
 
   const bookingSettings = tenant.settings?.booking_settings;
@@ -49,11 +55,23 @@ export function PublicBookingFlow({ catalog }: PublicBookingFlowProps) {
   const businessWhatsapp = bookingSettings?.whatsapp || tenant.settings?.whatsapp;
   const bookingNotice = bookingSettings?.booking_notice || tenant.settings?.booking_notice;
 
-  // Estados da seleção
-  const [step, setStep] = useState<Step>('service');
-  const [selectedService, setSelectedService] = useState<PublicService | null>(null);
-  const [selectedProfessional, setSelectedProfessional] = useState<PublicProfessional | null>(null);
+  // Pré-seleção a partir dos parâmetros vindos da vitrine
+  const preSelectedService = initialServiceId
+    ? services.find((s) => s.id === initialServiceId) || null
+    : null;
+  const preSelectedProfessional = initialProfessionalId
+    ? professionals.find((p) => p.id === initialProfessionalId) || null
+    : null;
+
+  // Estados da seleção com pré-seleção preservada
+  const [selectedService, setSelectedService] = useState<PublicService | null>(preSelectedService);
+  const [selectedProfessional, setSelectedProfessional] = useState<PublicProfessional | null>(preSelectedProfessional);
   const [isAnyProfessional, setIsAnyProfessional] = useState(false);
+  const [step, setStep] = useState<Step>(() => {
+    if (preSelectedService && preSelectedProfessional) return 'datetime';
+    if (preSelectedService) return 'professional';
+    return 'service';
+  });
 
   // Estados de data e slots
   const [selectedDate, setSelectedDate] = useState<string>(() => {

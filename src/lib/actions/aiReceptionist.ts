@@ -395,6 +395,12 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
     let reply = '';
     let suggestedSlotsData: AIChatMessage['suggestedSlots'] = undefined;
 
+    // Detecção de serviço citado diretamente pelo cliente no texto ou no histórico
+    const serviceMentioned = services.find((s) => {
+      const sName = s.name.toLowerCase();
+      return lower.includes(sName) || sName.includes(lower);
+    });
+
     // Detecção de intenção: Perguntou de preços ou serviços
     if (
       lower.includes('serviço') ||
@@ -404,12 +410,16 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
       lower.includes('valor') ||
       lower.includes('tratamento')
     ) {
-      const sampleServices = services.slice(0, 5);
-      reply = `Temos opções incríveis em ${businessName}! Veja alguns dos nossos principais procedimentos:\n\n` +
-        sampleServices
-          .map((s) => `• **${s.name}**: R$ ${Number(s.price).toFixed(2)} (${s.duration_minutes} min)`)
-          .join('\n') +
-        `\n\nQual desses você gostaria de agendar? Basta me informar o nome ou a data desejada!`;
+      if (serviceMentioned) {
+        reply = `O procedimento **${serviceMentioned.name}** custa **R$ ${Number(serviceMentioned.price).toFixed(2)}** com duração de aproximadamente **${serviceMentioned.duration_minutes} minutos**.\n\nDeseja que eu consulte os horários disponíveis para agendarmos?`;
+      } else {
+        const sampleServices = services.slice(0, 5);
+        reply = `Temos opções incríveis em ${businessName}! Veja alguns dos nossos principais procedimentos:\n\n` +
+          sampleServices
+            .map((s) => `• **${s.name}**: R$ ${Number(s.price).toFixed(2)} (${s.duration_minutes} min)`)
+            .join('\n') +
+          `\n\nQual desses você gostaria de agendar? Basta me informar o nome ou a data desejada!`;
+      }
     }
     // Detecção de intenção: Profissionais
     else if (
@@ -422,8 +432,9 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
         professionals.map((p) => `• **${p.full_name}** — ${p.specialty}`).join('\n') +
         `\n\nVocê tem preferência por algum profissional ou prefere o primeiro horário disponível?`;
     }
-    // Detecção de intenção: Horários e Agendamento
+    // Detecção de intenção: Horários, Agendamento ou menção direta de um Serviço do catálogo (ex: "corte", "limpeza", etc.)
     else if (
+      serviceMentioned ||
       lower.includes('horario') ||
       lower.includes('horário') ||
       lower.includes('agendar') ||
@@ -433,9 +444,21 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
       lower.includes('amanhã') ||
       lower.includes('hoje')
     ) {
-      // Localiza o primeiro serviço compatível ou o primeiro cadastrado
-      const matchedService =
-        services.find((s) => lower.includes(s.name.toLowerCase())) || services[0];
+      // Localiza o serviço citado na mensagem ou recupera do histórico recente
+      let matchedService = serviceMentioned;
+      if (!matchedService) {
+        for (let i = history.length - 1; i >= 0; i--) {
+          const hText = history[i].content.toLowerCase();
+          const found = services.find((s) => hText.includes(s.name.toLowerCase()));
+          if (found) {
+            matchedService = found;
+            break;
+          }
+        }
+      }
+      if (!matchedService) {
+        matchedService = services[0];
+      }
 
       if (matchedService) {
         // Consulta slots reais
@@ -455,11 +478,11 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
             date: todayStr,
           }));
 
-          reply = `Consultei a nossa agenda em tempo real para **${matchedService.name}**! Temos os seguintes horários livres hoje:\n\n` +
+          reply = `Perfeito! Para **${matchedService.name}**, consultei a nossa agenda em tempo real e temos estes horários livres hoje:\n\n` +
             topSlots.map((s) => `🕒 **${s.slot_time}** com ${s.professional_name}`).join('\n') +
             `\n\nQual desses horários fica melhor para você? Ou se preferir outra data, basta me dizer o dia!`;
         } else {
-          reply = `Para hoje não temos mais horários livres para **${matchedService.name}**. Gostaria de verificar a disponibilidade para amanhã ou outro dia da semana? Você também pode clicar no botão **Agendar Horário** para ver todos os dias no calendário.`;
+          reply = `Entendido! Para **${matchedService.name}**, no momento não temos mais vagas disponíveis para hoje. Gostaria de verificar para amanhã ou prefere escolher outra data? Você também pode clicar no botão **Agendar Horário** para escolher com calma.`;
         }
       } else {
         reply = `Com certeza! Qual serviço você gostaria de agendar? (Ex: Corte, Manicure, Limpeza de Pele...)`;
