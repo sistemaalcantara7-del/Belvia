@@ -68,6 +68,44 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
     }
   };
 
+  const handleQuickReply = (actionText: string) => {
+    if (isSending) return;
+    const userMsg: AIChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: actionText,
+      createdAt: new Date().toISOString(),
+    };
+
+    const newHistory = [...messages, userMsg];
+    setMessages(newHistory);
+
+    startSendTransition(async () => {
+      const res = await sendAIChatMessageAction(
+        {
+          tenantSlug: tenant.slug,
+          sessionToken,
+          message: actionText,
+        },
+        newHistory
+      );
+
+      if (res.success && res.message) {
+        setMessages((prev) => [...prev, res.message!]);
+      } else {
+        const errorMsg: AIChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content:
+            res.error ||
+            'Desculpe, tive uma instabilidade momentânea. Se preferir, pode agendar diretamente no botão acima!',
+          createdAt: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+      }
+    });
+  };
+
   const handleSendMessage = () => {
     const text = inputValue.trim();
     if (!text || isSending) return;
@@ -315,6 +353,22 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
                   >
                     <MarkdownMessage content={msg.content} />
                   </div>
+
+                  {/* Sugestões de opções guiadas para escolhas ambíguas */}
+                  {msg.quickReplies && msg.quickReplies.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5 max-w-[85%]">
+                      {msg.quickReplies.map((qr, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleQuickReply(qr.actionText)}
+                          className="px-2.5 py-1 text-xs rounded-full bg-white border border-[#EADBCE] text-[#C4837A] font-medium hover:border-[#C4837A] hover:bg-[#FAF6F3] transition-colors cursor-pointer text-left shadow-2xs"
+                        >
+                          {qr.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Sugestões de slots clicáveis retornados pela IA */}
                   {msg.suggestedSlots && msg.suggestedSlots.length > 0 && (

@@ -46,6 +46,10 @@ export interface AIChatMessage {
     time: string;
   };
   anamnesisPrompt?: AIChatAnamnesisPrompt;
+  quickReplies?: {
+    label: string;
+    actionText: string;
+  }[];
 }
 
 export interface AIChatSessionState {

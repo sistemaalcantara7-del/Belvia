@@ -11,6 +11,7 @@ export interface MinimalProfessional {
   id: string;
   full_name: string;
   specialty: string;
+  service_ids?: string[];
 }
 
 export interface MinimalChatMessage {
@@ -66,9 +67,66 @@ const INTENT_SYNONYMS: Record<string, string[]> = {
 };
 
 /**
+ * Identifica se a mensagem do usuário é uma pergunta focada em profissional / equipe / quem vai atender
+ */
+export function isProfessionalQuestion(userMessage: string): boolean {
+  const norm = normalizeNlpText(userMessage);
+
+  const teamPatterns = [
+    'quem ira me atender',
+    'quem vai me atender',
+    'quem me atende',
+    'quem atende',
+    'qual profissional',
+    'quais profissionais',
+    'quem sao os profissionais',
+    'quem e o profissional',
+    'quem e o especialista',
+    'quem faz esse procedimento',
+    'quem faz esse servico',
+    'quem corta',
+    'quem faz',
+    'atendente',
+    'equipe',
+    'especialista',
+  ];
+
+  if (teamPatterns.some((pattern) => norm.includes(pattern))) {
+    return true;
+  }
+
+  // Tokens isolados
+  const words = norm.split(/\s+/).map((w) => w.replace(/[.,!?:;]/g, ''));
+  return words.includes('profissional') || words.includes('profissionais') || words.includes('especialista');
+}
+
+/**
+ * Retorna os profissionais que atendem a um determinado serviço, considerando os vínculos de service_ids.
+ * Se nenhum profissional tiver vínculo explícito ou todos atenderem, retorna todos os ativos.
+ */
+export function getProfessionalsForService<P extends MinimalProfessional>(
+  serviceId: string,
+  professionals: P[]
+): P[] {
+  const professionalsWithLinks = professionals.filter(
+    (p) => Array.isArray(p.service_ids) && p.service_ids.length > 0
+  );
+
+  if (professionalsWithLinks.length > 0) {
+    const matched = professionals.filter(
+      (p) => Array.isArray(p.service_ids) && p.service_ids.includes(serviceId)
+    );
+    if (matched.length > 0) {
+      return matched;
+    }
+  }
+
+  return professionals;
+}
+
+/**
  * Localiza todos os serviços compatíveis a partir da mensagem ou do histórico recente.
- * Distingue quando há match único vs quando há múltiplos serviços que atendem à intenção
- * (ex: "cortar o cabelo" com "Corte Feminino" e "Corte Masculino").
+ * Preserva a ambiguidade quando o usuário não escolheu uma opção específica ainda.
  */
 export function detectAllMatchingServices<T extends MinimalService>(
   userMessage: string,
@@ -120,14 +178,12 @@ export function detectAllMatchingServices<T extends MinimalService>(
     return { matches: Array.from(matchedMap.values()), source: 'token_or_synonym' };
   }
 
-  // 3. Fallback de histórico recente: se a mensagem atual não cita serviço (ex: "amanhã às 14h", "com o Marcos")
+  // 3. Fallback de histórico recente: preserva TODOS os serviços discutidos na última interação
   for (let i = history.length - 1; i >= 0; i--) {
     const hText = normalizeNlpText(history[i].content);
-    for (const s of services) {
-      const normName = normalizeNlpText(s.name);
-      if (hText.includes(normName)) {
-        return { matches: [s], source: 'history' };
-      }
+    const foundInMessage = services.filter((s) => hText.includes(normalizeNlpText(s.name)));
+    if (foundInMessage.length > 0) {
+      return { matches: foundInMessage, source: 'history' };
     }
   }
 
@@ -135,7 +191,7 @@ export function detectAllMatchingServices<T extends MinimalService>(
 }
 
 /**
- * Localiza profissional mencionado no texto ou preservado no histórico recente
+ * Localiza profissional mencionado no texto (por nome ou pronome como "ela"/"ele" caso haja profissional no histórico)
  */
 export function detectProfessionalInConversation<P extends MinimalProfessional>(
   userMessage: string,
@@ -144,7 +200,7 @@ export function detectProfessionalInConversation<P extends MinimalProfessional>(
 ): P | null {
   const normMsg = normalizeNlpText(userMessage);
 
-  // 1. Verificação na mensagem atual
+  // 1. Verificação nominal direta na mensagem atual
   for (const p of professionals) {
     const firstName = normalizeNlpText(p.full_name.split(' ')[0]);
     const fullName = normalizeNlpText(p.full_name);
@@ -153,16 +209,26 @@ export function detectProfessionalInConversation<P extends MinimalProfessional>(
     }
   }
 
-  // 2. Preservação a partir do histórico recente
+  // 2. Pronomes ou referências de gênero ("ela", "ele", "dra", "doutora")
+  const words = normMsg.split(/\s+/).map((w) => w.replace(/[.,!?:;]/g, ''));
+  const hasPronoun = words.some((w) => ['ela', 'ele', 'dra', 'doutora', 'dr', 'doutor'].includes(w));
+
+  // 3. Preservação a partir do histórico recente
   for (let i = history.length - 1; i >= 0; i--) {
     const hText = normalizeNlpText(history[i].content);
     for (const p of professionals) {
       const firstName = normalizeNlpText(p.full_name.split(' ')[0]);
       const fullName = normalizeNlpText(p.full_name);
       if (hText.includes(fullName) || (firstName.length >= 3 && hText.includes(firstName))) {
+        // Se a mensagem citar um pronome ou estiver fazendo follow-up, devolve o profissional preservado
         return p;
       }
     }
+  }
+
+  // Se houver apenas 1 profissional na equipe do tenant e o usuário usou pronome
+  if (hasPronoun && professionals.length === 1) {
+    return professionals[0];
   }
 
   return null;
@@ -175,7 +241,7 @@ export function detectDateInConversation(
   userMessage: string,
   referenceDateIso?: string,
   history: MinimalChatMessage[] = []
-): string {
+): { targetDate: string; isExplicitInCurrentMessage: boolean } {
   const norm = normalizeNlpText(userMessage);
   const base = referenceDateIso ? new Date(referenceDateIso + 'T12:00:00Z') : new Date();
 
@@ -183,15 +249,15 @@ export function detectDateInConversation(
   if (norm.includes('amanha') && !norm.includes('depois de amanha')) {
     const tomorrow = new Date(base);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    return tomorrow.toISOString().split('T')[0];
+    return { targetDate: tomorrow.toISOString().split('T')[0], isExplicitInCurrentMessage: true };
   }
   if (norm.includes('depois de amanha')) {
     const after = new Date(base);
     after.setDate(after.getDate() + 2);
-    return after.toISOString().split('T')[0];
+    return { targetDate: after.toISOString().split('T')[0], isExplicitInCurrentMessage: true };
   }
   if (norm.includes('hoje')) {
-    return base.toISOString().split('T')[0];
+    return { targetDate: base.toISOString().split('T')[0], isExplicitInCurrentMessage: true };
   }
 
   // 2. Histórico recente
@@ -200,17 +266,17 @@ export function detectDateInConversation(
     if (hText.includes('amanha') && !hText.includes('depois de amanha')) {
       const tomorrow = new Date(base);
       tomorrow.setDate(tomorrow.getDate() + 1);
-      return tomorrow.toISOString().split('T')[0];
+      return { targetDate: tomorrow.toISOString().split('T')[0], isExplicitInCurrentMessage: false };
     }
     if (hText.includes('depois de amanha')) {
       const after = new Date(base);
       after.setDate(after.getDate() + 2);
-      return after.toISOString().split('T')[0];
+      return { targetDate: after.toISOString().split('T')[0], isExplicitInCurrentMessage: false };
     }
   }
 
   // Padrão hoje
-  return base.toISOString().split('T')[0];
+  return { targetDate: base.toISOString().split('T')[0], isExplicitInCurrentMessage: false };
 }
 
 /**
