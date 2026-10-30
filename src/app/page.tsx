@@ -86,45 +86,48 @@ export default function HomePage() {
       {/* ── 2. HERO SECTION ────────────────────────────────────────── */}
       <section
         id="inicio"
-        className="relative w-full overflow-hidden bg-no-repeat bg-[#FAF4EE]"
+        className="relative w-full overflow-hidden bg-[#FAF4EE] md:bg-no-repeat md:bg-cover md:bg-center"
         style={{
-          backgroundImage: "url('/img/bg_hero.png')",
-          backgroundPosition: 'center center',
-          backgroundSize: 'cover',
-          minHeight: '800px',
-          height: '800px',
+          // No desktop (md+): mantém a imagem de fundo integrada com min-height de 800px
+          // No mobile (< md): usa fundo com gradiente sutil elegante com layout em pilha vertical
         }}
       >
-        {/* Gradiente suave apenas no mobile/tablet para leitura */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#FAF4EE] via-[#FAF4EE]/85 via-40% to-transparent pointer-events-none md:hidden" />
+        {/* Camada desktop com a imagem de fundo original exatamente como desenhada */}
+        <div
+          className="hidden md:block absolute inset-0 bg-cover bg-center pointer-events-none"
+          style={{ backgroundImage: "url('/img/bg_hero.png')" }}
+        />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full min-h-[800px] flex items-center">
+        {/* Gradiente sutil no topo/fundo mobile para suavizar a transição com o header */}
+        <div className="md:hidden absolute inset-0 bg-gradient-to-b from-[#FAF4EE] via-[#FBF6F2] to-[#FAF4EE] pointer-events-none" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full md:h-[800px] md:min-h-[800px] flex flex-col md:flex-row md:items-center pt-8 pb-10 md:pt-0 md:pb-0">
           {/* Coluna Esquerda: Texto e CTAs */}
-          <div className="w-full md:max-w-lg lg:max-w-xl z-10 space-y-6 -ml-0 lg:-ml-4">
+          <div className="w-full md:max-w-lg lg:max-w-xl z-10 space-y-4 sm:space-y-6 lg:-ml-4 text-left">
             <div className="inline-block">
-              <span className="text-[11px] md:text-xs font-semibold tracking-[0.25em] uppercase text-[#9B8985] font-sans">
+              <span className="text-[11px] sm:text-xs font-semibold tracking-[0.2em] sm:tracking-[0.25em] uppercase text-[#9B8985] font-sans">
                 Mais organização para o seu negócio
               </span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-[46px] font-serif leading-[1.18] text-[#2C1810] font-normal tracking-tight">
+            <h1 className="text-2xl sm:text-4xl lg:text-[46px] font-serif leading-[1.2] sm:leading-[1.18] text-[#2C1810] font-normal tracking-tight">
               Seu tempo vale mais para o que realmente{' '}
               <span className="italic font-normal" style={{ color: 'var(--belvia-rose)' }}>
                 importa.
               </span>
             </h1>
 
-            <p className="text-sm md:text-base text-[#6B5A54] leading-relaxed max-w-[380px] lg:max-w-[400px] font-sans">
+            <p className="text-xs sm:text-sm md:text-base text-[#6B5A54] leading-relaxed max-w-[360px] sm:max-w-[380px] lg:max-w-[400px] font-sans">
               O ZELUNIA é a plataforma completa para clínicas de estética, beleza e bem-estar.
               <br className="hidden sm:inline" />
-              Organize sua agenda, seus clientes, seu financeiro e toda a rotina do seu estabelecimento em um só lugar.
+              {' '}Organize sua agenda, seus clientes, seu financeiro e toda a rotina do seu estabelecimento em um só lugar.
             </p>
 
             {/* CTAs */}
-            <div className="pt-2 flex flex-wrap items-center gap-4">
+            <div className="pt-2 flex flex-col xs:flex-row items-stretch xs:items-center gap-3 sm:gap-4">
               <Link
                 href="/register"
-                className="inline-flex items-center gap-2.5 px-6 py-3 rounded-xl text-sm font-medium text-white transition-all shadow-sm hover:opacity-95"
+                className="inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl text-sm font-medium text-white transition-all shadow-sm hover:opacity-95"
                 style={{ backgroundColor: 'var(--belvia-rose)' }}
               >
                 <span>Começar agora</span>
@@ -133,13 +136,27 @@ export default function HomePage() {
 
               <a
                 href="#solucoes"
-                className="inline-flex items-center gap-2.5 px-5 py-3 rounded-xl text-sm font-medium text-[#4A3B36] bg-white/70 hover:bg-white border border-[#EAD9D3] transition-all"
+                className="inline-flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl text-sm font-medium text-[#4A3B36] bg-white/80 hover:bg-white border border-[#EAD9D3] transition-all shadow-2xs"
               >
-                <div className="w-6 h-6 rounded-full flex items-center justify-center bg-[#F2E0DC] text-[#C4837A]">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center bg-[#F2E0DC] text-[#C4837A] shrink-0">
                   <Play className="w-3 h-3 fill-current ml-0.5" />
                 </div>
                 <span>Conheça os recursos</span>
               </a>
+            </div>
+          </div>
+
+          {/* Bloco Mobile dos Mockups (Notebook & Celular) — Posicionado abaixo dos botões sem sobreposição */}
+          <div className="md:hidden mt-8 sm:mt-10 w-full flex justify-center items-center overflow-hidden">
+            <div className="relative w-full max-w-[420px] px-2 flex justify-center">
+              <Image
+                src="/img/hero_devices.png"
+                alt="ZELUNIA — Gestão em Notebook e Celular"
+                width={1164}
+                height={809}
+                priority
+                className="w-full h-auto object-contain drop-shadow-md select-none pointer-events-none"
+              />
             </div>
           </div>
         </div>

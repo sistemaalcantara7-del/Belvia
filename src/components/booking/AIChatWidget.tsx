@@ -25,7 +25,7 @@ import {
 } from '@/lib/actions/publicBooking';
 import { PublicCatalogData } from '@/types/publicBooking';
 import { maskPhone, sanitizeDigits } from '@/lib/utils/masks';
-import { formatAppointmentDate } from '@/lib/utils/timezone';
+import { formatAppointmentDate, formatAppointmentTime } from '@/lib/utils/timezone';
 import Link from 'next/link';
 import { MarkdownMessage } from './MarkdownMessage';
 
@@ -282,12 +282,20 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
     setIsBookingSubmitting(false);
 
     if (bookingRes.success && bookingRes.appointmentId) {
+      const persistedClientName = bookingRes.clientName || bookingDraft.clientName;
+      const persistedServiceName = bookingRes.serviceName || bookingDraft.serviceName;
+      const persistedProfName = bookingRes.professionalName || bookingDraft.professionalName;
+      const persistedTime = bookingRes.startTime
+        ? formatAppointmentTime(bookingRes.startTime)
+        : bookingDraft.time;
+      const persistedWhatsapp = bookingRes.clientWhatsapp || bookingDraft.clientWhatsapp;
       const formattedDate = formatAppointmentDate(bookingDraft.date);
       const prompt = 'anamnesisPrompt' in bookingRes ? (bookingRes.anamnesisPrompt as AIChatAnamnesisPrompt) : undefined;
+
       const successMsg: AIChatMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `🎉 **Agendamento Confirmado com Sucesso!**\n\nMuito obrigado, **${bookingDraft.clientName}**! Seu horário está garantido em nossa agenda oficial:\n\n• **Serviço:** ${bookingDraft.serviceName}\n• **Profissional:** ${bookingDraft.professionalName}\n• **Data:** ${formattedDate}\n• **Horário:** ${bookingDraft.time}\n• **WhatsApp:** ${maskPhone(bookingDraft.clientWhatsapp)}\n\nNossa equipe já foi notificada. Qualquer dúvida ou imprevisto, estamos à inteira disposição!`,
+        content: `🎉 **Agendamento Confirmado com Sucesso!**\n\nMuito obrigado, **${persistedClientName}**! Seu horário está garantido em nossa agenda oficial:\n\n• **Cliente:** ${persistedClientName}\n• **Serviço:** ${persistedServiceName}\n• **Profissional:** ${persistedProfName}\n• **Data:** ${formattedDate}\n• **Horário:** ${persistedTime}\n• **WhatsApp:** ${maskPhone(persistedWhatsapp)}\n\nNossa equipe já foi notificada. Qualquer dúvida ou imprevisto, estamos à inteira disposição!`,
         createdAt: new Date().toISOString(),
         anamnesisPrompt: prompt,
       };
@@ -295,6 +303,11 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
       setMessages((prev) => [...prev, successMsg]);
       setBookingDraft({
         ...bookingDraft,
+        clientName: persistedClientName,
+        serviceName: persistedServiceName,
+        professionalName: persistedProfName,
+        time: persistedTime,
+        clientWhatsapp: persistedWhatsapp,
         step: 'confirmed',
       });
     } else {
