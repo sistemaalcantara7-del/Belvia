@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useTransition } from 'react';
+import React, { useState, useTransition, useEffect } from 'react';
 import {
   Calendar,
   Clock,
@@ -34,6 +34,8 @@ interface PublicBookingFlowProps {
   catalog: PublicCatalogData;
   initialServiceId?: string;
   initialProfessionalId?: string;
+  initialDate?: string;
+  initialTime?: string;
 }
 
 type Step = 'service' | 'professional' | 'datetime' | 'details' | 'success';
@@ -42,6 +44,8 @@ export function PublicBookingFlow({
   catalog,
   initialServiceId,
   initialProfessionalId,
+  initialDate,
+  initialTime,
 }: PublicBookingFlowProps) {
   const { tenant, services, professionals } = catalog;
 
@@ -55,7 +59,7 @@ export function PublicBookingFlow({
   const businessWhatsapp = bookingSettings?.whatsapp || tenant.settings?.whatsapp;
   const bookingNotice = bookingSettings?.booking_notice || tenant.settings?.booking_notice;
 
-  // Pré-seleção a partir dos parâmetros vindos da vitrine
+  // Pré-seleção a partir dos parâmetros vindos da vitrine ou do chat da recepcionista
   const preSelectedService = initialServiceId
     ? services.find((s) => s.id === initialServiceId) || null
     : null;
@@ -67,20 +71,33 @@ export function PublicBookingFlow({
   const [selectedService, setSelectedService] = useState<PublicService | null>(preSelectedService);
   const [selectedProfessional, setSelectedProfessional] = useState<PublicProfessional | null>(preSelectedProfessional);
   const [isAnyProfessional, setIsAnyProfessional] = useState(false);
+
+  // Estados de data e slots
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    return initialDate || new Date().toISOString().split('T')[0];
+  });
+  const [availableSlots, setAvailableSlots] = useState<PublicSlot[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<PublicSlot | null>(() => {
+    if (preSelectedProfessional && initialTime) {
+      return {
+        slot_time: initialTime,
+        professional_id: preSelectedProfessional.id,
+        professional_name: preSelectedProfessional.full_name,
+      };
+    }
+    return null;
+  });
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotError, setSlotError] = useState<string | null>(null);
+
+  // Determina a etapa inicial de forma inteligente:
+  // Se todos os dados (serviço, profissional, data, horário) já foram escolhidos no chat, abre direto em 'details'
   const [step, setStep] = useState<Step>(() => {
+    if (preSelectedService && preSelectedProfessional && initialTime) return 'details';
     if (preSelectedService && preSelectedProfessional) return 'datetime';
     if (preSelectedService) return 'professional';
     return 'service';
   });
-
-  // Estados de data e slots
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
-    return new Date().toISOString().split('T')[0];
-  });
-  const [availableSlots, setAvailableSlots] = useState<PublicSlot[]>([]);
-  const [selectedSlot, setSelectedSlot] = useState<PublicSlot | null>(null);
-  const [loadingSlots, setLoadingSlots] = useState(false);
-  const [slotError, setSlotError] = useState<string | null>(null);
 
   // Estados do formulário de dados do cliente
   const [clientName, setClientName] = useState('');
@@ -103,7 +120,6 @@ export function PublicBookingFlow({
   const handleLoadSlots = (serviceId: string, profId: string | null, date: string) => {
     setLoadingSlots(true);
     setSlotError(null);
-    setSelectedSlot(null);
 
     getPublicAvailableSlotsAction(tenant.id, serviceId, profId, date)
       .then((res) => {
@@ -124,6 +140,35 @@ export function PublicBookingFlow({
         setLoadingSlots(false);
       });
   };
+
+  // Se o usuário entrou diretamente na etapa de data/hora ou detalhes via deep link, carrega os slots da data de forma assíncrona
+  useEffect(() => {
+    let isCancelled = false;
+    if ((step === 'datetime' || step === 'details') && selectedService && availableSlots.length === 0) {
+      const profId = isAnyProfessional || !selectedProfessional ? null : selectedProfessional.id;
+      getPublicAvailableSlotsAction(tenant.id, selectedService.id, profId, selectedDate)
+        .then((res) => {
+          if (isCancelled) return;
+          if (res.success && res.slots) {
+            setAvailableSlots(res.slots);
+            if (res.slots.length === 0) {
+              setSlotError('Nenhum horário livre encontrado para esta data. Escolha outro dia.');
+            }
+          } else {
+            setSlotError(res.error || 'Não foi possível carregar os horários.');
+          }
+        })
+        .catch((err: unknown) => {
+          if (isCancelled) return;
+          const msg = err instanceof Error ? err.message : 'Erro ao buscar horários';
+          setSlotError('Falha ao verificar horários: ' + msg);
+        });
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [step, selectedService, selectedProfessional, isAnyProfessional, selectedDate, availableSlots.length, tenant.id]);
 
   // Formatação de Moeda
   const formatCurrency = (val: number) => {
@@ -538,6 +583,7 @@ export function PublicBookingFlow({
                       type="button"
                       onClick={() => {
                         setSelectedDate(day.iso);
+                        setSelectedSlot(null);
                         if (selectedService) {
                           const profId = isAnyProfessional || !selectedProfessional ? null : selectedProfessional.id;
                           handleLoadSlots(selectedService.id, profId, day.iso);
@@ -569,6 +615,7 @@ export function PublicBookingFlow({
                   onChange={(e) => {
                     const newDate = e.target.value;
                     setSelectedDate(newDate);
+                    setSelectedSlot(null);
                     if (selectedService && newDate) {
                       const profId = isAnyProfessional || !selectedProfessional ? null : selectedProfessional.id;
                       handleLoadSlots(selectedService.id, profId, newDate);
@@ -895,7 +942,7 @@ export function PublicBookingFlow({
         <div className="max-w-3xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>{tenant.name} &bull; Agendamento Online</span>
           <span className="flex items-center gap-1 text-[11px]">
-            Powered by <strong className="text-[#A86B62]">BELVIA</strong>
+            Powered by <strong className="text-[#A86B62]">ZELUNIA</strong>
           </span>
         </div>
       </footer>

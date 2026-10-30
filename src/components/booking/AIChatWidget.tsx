@@ -377,20 +377,30 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
                         Horários Livres Encontrados:
                       </p>
                       <div className="grid grid-cols-2 gap-1.5">
-                        {msg.suggestedSlots.map((slot, idx) => (
-                          <Link
-                            key={idx}
-                            href={`/agendar/${tenant.slug}`}
-                            className="p-2 rounded-xl bg-white border border-[#EADBCE] text-center hover:border-[#C4837A] hover:bg-[#FAF6F3] transition-colors"
-                          >
-                            <span className="font-bold text-[#2C1810] block text-xs">
-                              {slot.time}
-                            </span>
-                            <span className="text-[10px] text-[#A86B62] block truncate">
-                              {slot.professionalName.split(' ')[0]}
-                            </span>
-                          </Link>
-                        ))}
+                        {msg.suggestedSlots.map((slot, idx) => {
+                          const params = new URLSearchParams();
+                          if (slot.serviceId) params.set('serviceId', slot.serviceId);
+                          if (slot.professionalId) params.set('professionalId', slot.professionalId);
+                          if (slot.date) params.set('date', slot.date);
+                          if (slot.time) params.set('time', slot.time);
+
+                          const href = `/agendar/${tenant.slug}${params.toString() ? `?${params.toString()}` : ''}`;
+
+                          return (
+                            <Link
+                              key={idx}
+                              href={href}
+                              className="p-2 rounded-xl bg-white border border-[#EADBCE] text-center hover:border-[#C4837A] hover:bg-[#FAF6F3] transition-colors"
+                            >
+                              <span className="font-bold text-[#2C1810] block text-xs">
+                                {slot.time}
+                              </span>
+                              <span className="text-[10px] text-[#A86B62] block truncate">
+                                {slot.professionalName.split(' ')[0]}
+                              </span>
+                            </Link>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

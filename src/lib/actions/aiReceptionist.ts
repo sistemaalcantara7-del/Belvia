@@ -582,6 +582,8 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
           professionalName: s.professional_name,
           professionalId: s.professional_id,
           date: targetDate,
+          serviceId: chosenService.id,
+          serviceName: chosenService.name,
         }));
 
         const profMentionStr = matchedProfessional ? ` com ${matchedProfessional.full_name}` : '';

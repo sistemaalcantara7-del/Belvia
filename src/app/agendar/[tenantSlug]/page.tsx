@@ -5,7 +5,12 @@ import { PublicBookingFlow } from '@/components/booking/PublicBookingFlow';
 
 interface PageProps {
   params: Promise<{ tenantSlug: string }>;
-  searchParams: Promise<{ serviceId?: string; professionalId?: string }>;
+  searchParams: Promise<{
+    serviceId?: string;
+    professionalId?: string;
+    date?: string;
+    time?: string;
+  }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -28,7 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PublicBookingPage({ params, searchParams }: PageProps) {
   const { tenantSlug } = await params;
-  const { serviceId, professionalId } = await searchParams;
+  const { serviceId, professionalId, date, time } = await searchParams;
   const res = await getPublicTenantCatalogAction(tenantSlug);
 
   if (!res.success || !res.data) {
@@ -40,6 +45,8 @@ export default async function PublicBookingPage({ params, searchParams }: PagePr
       catalog={res.data}
       initialServiceId={serviceId}
       initialProfessionalId={professionalId}
+      initialDate={date}
+      initialTime={time}
     />
   );
 }

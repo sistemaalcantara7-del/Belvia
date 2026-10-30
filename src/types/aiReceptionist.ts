@@ -26,6 +26,8 @@ export interface AIChatMessage {
     professionalName: string;
     professionalId: string;
     date: string;
+    serviceId?: string;
+    serviceName?: string;
   }[];
   bookingSummary?: {
     serviceName: string;
