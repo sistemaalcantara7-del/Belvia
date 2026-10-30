@@ -190,7 +190,8 @@ ${professionalsListText}
    Passo 2: Identificar profissional de preferência (ou qualquer disponível) e a data desejada (ex: hoje, amanhã, dia X).
    Passo 3: Apresentar horários livres reais e instruir o cliente a clicar no cartão de horário desejado.
    REGRA INEGOCIÁVEL: É TERMINANTEMENTE PROIBIDO pedir nome completo, WhatsApp ou pedir confirmação de agendamento antes de o cliente ter escolhido e clicado em um horário específico na interface.
-   Passo 4: Somente após a seleção explícita do horário, o sistema coletará nome completo, WhatsApp e solicitará a confirmação com o resumo dos dados.
+   Passo 4: Somente após a seleção explícita do horário, o sistema coletará o WhatsApp com DDD e o nome completo do cliente de forma acolhedora e segura.
+   Passo 5: Apresentação do resumo com valores e solicitação de confirmação explícita.
 
 Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo WhatsApp: ${businessPhone || 'diretamente na recepção'}.`;
 

@@ -19,7 +19,10 @@ import {
   getNextAnamnesisQuestionAction,
   confirmAppointmentFromAIChatAction,
 } from '@/lib/actions/aiReceptionist';
-import { getPublicAvailableSlotsAction } from '@/lib/actions/publicBooking';
+import {
+  getPublicAvailableSlotsAction,
+  lookupClientByPhoneAction,
+} from '@/lib/actions/publicBooking';
 import { PublicCatalogData } from '@/types/publicBooking';
 import { maskPhone, sanitizeDigits } from '@/lib/utils/masks';
 import { formatAppointmentDate } from '@/lib/utils/timezone';
@@ -192,9 +195,9 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
 
       setMessages((prev) => [...prev, userChoiceMsg, summaryMsg]);
     } else {
-      // Primeira escolha: define o rascunho com o horário e solicita o nome completo
+      // Primeira escolha: define o rascunho com o horário e solicita PRIMEIRO o WhatsApp com DDD
       setBookingDraft({
-        step: 'awaiting_name',
+        step: 'awaiting_phone',
         serviceId,
         serviceName,
         professionalId: slot.professionalId,
@@ -207,7 +210,7 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
       const assistantAckMsg: AIChatMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `Excelente escolha! ✨\n\nVocê selecionou **${serviceName}** com **${slot.professionalName}** para **${formattedDate} às ${slot.time}**.\n\nPara reservarmos sua vaga, por gentileza, digite o seu **nome completo**:`,
+        content: `Excelente escolha! ✨\n\nVocê selecionou **${serviceName}** com **${slot.professionalName}** para **${formattedDate} às ${slot.time}**.\n\nPara localizarmos seu cadastro e reservarmos seu horário, por favor, digite o seu **WhatsApp com DDD** (ex: 11 99999-8888):`,
         createdAt: new Date().toISOString(),
       };
 
@@ -298,7 +301,7 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
       // Divergência ou horário não mais disponível: oferece novos horários reais preservando nome e telefone
       const errorReason = bookingRes.message || 'Este horário acabou de ser preenchido por outro cliente.';
 
-      // Consulta horários atualizados da agenda
+      // Consulta horários atualizados da agenda em tempo real
       const freshSlotsRes = await getPublicAvailableSlotsAction(
         tenant.id,
         bookingDraft.serviceId,
@@ -306,20 +309,17 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
         bookingDraft.date
       );
 
-      // Filtra os slots garantindo que o horário que acabou de ser rejeitado não seja oferecido novamente
-      const rejectedTime = bookingDraft.time;
-      const filteredSlots = (freshSlotsRes.success && freshSlotsRes.slots)
-        ? freshSlotsRes.slots.filter((s) => s.slot_time !== rejectedTime)
-        : [];
-
-      const freshSlots = filteredSlots.slice(0, 4).map((s) => ({
-        time: s.slot_time,
-        professionalName: s.professional_name,
-        professionalId: s.professional_id,
-        date: bookingDraft.date,
-        serviceId: bookingDraft.serviceId,
-        serviceName: bookingDraft.serviceName,
-      }));
+      // Apresenta a disponibilidade real da agenda calculada pelo servidor
+      const freshSlots = (freshSlotsRes.success && freshSlotsRes.slots ? freshSlotsRes.slots : [])
+        .slice(0, 4)
+        .map((s) => ({
+          time: s.slot_time,
+          professionalName: s.professional_name,
+          professionalId: s.professional_id,
+          date: bookingDraft.date,
+          serviceId: bookingDraft.serviceId,
+          serviceName: bookingDraft.serviceName,
+        }));
 
       const retryMsg: AIChatMessage = {
         id: crypto.randomUUID(),
@@ -361,45 +361,7 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
       return;
     }
 
-    // Se estiver no fluxo nativo de agendamento: coleta de nome
-    if (bookingDraft && bookingDraft.step === 'awaiting_name') {
-      if (text.length < 3) {
-        const errorPromptMsg: AIChatMessage = {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: 'Por favor, informe seu **nome completo** (pelo menos 3 letras) para o registro da reserva.',
-          createdAt: new Date().toISOString(),
-        };
-        setMessages((prev) => [...prev, errorPromptMsg]);
-        return;
-      }
-
-      setBookingDraft({
-        ...bookingDraft,
-        clientName: text,
-        step: 'awaiting_phone',
-      });
-
-      const userMsg: AIChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'user',
-        content: text,
-        createdAt: new Date().toISOString(),
-      };
-
-      const askPhoneMsg: AIChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: `Prazer, **${text}**! 😊\n\nAgora, por gentileza, informe o seu **WhatsApp com DDD** (ex: 11 99999-8888) para receber os lembretes do seu atendimento:`,
-        createdAt: new Date().toISOString(),
-      };
-
-      setMessages((prev) => [...prev, userMsg, askPhoneMsg]);
-      setInputValue('');
-      return;
-    }
-
-    // Se estiver no fluxo nativo de agendamento: coleta de WhatsApp
+    // Se estiver no fluxo nativo de agendamento: coleta de WhatsApp e reconhecimento de cliente
     if (bookingDraft && bookingDraft.step === 'awaiting_phone') {
       const cleanDigits = sanitizeDigits(text);
       if (cleanDigits.length < 10 || cleanDigits.length > 11) {
@@ -414,13 +376,6 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
       }
 
       const formattedPhone = maskPhone(cleanDigits);
-      const updatedDraft: ChatBookingDraft = {
-        ...bookingDraft,
-        clientWhatsapp: cleanDigits,
-        step: 'awaiting_confirmation',
-      };
-      setBookingDraft(updatedDraft);
-
       const userMsg: AIChatMessage = {
         id: crypto.randomUUID(),
         role: 'user',
@@ -428,13 +383,70 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
         createdAt: new Date().toISOString(),
       };
 
+      setInputValue('');
+
+      // Registra verificação com rate-limit e solicita o nome completo com acolhimento cordial
+      startSendTransition(async () => {
+        await lookupClientByPhoneAction({
+          tenantSlug: tenant.slug,
+          whatsapp: cleanDigits,
+        });
+
+        // Sem verificação por OTP, sempre solicita o nome completo normalmente sem expor dados de cadastro
+        setBookingDraft({
+          ...bookingDraft,
+          clientWhatsapp: cleanDigits,
+          step: 'awaiting_name',
+        });
+
+        const askNameMsg: AIChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: `WhatsApp registrado com sucesso! ✨\n\nAgora, por gentileza, digite o seu **nome completo** para identificação do seu atendimento em **${businessName}**:`,
+          createdAt: new Date().toISOString(),
+        };
+
+        setMessages((prev) => [...prev, userMsg, askNameMsg]);
+      });
+
+      return;
+    }
+
+    // Se estiver no fluxo nativo de agendamento: coleta de nome (para clientes novos)
+    if (bookingDraft && bookingDraft.step === 'awaiting_name') {
+      if (text.length < 3) {
+        const errorPromptMsg: AIChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: 'Por favor, informe seu **nome completo** (pelo menos 3 letras) para o registro da reserva.',
+          createdAt: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, errorPromptMsg]);
+        return;
+      }
+
+      const updatedDraft: ChatBookingDraft = {
+        ...bookingDraft,
+        clientName: text,
+        step: 'awaiting_confirmation',
+      };
+      setBookingDraft(updatedDraft);
+
+      const userMsg: AIChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content: text,
+        createdAt: new Date().toISOString(),
+      };
+
       const formattedDate = formatAppointmentDate(updatedDraft.date);
       const priceText = updatedDraft.price ? `R$ ${updatedDraft.price.toFixed(2)}` : 'A combinar';
+      const formattedPhone = updatedDraft.clientWhatsapp ? maskPhone(updatedDraft.clientWhatsapp) : '';
 
       const summaryMsg: AIChatMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `Perfeito! Confira os dados do seu agendamento antes de confirmarmos:\n\n• **Cliente:** ${updatedDraft.clientName}\n• **WhatsApp:** ${formattedPhone}\n• **Serviço:** ${updatedDraft.serviceName}\n• **Profissional:** ${updatedDraft.professionalName}\n• **Data:** ${formattedDate}\n• **Horário:** ${updatedDraft.time}\n• **Valor:** ${priceText}\n\nPodemos confirmar sua reserva na agenda da **${businessName}**?`,
+        content: `Perfeito, **${text}**! Confira os dados do seu agendamento antes de confirmarmos:\n\n• **Cliente:** ${text}\n• **WhatsApp:** ${formattedPhone}\n• **Serviço:** ${updatedDraft.serviceName}\n• **Profissional:** ${updatedDraft.professionalName}\n• **Data:** ${formattedDate}\n• **Horário:** ${updatedDraft.time}\n• **Valor:** ${priceText}\n\nPodemos confirmar sua reserva na agenda da **${businessName}**?`,
         createdAt: new Date().toISOString(),
       };
 

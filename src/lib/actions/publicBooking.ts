@@ -417,6 +417,79 @@ export async function getPublicAvailableSlotsAction(
 }
 
 /**
+ * Consulta de verificação preliminar por telefone (LGPD & Proteção contra Enumeração)
+ * Por diretriz estrita de segurança, esta consulta NUNCA expõe o nome completo ou dados cadastrais a visitantes não verificados.
+ * Se o visitante não tiver passado por verificação de posse (ex: OTP por WhatsApp),
+ * a interface deve coletar o nome completo normalmente sem vazar a existência do titular.
+ */
+export async function lookupClientByPhoneAction(params: {
+  tenantSlug: string;
+  whatsapp: string;
+}): Promise<{
+  success: boolean;
+  isVerified?: boolean;
+  firstName?: string;
+  error?: string;
+}> {
+  try {
+    const { tenantSlug, whatsapp } = params;
+    const cleanDigits = sanitizeDigits(whatsapp);
+
+    if (cleanDigits.length < 10 || cleanDigits.length > 11) {
+      return {
+        success: false,
+        error: 'WhatsApp inválido. Informe o DDD e o número com 10 ou 11 dígitos.',
+      };
+    }
+
+    const adminSupabase = getServiceRoleSupabase();
+
+    // 1. Localiza tenant
+    const { data: tenant, error: tErr } = await adminSupabase
+      .from('tenants')
+      .select('id, status')
+      .eq('slug', tenantSlug)
+      .maybeSingle();
+
+    if (tErr || !tenant || tenant.status !== 'active') {
+      return { success: false, error: 'Estabelecimento indisponível.' };
+    }
+
+    // 2. Proteção contra enumeração/abuso: rate limit estrito (máximo 10 requisições a cada 5 min)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { count: lookupAttempts } = await adminSupabase
+      .from('public_booking_rate_limits')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', tenant.id)
+      .eq('client_identifier', cleanDigits)
+      .gte('created_at', fiveMinutesAgo);
+
+    if (lookupAttempts && lookupAttempts >= 10) {
+      return {
+        success: false,
+        error: 'Muitas consultas para este número. Por favor, aguarde alguns instantes.',
+      };
+    }
+
+    await adminSupabase.from('public_booking_rate_limits').insert({
+      tenant_id: tenant.id,
+      client_identifier: cleanDigits,
+      action_type: 'phone_lookup',
+    });
+
+    // 3. Resposta cega: não vaza existência ou nome para visitantes anônimos não autenticados.
+    // O cadastro completo será vinculado de forma atômica no banco na persistência da RPC create_public_online_appointment.
+    return {
+      success: true,
+      isVerified: false,
+    };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Falha ao consultar cliente.';
+    return { success: false, error: msg };
+  }
+}
+
+/**
  * Criação de Agendamento Online Público com isolamento e validação atômica
  */
 export async function createPublicBookingAction(
@@ -465,7 +538,7 @@ export async function createPublicBookingAction(
 
     const startIso = localDateTimeToUtcIso(date, time, 'America/Sao_Paulo');
 
-    // 1. Tenta executar via RPC Atômica da Migration 31 (com cliente anon público)
+    // 1. Executa exclusivamente via RPC Atômica Oficial (PostgreSQL transacional com advisory lock e validações completas)
     const publicClient = getPublicSupabase();
     const { data: rpcRes, error: rpcErr } = await publicClient.rpc('create_public_online_appointment', {
       p_tenant_slug: tenantSlug,
@@ -479,211 +552,40 @@ export async function createPublicBookingAction(
       p_client_ip: 'online_public_web',
     });
 
-    // Se a RPC foi executada com sucesso (ou retornou resposta de negócio estruturada)
-    if (!rpcErr && rpcRes) {
-      if (rpcRes.success) {
-        return {
-          success: true,
-          appointmentId: rpcRes.appointment_id,
-          tenantName: rpcRes.tenant_name,
-          serviceName: rpcRes.service_name,
-          professionalName: rpcRes.professional_name,
-          startTime: rpcRes.start_time,
-          endTime: rpcRes.end_time,
-          price: rpcRes.price,
-          clientName: rpcRes.client_name,
-          clientWhatsapp: rpcRes.client_whatsapp,
-          message: rpcRes.message,
-          code: rpcRes.code,
-        };
-      }
-
-      // Se a RPC retornou erro de negócio estruturado (ex: PAST_TIME, RATE_LIMITED, INVALID_SERVICE, CONFLICT)
-      return {
-        success: false,
-        code: rpcRes.code || 'BOOKING_REJECTED',
-        message: rpcRes.message || 'Horário indisponível ou já reservado.',
-      };
-    }
-
     if (rpcErr) {
-      console.warn(`[Public Booking] RPC create_public_online_appointment não executada (${rpcErr.message}). Utilizando fallback seguro.`);
-    }
-
-    // 2. Se a RPC não estiver disponível ou falhou tecnicamente,
-    // executa fallback direto seguro no servidor via service_role para contornar RLS pública
-    const adminSupabase = getServiceRoleSupabase();
-    const { data: tenant } = await adminSupabase
-      .from('tenants')
-      .select('id, name, status, settings')
-      .eq('slug', tenantSlug)
-      .single();
-
-    if (!tenant || tenant.status !== 'active') {
-      return { success: false, code: 'INVALID_TENANT', message: 'Estabelecimento indisponível no momento.' };
-    }
-
-    const bookingSettings = (tenant.settings as Record<string, unknown>)?.booking_settings as
-      | {
-          enabled?: boolean;
-          min_advance_hours?: number;
-          max_future_days?: number;
-          allowed_start_time?: string;
-          allowed_end_time?: string;
-          public_services_filter?: string[];
-          public_professionals_filter?: string[];
-        }
-      | undefined;
-
-    if (bookingSettings && bookingSettings.enabled === false) {
+      console.error('[Public Booking] Erro ao invocar RPC create_public_online_appointment:', rpcErr);
       return {
         success: false,
-        code: 'BOOKING_DISABLED',
-        message: 'O agendamento online está temporariamente suspenso por este estabelecimento.',
+        code: 'RPC_EXECUTION_ERROR',
+        message: 'Não foi possível processar a reserva neste momento. Por favor, tente novamente em instantes.',
       };
     }
 
-    // Valida antecedência mínima
-    const minAdvanceHours = bookingSettings?.min_advance_hours ?? 1;
-    const nowTime = Date.now();
-    if (new Date(startIso).getTime() < nowTime + minAdvanceHours * 60 * 60 * 1000) {
+    if (rpcRes && rpcRes.success) {
       return {
-        success: false,
-        code: 'MIN_ADVANCE_VIOLATION',
-        message: `Antecedência mínima para agendamento: ${minAdvanceHours} hora(s).`,
+        success: true,
+        appointmentId: rpcRes.appointment_id,
+        tenantName: rpcRes.tenant_name,
+        serviceName: rpcRes.service_name,
+        professionalName: rpcRes.professional_name,
+        startTime: rpcRes.start_time,
+        endTime: rpcRes.end_time,
+        price: rpcRes.price,
+        clientName: rpcRes.client_name,
+        clientWhatsapp: rpcRes.client_whatsapp,
+        message: rpcRes.message || 'Agendamento confirmado com sucesso!',
+        code: rpcRes.code,
       };
     }
 
-    // Valida filtro de serviços
-    if (
-      bookingSettings?.public_services_filter &&
-      bookingSettings.public_services_filter.length > 0 &&
-      !bookingSettings.public_services_filter.includes(serviceId)
-    ) {
-      return {
-        success: false,
-        code: 'SERVICE_NOT_ALLOWED',
-        message: 'Este serviço não está disponível para reserva online.',
-      };
-    }
-
-    // Valida filtro de profissionais
-    if (
-      bookingSettings?.public_professionals_filter &&
-      bookingSettings.public_professionals_filter.length > 0 &&
-      !bookingSettings.public_professionals_filter.includes(professionalId)
-    ) {
-      return {
-        success: false,
-        code: 'PROFESSIONAL_NOT_ALLOWED',
-        message: 'Este profissional não está disponível para reserva online.',
-      };
-    }
-
-    // Obtém serviço
-    const { data: service } = await adminSupabase
-      .from('services')
-      .select('id, name, price, duration_minutes, break_minutes')
-      .eq('id', serviceId)
-      .eq('tenant_id', tenant.id)
-      .single();
-
-    if (!service) {
-      return { success: false, code: 'INVALID_SERVICE', message: 'Serviço não localizado.' };
-    }
-
-    const totalMinutes = service.duration_minutes + (service.break_minutes || 0);
-    const endIso = new Date(new Date(startIso).getTime() + totalMinutes * 60 * 1000).toISOString();
-
-    // Obtém ou cadastra o cliente via adminSupabase
-    let clientId: string | null = null;
-    const { data: existingClient } = await adminSupabase
-      .from('clients')
-      .select('id')
-      .eq('tenant_id', tenant.id)
-      .or(`whatsapp.eq.${cleanWhatsapp},phone.eq.${cleanWhatsapp}`)
-      .limit(1)
-      .maybeSingle();
-
-    if (existingClient) {
-      clientId = existingClient.id;
-    } else {
-      const { data: newClient, error: clientErr } = await adminSupabase
-        .from('clients')
-        .insert({
-          tenant_id: tenant.id,
-          full_name: cleanName,
-          whatsapp: cleanWhatsapp,
-          phone: cleanWhatsapp,
-          email: clientEmail?.trim() || null,
-          status: 'active',
-          notes: 'Cadastrado via Agendamento Online Público',
-        })
-        .select('id')
-        .single();
-
-      if (clientErr || !newClient) {
-        console.error('[Public Booking] Erro ao cadastrar cliente:', clientErr);
-        return {
-          success: false,
-          code: 'CLIENT_CREATE_ERROR',
-          message: 'Não foi possível registrar o cliente. Por favor, tente novamente.',
-        };
-      }
-      clientId = newClient.id;
-    }
-
-    // Obtém nome do profissional
-    const { data: prof } = await adminSupabase
-      .from('professionals')
-      .select('full_name')
-      .eq('id', professionalId)
-      .single();
-
-    // Insere o agendamento oficial com verificação atômica de sobreposição
-    const { data: newAppt, error: apptErr } = await adminSupabase
-      .from('appointments')
-      .insert({
-        tenant_id: tenant.id,
-        client_id: clientId,
-        service_id: service.id,
-        professional_id: professionalId,
-        start_time: startIso,
-        end_time: endIso,
-        price: service.price,
-        status: 'scheduled',
-        notes: clientNotes?.trim() || 'Agendado pelo cliente via página pública.',
-      })
-      .select('id')
-      .single();
-
-    if (apptErr || !newAppt) {
-      console.warn('[Public Booking] Erro na inserção do agendamento:', apptErr);
-      const isConflict = apptErr?.message?.toLowerCase().includes('conflito') || apptErr?.code === '23P01';
-      return {
-        success: false,
-        code: isConflict ? 'CONFLICT' : 'PERSISTENCE_ERROR',
-        message: isConflict
-          ? 'O horário selecionado já foi preenchido por outro agendamento. Por favor, escolha outro horário.'
-          : (apptErr?.message || 'Falha ao gravar agendamento.'),
-      };
-    }
-
+    // Retorno estruturado de negócio da RPC (ex: CONFLICT, MIN_ADVANCE_REQUIRED, INVALID_NAME, etc.)
     return {
-      success: true,
-      appointmentId: newAppt.id,
-      tenantName: tenant.name,
-      serviceName: service.name,
-      professionalName: prof?.full_name || 'Profissional',
-      startTime: startIso,
-      endTime: endIso,
-      price: service.price,
-      clientName: cleanName,
-      clientWhatsapp: cleanWhatsapp,
-      message: 'Agendamento confirmado com sucesso!',
+      success: false,
+      code: rpcRes?.code || 'BOOKING_REJECTED',
+      message: rpcRes?.message || 'O horário selecionado não está mais disponível. Por favor, escolha outro horário.',
     };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Falha ao processar agendamento online.';
-    return { success: false, message: msg };
+    return { success: false, code: 'UNEXPECTED_ERROR', message: msg };
   }
 }
