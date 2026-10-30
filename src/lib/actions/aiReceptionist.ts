@@ -454,11 +454,15 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
         // Ambiguidade preservada: informa os profissionais vinculados a cada opção
         const optionsBreakdown = matchedServices.map((s) => {
           const eligibleProfs = getProfessionalsForService(s.id, professionals);
-          const profNames = eligibleProfs.map((p) => p.full_name).join(', ');
-          return `• **${s.name}**: atendido por ${profNames || 'nossa equipe'}`;
+          if (eligibleProfs.length > 0) {
+            const profNames = eligibleProfs.map((p) => p.full_name).join(', ');
+            return `• **${s.name}**: atendido por ${profNames}`;
+          } else {
+            return `• **${s.name}**: nenhum profissional habilitado no momento`;
+          }
         });
 
-        reply = `Para os serviços de corte em **${businessName}**, nossos especialistas são:\n\n` +
+        reply = `Em **${businessName}**, estes são os profissionais disponíveis para cada procedimento:\n\n` +
           optionsBreakdown.join('\n') +
           `\n\nQual dessas opções você prefere agendar?`;
 
@@ -470,24 +474,37 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
         // Apenas um serviço no escopo
         const s = matchedServices[0];
         const eligibleProfs = getProfessionalsForService(s.id, professionals);
-        const profNames = eligibleProfs.map((p) => `**${p.full_name}** (${p.specialty})`).join(' ou ');
 
-        reply = `Para o procedimento **${s.name}**, o atendimento é realizado por ${profNames || 'nossos especialistas qualificados'}.\n\nDeseja que eu consulte os horários livres com algum deles para hoje ou amanhã?`;
+        if (eligibleProfs.length > 0) {
+          const profNames = eligibleProfs.map((p) => `**${p.full_name}** (${p.specialty})`).join(' ou ');
+          reply = `Para o procedimento **${s.name}**, o atendimento é realizado por ${profNames}.\n\nDeseja que eu consulte os horários livres com algum deles para hoje ou amanhã?`;
 
-        quickRepliesData = eligibleProfs.map((p) => ({
-          label: `Com ${p.full_name.split(' ')[0]}`,
-          actionText: `Horários com ${p.full_name}`,
-        }));
+          quickRepliesData = eligibleProfs.map((p) => ({
+            label: `Com ${p.full_name.split(' ')[0]}`,
+            actionText: `Horários com ${p.full_name}`,
+          }));
+        } else {
+          reply = `No momento, não temos nenhum profissional ativo vinculado especificamente ao procedimento **${s.name}** em **${businessName}**.\n\nDeseja conhecer nossos outros procedimentos disponíveis?`;
+
+          quickRepliesData = services.slice(0, 3).map((srv) => ({
+            label: srv.name,
+            actionText: srv.name,
+          }));
+        }
       } else {
         // Pergunta geral sobre a equipe
-        reply = `Nossa equipe em **${businessName}** conta com especialistas qualificados:\n\n` +
-          professionals.map((p) => `• **${p.full_name}** — ${p.specialty}`).join('\n') +
-          `\n\nVocê tem preferência por algum especialista ou gostaria de conhecer nossos procedimentos?`;
+        if (professionals.length > 0) {
+          reply = `Nossa equipe em **${businessName}** conta com especialistas qualificados:\n\n` +
+            professionals.map((p) => `• **${p.full_name}** — ${p.specialty}`).join('\n') +
+            `\n\nVocê tem preferência por algum especialista ou gostaria de conhecer nossos procedimentos?`;
 
-        quickRepliesData = professionals.map((p) => ({
-          label: p.full_name.split(' ')[0],
-          actionText: `Com ${p.full_name}`,
-        }));
+          quickRepliesData = professionals.map((p) => ({
+            label: p.full_name.split(' ')[0],
+            actionText: `Com ${p.full_name}`,
+          }));
+        } else {
+          reply = `No momento não há profissionais ativos listados em nosso sistema para **${businessName}**.\n\nPor favor, entre em contato diretamente pelo nosso WhatsApp para mais informações.`;
+        }
       }
     }
     // -------------------------------------------------------------------------
@@ -616,6 +633,7 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
       content: reply,
       createdAt: new Date().toISOString(),
       suggestedSlots: suggestedSlotsData,
+      quickReplies: quickRepliesData,
     };
 
     return {

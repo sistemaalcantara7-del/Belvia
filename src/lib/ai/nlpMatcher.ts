@@ -75,8 +75,16 @@ export function isProfessionalQuestion(userMessage: string): boolean {
   const teamPatterns = [
     'quem ira me atender',
     'quem vai me atender',
+    'quem ira atender',
+    'quem vai atender',
     'quem me atende',
     'quem atende',
+    'quem vai cortar',
+    'quem ira cortar',
+    'quem corta',
+    'quem vai fazer',
+    'quem ira fazer',
+    'quem faz',
     'qual profissional',
     'quais profissionais',
     'quem sao os profissionais',
@@ -84,14 +92,17 @@ export function isProfessionalQuestion(userMessage: string): boolean {
     'quem e o especialista',
     'quem faz esse procedimento',
     'quem faz esse servico',
-    'quem corta',
-    'quem faz',
     'atendente',
     'equipe',
     'especialista',
   ];
 
   if (teamPatterns.some((pattern) => norm.includes(pattern))) {
+    return true;
+  }
+
+  // Padrões flexíveis: "quem ... [atender|cortar|fazer|cuidar]"
+  if (/^quem\s+(vai|ira|pode|consegue)?\s*(me)?\s*(atender|cortar|fazer|cuidar)/i.test(norm)) {
     return true;
   }
 
@@ -102,7 +113,7 @@ export function isProfessionalQuestion(userMessage: string): boolean {
 
 /**
  * Retorna os profissionais que atendem a um determinado serviço, considerando os vínculos de service_ids.
- * Se nenhum profissional tiver vínculo explícito ou todos atenderem, retorna todos os ativos.
+ * Se nenhum profissional tiver vínculo explícito com o serviço, retorna apenas os vinculados ou vazio se houver vínculos no tenant.
  */
 export function getProfessionalsForService<P extends MinimalProfessional>(
   serviceId: string,
@@ -113,14 +124,12 @@ export function getProfessionalsForService<P extends MinimalProfessional>(
   );
 
   if (professionalsWithLinks.length > 0) {
-    const matched = professionals.filter(
+    return professionals.filter(
       (p) => Array.isArray(p.service_ids) && p.service_ids.includes(serviceId)
     );
-    if (matched.length > 0) {
-      return matched;
-    }
   }
 
+  // Se nenhum profissional tem vínculos configurados (ex: clínica com profissional único que atende tudo)
   return professionals;
 }
 
