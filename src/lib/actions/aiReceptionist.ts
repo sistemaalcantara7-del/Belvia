@@ -185,14 +185,12 @@ ${servicesListText}
 4. Nossos profissionais habilitados:
 ${professionalsListText}
 
-5. FLUXO DE AGENDAMENTO:
+5. SEQUÊNCIA OBRIGATÓRIA DE AGENDAMENTO:
    Passo 1: Identificar o serviço desejado.
-   Passo 2: Identificar a preferência de profissional (ou qualquer disponível).
-   Passo 3: Identificar a data desejada (ex: hoje, amanhã, dia X).
-   Passo 4: Consultar horários livres reais (nunca inventar).
-   Passo 5: Solicitar nome completo e WhatsApp com DDD do cliente.
-   Passo 6: Apresentar resumo completo e pedir confirmação explícita (ex: "Podemos confirmar sua reserva para [serviço] no dia [data] às [horário]?").
-   Passo 7: Somente após a confirmação com SIM/CONFIRMAR, instrua o sistema a efetivar.
+   Passo 2: Identificar profissional de preferência (ou qualquer disponível) e a data desejada (ex: hoje, amanhã, dia X).
+   Passo 3: Apresentar horários livres reais e instruir o cliente a clicar no cartão de horário desejado.
+   REGRA INEGOCIÁVEL: É TERMINANTEMENTE PROIBIDO pedir nome completo, WhatsApp ou pedir confirmação de agendamento antes de o cliente ter escolhido e clicado em um horário específico na interface.
+   Passo 4: Somente após a seleção explícita do horário, o sistema coletará nome completo, WhatsApp e solicitará a confirmação com o resumo dos dados.
 
 Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo WhatsApp: ${businessPhone || 'diretamente na recepção'}.`;
 
@@ -307,13 +305,38 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
             provider: 'openai' as const,
           };
 
-          console.info(`[OpenAI Usage - Tenant ${tenant.slug}] Model: ${openAiModel} | Tokens: ${totalTokens} (Prompt: ${promptTokens}, Comp: ${completionTokens})`);
+          // Anexa cartões de horários reais (suggestedSlots) se serviço e intenção de data/horário forem detectados
+          const { matches: detectedServices } = detectAllMatchingServices(cleanUserMessage, services, history);
+          const detectedProf = detectProfessionalInConversation(cleanUserMessage, professionals, history);
+          const { targetDate: detectedDate } = detectDateInConversation(cleanUserMessage, todayStr, history);
+
+          let openAiSlots: AIChatMessage['suggestedSlots'] = undefined;
+          if (detectedServices.length >= 1) {
+            const srv = detectedServices[0];
+            const slotsQuery = await getPublicAvailableSlotsAction(
+              tenant.id,
+              srv.id,
+              detectedProf ? detectedProf.id : null,
+              detectedDate
+            );
+            if (slotsQuery.success && slotsQuery.slots && slotsQuery.slots.length > 0) {
+              openAiSlots = slotsQuery.slots.slice(0, 4).map((s) => ({
+                time: s.slot_time,
+                professionalName: s.professional_name,
+                professionalId: s.professional_id,
+                date: detectedDate,
+                serviceId: srv.id,
+                serviceName: srv.name,
+              }));
+            }
+          }
 
           const assistantMsg: AIChatMessage = {
             id: crypto.randomUUID(),
             role: 'assistant',
             content: replyText,
             createdAt: new Date().toISOString(),
+            suggestedSlots: openAiSlots,
           };
 
           return {
@@ -380,11 +403,38 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
               }
             : undefined;
 
+          // Anexa cartões de horários reais (suggestedSlots) se serviço e intenção de data/horário forem detectados
+          const { matches: detectedServices } = detectAllMatchingServices(cleanUserMessage, services, history);
+          const detectedProf = detectProfessionalInConversation(cleanUserMessage, professionals, history);
+          const { targetDate: detectedDate } = detectDateInConversation(cleanUserMessage, todayStr, history);
+
+          let geminiSlots: AIChatMessage['suggestedSlots'] = undefined;
+          if (detectedServices.length >= 1) {
+            const srv = detectedServices[0];
+            const slotsQuery = await getPublicAvailableSlotsAction(
+              tenant.id,
+              srv.id,
+              detectedProf ? detectedProf.id : null,
+              detectedDate
+            );
+            if (slotsQuery.success && slotsQuery.slots && slotsQuery.slots.length > 0) {
+              geminiSlots = slotsQuery.slots.slice(0, 4).map((s) => ({
+                time: s.slot_time,
+                professionalName: s.professional_name,
+                professionalId: s.professional_id,
+                date: detectedDate,
+                serviceId: srv.id,
+                serviceName: srv.name,
+              }));
+            }
+          }
+
           const assistantMsg: AIChatMessage = {
             id: crypto.randomUUID(),
             role: 'assistant',
             content: replyText,
             createdAt: new Date().toISOString(),
+            suggestedSlots: geminiSlots,
           };
 
           return {
@@ -670,14 +720,38 @@ export async function confirmAppointmentFromAIChatAction(params: {
   clientName: string;
   clientWhatsapp: string;
 }) {
+  // Validação server-side estrita para impedir chamadas prematuras ou sem seleção de slot
+  if (!params.tenantSlug || !params.serviceId || !params.date || !params.time) {
+    return {
+      success: false,
+      message: 'Nenhum horário foi selecionado. Por favor, escolha um dos horários disponíveis.',
+    };
+  }
+
+  const cleanName = (params.clientName || '').trim();
+  if (cleanName.length < 3) {
+    return {
+      success: false,
+      message: 'Nome do cliente deve ter pelo menos 3 caracteres.',
+    };
+  }
+
+  const cleanDigits = sanitizeDigits(params.clientWhatsapp || '');
+  if (cleanDigits.length < 10 || cleanDigits.length > 11) {
+    return {
+      success: false,
+      message: 'WhatsApp com DDD inválido (deve conter 10 ou 11 dígitos).',
+    };
+  }
+
   const bookingRes = await createPublicBookingAction({
     tenantSlug: params.tenantSlug,
     serviceId: params.serviceId,
     professionalId: params.professionalId,
     date: params.date,
     time: params.time,
-    clientName: params.clientName,
-    clientWhatsapp: params.clientWhatsapp,
+    clientName: cleanName,
+    clientWhatsapp: cleanDigits,
     clientNotes: 'Agendado através da Recepcionista Virtual com IA',
   });
 

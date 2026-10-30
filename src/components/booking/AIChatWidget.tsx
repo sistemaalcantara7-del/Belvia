@@ -141,9 +141,12 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
     });
   };
 
-  // Clique no horário disponível: inicia o funil de agendamento DENTRO do chat
+  // Clique no horário disponível: inicia ou atualiza o funil de agendamento DENTRO do chat
   const handleSelectSlot = (slot: SuggestedSlotItem) => {
     if (isBookingSubmitting) return;
+
+    // Garante que o slot tenha data e hora válidas
+    if (!slot.date || !slot.time) return;
 
     const srv = catalog.services.find((s) => s.id === slot.serviceId) || catalog.services[0];
     const serviceId = slot.serviceId || srv?.id || '';
@@ -151,16 +154,9 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
     const price = srv ? Number(srv.price) : undefined;
     const formattedDate = formatAppointmentDate(slot.date);
 
-    setBookingDraft({
-      step: 'awaiting_name',
-      serviceId,
-      serviceName,
-      professionalId: slot.professionalId,
-      professionalName: slot.professionalName,
-      date: slot.date,
-      time: slot.time,
-      price,
-    });
+    // Preserva nome e WhatsApp caso o cliente já tenha preenchido anteriormente (ex: reagendamento/conflito)
+    const existingName = bookingDraft?.clientName?.trim();
+    const existingWhatsapp = bookingDraft?.clientWhatsapp?.trim();
 
     const userChoiceMsg: AIChatMessage = {
       id: crypto.randomUUID(),
@@ -169,19 +165,69 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
       createdAt: new Date().toISOString(),
     };
 
-    const assistantAckMsg: AIChatMessage = {
-      id: crypto.randomUUID(),
-      role: 'assistant',
-      content: `Excelente escolha! ✨\n\nVocê selecionou **${serviceName}** com **${slot.professionalName}** para **${formattedDate} às ${slot.time}**.\n\nPara reservarmos sua vaga, por gentileza, digite o seu **nome completo**:`,
-      createdAt: new Date().toISOString(),
-    };
+    if (existingName && existingName.length >= 3 && existingWhatsapp && existingWhatsapp.length >= 10) {
+      // Cliente já havia informado os dados: avança direto para a confirmação com o novo horário!
+      const updatedDraft: ChatBookingDraft = {
+        step: 'awaiting_confirmation',
+        serviceId,
+        serviceName,
+        professionalId: slot.professionalId,
+        professionalName: slot.professionalName,
+        date: slot.date,
+        time: slot.time,
+        price,
+        clientName: existingName,
+        clientWhatsapp: existingWhatsapp,
+      };
 
-    setMessages((prev) => [...prev, userChoiceMsg, assistantAckMsg]);
+      setBookingDraft(updatedDraft);
+
+      const priceText = updatedDraft.price ? `R$ ${updatedDraft.price.toFixed(2)}` : 'A combinar';
+      const summaryMsg: AIChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `Novo horário selecionado com sucesso! ✨\n\nConfira o resumo atualizado antes de confirmarmos:\n\n• **Cliente:** ${updatedDraft.clientName}\n• **WhatsApp:** ${maskPhone(updatedDraft.clientWhatsapp)}\n• **Serviço:** ${updatedDraft.serviceName}\n• **Profissional:** ${updatedDraft.professionalName}\n• **Data:** ${formattedDate}\n• **Horário:** ${updatedDraft.time}\n• **Valor:** ${priceText}\n\nPodemos confirmar sua reserva na agenda da **${businessName}**?`,
+        createdAt: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, userChoiceMsg, summaryMsg]);
+    } else {
+      // Primeira escolha: define o rascunho com o horário e solicita o nome completo
+      setBookingDraft({
+        step: 'awaiting_name',
+        serviceId,
+        serviceName,
+        professionalId: slot.professionalId,
+        professionalName: slot.professionalName,
+        date: slot.date,
+        time: slot.time,
+        price,
+      });
+
+      const assistantAckMsg: AIChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `Excelente escolha! ✨\n\nVocê selecionou **${serviceName}** com **${slot.professionalName}** para **${formattedDate} às ${slot.time}**.\n\nPara reservarmos sua vaga, por gentileza, digite o seu **nome completo**:`,
+        createdAt: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, userChoiceMsg, assistantAckMsg]);
+    }
   };
 
   // Cancelar ou alterar rascunho de agendamento
   const cancelOrResetDraft = (reason: 'alterar' | 'cancelar') => {
-    setBookingDraft(null);
+    // Se for apenas alterar horário, preserva nome e WhatsApp já digitados
+    if (reason === 'alterar' && bookingDraft?.clientName && bookingDraft?.clientWhatsapp) {
+      setBookingDraft({
+        ...bookingDraft,
+        step: 'idle',
+        time: '',
+      });
+    } else {
+      setBookingDraft(null);
+    }
+
     const userMsg: AIChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -199,7 +245,24 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
 
   // Executa o agendamento no Supabase via RPC atômica
   const executeInChatBooking = async () => {
-    if (!bookingDraft || !bookingDraft.clientName || !bookingDraft.clientWhatsapp) return;
+    // Validação estrita: somente executa se tiver horário explícito, serviço e dados do cliente
+    if (
+      !bookingDraft ||
+      !bookingDraft.time ||
+      !bookingDraft.serviceId ||
+      !bookingDraft.date ||
+      !bookingDraft.clientName ||
+      !bookingDraft.clientWhatsapp
+    ) {
+      const missingMsg: AIChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: 'Por favor, selecione um horário disponível clicando em um dos cartões antes de confirmar.',
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, missingMsg]);
+      return;
+    }
 
     setIsBookingSubmitting(true);
 
@@ -232,7 +295,7 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
         step: 'confirmed',
       });
     } else {
-      // Divergência ou horário não mais disponível: oferece novos horários reais
+      // Divergência ou horário não mais disponível: oferece novos horários reais preservando nome e telefone
       const errorReason = bookingRes.message || 'Este horário acabou de ser preenchido por outro cliente.';
 
       // Consulta horários atualizados da agenda
@@ -273,7 +336,13 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
       };
 
       setMessages((prev) => [...prev, retryMsg]);
-      setBookingDraft(null); // Reseta rascunho para permitir nova escolha
+
+      // Preserva nome, whatsapp, serviço e data, mas limpa o horário inválido
+      setBookingDraft({
+        ...bookingDraft,
+        step: 'idle',
+        time: '',
+      });
     }
   };
 
@@ -366,6 +435,44 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
       };
 
       setMessages((prev) => [...prev, userMsg, summaryMsg]);
+      setInputValue('');
+      return;
+    }
+
+    // Se estiver no fluxo nativo aguardando confirmação e o cliente responder no campo de texto
+    if (bookingDraft && bookingDraft.step === 'awaiting_confirmation') {
+      const lower = text.toLowerCase();
+      if (lower.includes('sim') || lower.includes('confirma') || lower.includes('pode') || lower.includes('ok') || lower.includes('claro')) {
+        setInputValue('');
+        executeInChatBooking();
+        return;
+      } else if (lower.includes('nao') || lower.includes('não') || lower.includes('cancela')) {
+        setInputValue('');
+        cancelOrResetDraft('cancelar');
+        return;
+      }
+    }
+
+    // Se o cliente tentar digitar "confirmar" ou dados pessoais sem ter selecionado um horário antes
+    const lowerText = text.toLowerCase();
+    const isPrematureConfirm =
+      (!bookingDraft || !bookingDraft.time) &&
+      (lowerText === 'confirmar' || lowerText === 'confirma' || lowerText === 'sim' || lowerText === 'confirmar agendamento');
+
+    if (isPrematureConfirm) {
+      const promptSlotMsg: AIChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content: text,
+        createdAt: new Date().toISOString(),
+      };
+      const assistantAdviseMsg: AIChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: 'Para confirmarmos seu agendamento, primeiro clique em um dos **cartões de horários disponíveis** acima. Qual horário você prefere?',
+        createdAt: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, promptSlotMsg, assistantAdviseMsg]);
       setInputValue('');
       return;
     }
