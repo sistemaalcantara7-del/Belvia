@@ -15,20 +15,22 @@ export interface AIChatAnamnesisPrompt {
   status: 'pending_consent' | 'in_progress' | 'completed' | 'declined';
 }
 
+export interface SuggestedSlotItem {
+  time: string;
+  professionalName: string;
+  professionalId: string;
+  date: string;
+  serviceId?: string;
+  serviceName?: string;
+}
+
 export interface AIChatMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   createdAt: string;
   // Campos estruturados quando a IA sugere ou confirma ações
-  suggestedSlots?: {
-    time: string;
-    professionalName: string;
-    professionalId: string;
-    date: string;
-    serviceId?: string;
-    serviceName?: string;
-  }[];
+  suggestedSlots?: SuggestedSlotItem[];
   bookingSummary?: {
     serviceName: string;
     serviceId: string;

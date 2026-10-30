@@ -83,13 +83,18 @@ export async function initAIChatSessionAction(
     const businessName = tenant.settings?.booking_settings?.business_name || tenant.name;
     const sessionToken = existingToken || crypto.randomUUID();
 
-    const welcomeText = `Olá! Sou a assistente virtual da **${businessName}**. Estou aqui para tirar dúvidas sobre nossos serviços, consultar horários livres e ajudar você a agendar seu atendimento. Como posso te ajudar hoje?`;
+    const welcomeText = `Olá! Seja bem-vindo(a) à **${businessName}**! ✨\n\nSou a assistente virtual e estou aqui para facilitar seu agendamento, consultar horários livres ou tirar qualquer dúvida sobre nossos serviços. Como posso ajudar você hoje?`;
 
     const initialMessage: AIChatMessage = {
       id: crypto.randomUUID(),
       role: 'assistant',
       content: welcomeText,
       createdAt: new Date().toISOString(),
+      quickReplies: [
+        { label: 'Ver Serviços e Valores', actionText: 'Quais são os serviços e valores?' },
+        { label: 'Agendar um Horário', actionText: 'Gostaria de agendar um horário' },
+        { label: 'Conhecer a Equipe', actionText: 'Quem são os profissionais?' },
+      ],
     };
 
     return {
@@ -587,9 +592,9 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
         }));
 
         const profMentionStr = matchedProfessional ? ` com ${matchedProfessional.full_name}` : '';
-        reply = `Perfeito! Para **${chosenService.name}**${profMentionStr}, consultei nossa agenda em tempo real e temos estes horários livres para **${dateLabel}**:\n\n` +
-          topSlots.map((s) => `🕒 **${s.slot_time}** com ${s.professional_name}`).join('\n') +
-          `\n\nQual desses horários você prefere? Você pode clicar no horário desejado acima para concluir seu agendamento em instantes!`;
+        reply = `Perfeito! Para **${chosenService.name}**${profMentionStr}, verifiquei nossa agenda em tempo real e separei estas opções livres para **${dateLabel}**:\n\n` +
+          topSlots.map((s) => `🕒 **${s.slot_time}** — ${s.professional_name}`).join('\n') +
+          `\n\nBasta tocar no horário desejado aqui em cima para continuarmos o seu agendamento diretamente por aqui!`;
       } else {
         const profNotice = matchedProfessional ? ` com ${matchedProfessional.full_name}` : '';
         reply = `Para **${chosenService.name}**${profNotice}, não encontrei horários livres para **${dateLabel}** na agenda online. Gostaria de consultar para outro dia, ou prefere falar diretamente conosco pelo WhatsApp?`;

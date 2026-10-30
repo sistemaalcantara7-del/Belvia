@@ -9,20 +9,38 @@ import {
   ShieldCheck,
   CheckCircle2,
   FileText,
+  Edit2,
 } from 'lucide-react';
-import { AIChatMessage, AIChatAnamnesisPrompt } from '@/types/aiReceptionist';
+import { AIChatMessage, AIChatAnamnesisPrompt, SuggestedSlotItem } from '@/types/aiReceptionist';
 import {
   initAIChatSessionAction,
   sendAIChatMessageAction,
   answerConversationalAnamnesisAction,
   getNextAnamnesisQuestionAction,
+  confirmAppointmentFromAIChatAction,
 } from '@/lib/actions/aiReceptionist';
+import { getPublicAvailableSlotsAction } from '@/lib/actions/publicBooking';
 import { PublicCatalogData } from '@/types/publicBooking';
+import { maskPhone, sanitizeDigits } from '@/lib/utils/masks';
+import { formatAppointmentDate } from '@/lib/utils/timezone';
 import Link from 'next/link';
 import { MarkdownMessage } from './MarkdownMessage';
 
 interface AIChatWidgetProps {
   catalog: PublicCatalogData;
+}
+
+interface ChatBookingDraft {
+  step: 'idle' | 'awaiting_name' | 'awaiting_phone' | 'awaiting_confirmation' | 'submitting' | 'confirmed';
+  serviceId: string;
+  serviceName: string;
+  professionalId: string;
+  professionalName: string;
+  date: string;
+  time: string;
+  price?: number;
+  clientName?: string;
+  clientWhatsapp?: string;
 }
 
 export function AIChatWidget({ catalog }: AIChatWidgetProps) {
@@ -38,6 +56,10 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
   const [isSending, startSendTransition] = useTransition();
   const [hasInitialized, setHasInitialized] = useState(false);
 
+  // Fluxo de Agendamento Nativo Dentro do Chat
+  const [bookingDraft, setBookingDraft] = useState<ChatBookingDraft | null>(null);
+  const [isBookingSubmitting, setIsBookingSubmitting] = useState(false);
+
   // Estado da Anamnese Ativa no Chat
   const [activeAnamnesis, setActiveAnamnesis] = useState<AIChatAnamnesisPrompt | null>(null);
   const [isSubmittingAnamnesis, setIsSubmittingAnamnesis] = useState(false);
@@ -52,7 +74,7 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
     if (isOpen) {
       scrollToBottom();
     }
-  }, [messages, isOpen, activeAnamnesis]);
+  }, [messages, isOpen, activeAnamnesis, bookingDraft]);
 
   // Inicializa sessão ao abrir pela primeira vez
   const handleOpenChat = () => {
@@ -69,7 +91,20 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
   };
 
   const handleQuickReply = (actionText: string) => {
-    if (isSending) return;
+    if (isSending || isBookingSubmitting) return;
+
+    // Se estiver no card de confirmação de agendamento
+    if (bookingDraft && bookingDraft.step === 'awaiting_confirmation') {
+      if (actionText === 'confirm_booking') {
+        executeInChatBooking();
+        return;
+      }
+      if (actionText === 'edit_booking') {
+        cancelOrResetDraft('alterar');
+        return;
+      }
+    }
+
     const userMsg: AIChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -98,7 +133,7 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
           role: 'assistant',
           content:
             res.error ||
-            'Desculpe, tive uma instabilidade momentânea. Se preferir, pode agendar diretamente no botão acima!',
+            'Desculpe, tive uma instabilidade momentânea. Se preferir, você pode agendar diretamente no botão acima!',
           createdAt: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, errorMsg]);
@@ -106,13 +141,231 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
     });
   };
 
+  // Clique no horário disponível: inicia o funil de agendamento DENTRO do chat
+  const handleSelectSlot = (slot: SuggestedSlotItem) => {
+    if (isBookingSubmitting) return;
+
+    const srv = catalog.services.find((s) => s.id === slot.serviceId) || catalog.services[0];
+    const serviceId = slot.serviceId || srv?.id || '';
+    const serviceName = slot.serviceName || srv?.name || 'Serviço';
+    const price = srv ? Number(srv.price) : undefined;
+    const formattedDate = formatAppointmentDate(slot.date);
+
+    setBookingDraft({
+      step: 'awaiting_name',
+      serviceId,
+      serviceName,
+      professionalId: slot.professionalId,
+      professionalName: slot.professionalName,
+      date: slot.date,
+      time: slot.time,
+      price,
+    });
+
+    const userChoiceMsg: AIChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: `Quero agendar às ${slot.time} com ${slot.professionalName}`,
+      createdAt: new Date().toISOString(),
+    };
+
+    const assistantAckMsg: AIChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: `Excelente escolha! ✨\n\nVocê selecionou **${serviceName}** com **${slot.professionalName}** para **${formattedDate} às ${slot.time}**.\n\nPara reservarmos sua vaga, por gentileza, digite o seu **nome completo**:`,
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, userChoiceMsg, assistantAckMsg]);
+  };
+
+  // Cancelar ou alterar rascunho de agendamento
+  const cancelOrResetDraft = (reason: 'alterar' | 'cancelar') => {
+    setBookingDraft(null);
+    const userMsg: AIChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: reason === 'alterar' ? 'Gostaria de escolher outro horário ou serviço' : 'Cancelar agendamento',
+      createdAt: new Date().toISOString(),
+    };
+    const assistantMsg: AIChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: 'Tudo bem! Qual serviço, profissional ou outro horário você gostaria de consultar?',
+      createdAt: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
+  };
+
+  // Executa o agendamento no Supabase via RPC atômica
+  const executeInChatBooking = async () => {
+    if (!bookingDraft || !bookingDraft.clientName || !bookingDraft.clientWhatsapp) return;
+
+    setIsBookingSubmitting(true);
+
+    const bookingRes = await confirmAppointmentFromAIChatAction({
+      tenantSlug: tenant.slug,
+      serviceId: bookingDraft.serviceId,
+      professionalId: bookingDraft.professionalId,
+      date: bookingDraft.date,
+      time: bookingDraft.time,
+      clientName: bookingDraft.clientName,
+      clientWhatsapp: bookingDraft.clientWhatsapp,
+    });
+
+    setIsBookingSubmitting(false);
+
+    if (bookingRes.success && bookingRes.appointmentId) {
+      const formattedDate = formatAppointmentDate(bookingDraft.date);
+      const prompt = 'anamnesisPrompt' in bookingRes ? (bookingRes.anamnesisPrompt as AIChatAnamnesisPrompt) : undefined;
+      const successMsg: AIChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `🎉 **Agendamento Confirmado com Sucesso!**\n\nMuito obrigado, **${bookingDraft.clientName}**! Seu horário está garantido em nossa agenda oficial:\n\n• **Serviço:** ${bookingDraft.serviceName}\n• **Profissional:** ${bookingDraft.professionalName}\n• **Data:** ${formattedDate}\n• **Horário:** ${bookingDraft.time}\n• **WhatsApp:** ${maskPhone(bookingDraft.clientWhatsapp)}\n\nNossa equipe já foi notificada. Qualquer dúvida ou imprevisto, estamos à inteira disposição!`,
+        createdAt: new Date().toISOString(),
+        anamnesisPrompt: prompt,
+      };
+
+      setMessages((prev) => [...prev, successMsg]);
+      setBookingDraft({
+        ...bookingDraft,
+        step: 'confirmed',
+      });
+    } else {
+      // Divergência ou horário não mais disponível: oferece novos horários reais
+      const errorReason = bookingRes.message || 'Este horário acabou de ser preenchido por outro cliente.';
+
+      // Consulta horários atualizados da agenda
+      const freshSlotsRes = await getPublicAvailableSlotsAction(
+        tenant.id,
+        bookingDraft.serviceId,
+        bookingDraft.professionalId || null,
+        bookingDraft.date
+      );
+
+      const freshSlots = freshSlotsRes.success && freshSlotsRes.slots && freshSlotsRes.slots.length > 0
+        ? freshSlotsRes.slots.slice(0, 4).map((s) => ({
+            time: s.slot_time,
+            professionalName: s.professional_name,
+            professionalId: s.professional_id,
+            date: bookingDraft.date,
+            serviceId: bookingDraft.serviceId,
+            serviceName: bookingDraft.serviceName,
+          }))
+        : [];
+
+      const retryMsg: AIChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `⚠️ **Aviso sobre a vaga:** ${errorReason}\n\n${
+          freshSlots.length > 0
+            ? 'Para sua comodidade, consultei a agenda novamente agora mesmo e encontrei estes horários livres para o mesmo dia:'
+            : 'Não encontramos outros horários livres para este dia. Gostaria de verificar para amanhã ou falar com a recepção?'
+        }`,
+        createdAt: new Date().toISOString(),
+        suggestedSlots: freshSlots,
+        quickReplies: freshSlots.length === 0
+          ? [
+              { label: 'Verificar amanhã', actionText: `Horários para amanhã para ${bookingDraft.serviceName}` },
+              { label: 'Outro serviço', actionText: 'Quais outros serviços estão disponíveis?' },
+            ]
+          : undefined,
+      };
+
+      setMessages((prev) => [...prev, retryMsg]);
+      setBookingDraft(null); // Reseta rascunho para permitir nova escolha
+    }
+  };
+
   const handleSendMessage = () => {
     const text = inputValue.trim();
-    if (!text || isSending) return;
+    if (!text || isSending || isBookingSubmitting) return;
 
     // Se estiver no fluxo de pergunta aberta de anamnese
     if (activeAnamnesis && activeAnamnesis.status === 'in_progress' && activeAnamnesis.question) {
       handleAnswerAnamnesis(text);
+      setInputValue('');
+      return;
+    }
+
+    // Se estiver no fluxo nativo de agendamento: coleta de nome
+    if (bookingDraft && bookingDraft.step === 'awaiting_name') {
+      if (text.length < 3) {
+        const errorPromptMsg: AIChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: 'Por favor, informe seu **nome completo** (pelo menos 3 letras) para o registro da reserva.',
+          createdAt: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, errorPromptMsg]);
+        return;
+      }
+
+      setBookingDraft({
+        ...bookingDraft,
+        clientName: text,
+        step: 'awaiting_phone',
+      });
+
+      const userMsg: AIChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content: text,
+        createdAt: new Date().toISOString(),
+      };
+
+      const askPhoneMsg: AIChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `Prazer, **${text}**! 😊\n\nAgora, por gentileza, informe o seu **WhatsApp com DDD** (ex: 11 99999-8888) para receber os lembretes do seu atendimento:`,
+        createdAt: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, userMsg, askPhoneMsg]);
+      setInputValue('');
+      return;
+    }
+
+    // Se estiver no fluxo nativo de agendamento: coleta de WhatsApp
+    if (bookingDraft && bookingDraft.step === 'awaiting_phone') {
+      const cleanDigits = sanitizeDigits(text);
+      if (cleanDigits.length < 10 || cleanDigits.length > 11) {
+        const errorPromptMsg: AIChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: 'Por favor, digite um **WhatsApp válido com DDD** (10 ou 11 dígitos, ex: 11 98888-7777).',
+          createdAt: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, errorPromptMsg]);
+        return;
+      }
+
+      const formattedPhone = maskPhone(cleanDigits);
+      const updatedDraft: ChatBookingDraft = {
+        ...bookingDraft,
+        clientWhatsapp: cleanDigits,
+        step: 'awaiting_confirmation',
+      };
+      setBookingDraft(updatedDraft);
+
+      const userMsg: AIChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content: formattedPhone,
+        createdAt: new Date().toISOString(),
+      };
+
+      const formattedDate = formatAppointmentDate(updatedDraft.date);
+      const priceText = updatedDraft.price ? `R$ ${updatedDraft.price.toFixed(2)}` : 'A combinar';
+
+      const summaryMsg: AIChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `Perfeito! Confira os dados do seu agendamento antes de confirmarmos:\n\n• **Cliente:** ${updatedDraft.clientName}\n• **WhatsApp:** ${formattedPhone}\n• **Serviço:** ${updatedDraft.serviceName}\n• **Profissional:** ${updatedDraft.professionalName}\n• **Data:** ${formattedDate}\n• **Horário:** ${updatedDraft.time}\n• **Valor:** ${priceText}\n\nPodemos confirmar sua reserva na agenda da **${businessName}**?`,
+        createdAt: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, userMsg, summaryMsg]);
       setInputValue('');
       return;
     }
@@ -146,7 +399,7 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
           role: 'assistant',
           content:
             res.error ||
-            'Desculpe, tive uma instabilidade momentânea. Se preferir, pode agendar diretamente no botão acima!',
+            'Desculpe, tive uma instabilidade momentânea. Se preferir, você pode agendar diretamente no botão acima!',
           createdAt: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, errorMsg]);
@@ -370,37 +623,28 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
                     </div>
                   )}
 
-                  {/* Sugestões de slots clicáveis retornados pela IA */}
+                  {/* Sugestões de slots clicáveis: mantém cards idênticos mas continua no chat */}
                   {msg.suggestedSlots && msg.suggestedSlots.length > 0 && (
                     <div className="mt-2 space-y-1.5 w-full max-w-[85%]">
                       <p className="text-[10px] uppercase font-bold text-[#A86B62] tracking-wider">
                         Horários Livres Encontrados:
                       </p>
                       <div className="grid grid-cols-2 gap-1.5">
-                        {msg.suggestedSlots.map((slot, idx) => {
-                          const params = new URLSearchParams();
-                          if (slot.serviceId) params.set('serviceId', slot.serviceId);
-                          if (slot.professionalId) params.set('professionalId', slot.professionalId);
-                          if (slot.date) params.set('date', slot.date);
-                          if (slot.time) params.set('time', slot.time);
-
-                          const href = `/agendar/${tenant.slug}${params.toString() ? `?${params.toString()}` : ''}`;
-
-                          return (
-                            <Link
-                              key={idx}
-                              href={href}
-                              className="p-2 rounded-xl bg-white border border-[#EADBCE] text-center hover:border-[#C4837A] hover:bg-[#FAF6F3] transition-colors"
-                            >
-                              <span className="font-bold text-[#2C1810] block text-xs">
-                                {slot.time}
-                              </span>
-                              <span className="text-[10px] text-[#A86B62] block truncate">
-                                {slot.professionalName.split(' ')[0]}
-                              </span>
-                            </Link>
-                          );
-                        })}
+                        {msg.suggestedSlots.map((slot, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleSelectSlot(slot)}
+                            className="p-2 rounded-xl bg-white border border-[#EADBCE] text-center hover:border-[#C4837A] hover:bg-[#FAF6F3] transition-colors cursor-pointer group shadow-2xs"
+                          >
+                            <span className="font-bold text-[#2C1810] block text-xs group-hover:text-[#C4837A]">
+                              {slot.time}
+                            </span>
+                            <span className="text-[10px] text-[#A86B62] block truncate">
+                              {slot.professionalName.split(' ')[0]}
+                            </span>
+                          </button>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -440,6 +684,86 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
                 </div>
               );
             })}
+
+            {/* Card de Confirmação Final do Agendamento Em Andamento Dentro do Chat */}
+            {bookingDraft && bookingDraft.step === 'awaiting_confirmation' && (
+              <div className="p-3.5 bg-white rounded-2xl border-2 border-rose-200 shadow-sm space-y-3 animate-in fade-in zoom-in-95 duration-150">
+                <div className="flex items-center justify-between border-b border-rose-100 pb-2">
+                  <span className="flex items-center gap-1.5 font-bold text-xs text-[#2C1810]">
+                    <CheckCircle2 className="w-4 h-4 text-[#C4837A]" />
+                    Resumo do Agendamento
+                  </span>
+                  <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
+                    Aguardando Confirmação
+                  </span>
+                </div>
+
+                <div className="space-y-1.5 text-[11px] text-[#6B5A55]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-500">Serviço:</span>
+                    <strong className="text-[#2C1810]">{bookingDraft.serviceName}</strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-500">Profissional:</span>
+                    <strong className="text-[#2C1810]">{bookingDraft.professionalName}</strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-500">Data e Horário:</span>
+                    <strong className="text-[#2C1810]">
+                      {formatAppointmentDate(bookingDraft.date)} às {bookingDraft.time}
+                    </strong>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-500">Cliente:</span>
+                    <span className="text-[#2C1810]">{bookingDraft.clientName}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-zinc-500">WhatsApp:</span>
+                    <span className="text-[#2C1810]">{maskPhone(bookingDraft.clientWhatsapp)}</span>
+                  </div>
+                  {bookingDraft.price !== undefined && (
+                    <div className="flex items-center justify-between border-t border-dashed border-rose-100 pt-1.5 mt-1.5">
+                      <span className="font-semibold text-zinc-700">Total:</span>
+                      <strong className="text-sm text-[#2C1810]">
+                        R$ {bookingDraft.price.toFixed(2)}
+                      </strong>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    disabled={isBookingSubmitting}
+                    onClick={executeInChatBooking}
+                    className="flex-1 py-2 px-3 rounded-xl text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs hover:opacity-95 disabled:opacity-50 cursor-pointer"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    {isBookingSubmitting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Confirmando vaga...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        Confirmar Agendamento
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isBookingSubmitting}
+                    onClick={() => cancelOrResetDraft('alterar')}
+                    className="py-2 px-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold text-xs flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    Alterar
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Painel de Resposta Ativa da Anamnese Conversacional */}
             {activeAnamnesis && activeAnamnesis.status === 'in_progress' && activeAnamnesis.question && (
@@ -513,10 +837,12 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
               </div>
             )}
 
-            {isSending && (
+            {(isSending || isBookingSubmitting) && (
               <div className="flex items-center gap-2 text-[#9B8985] text-xs py-1">
                 <Loader2 className="w-4 h-4 animate-spin text-[#C4837A]" />
-                <span>Digitando resposta...</span>
+                <span>
+                  {isBookingSubmitting ? 'Gravando reserva com segurança...' : 'Digitando resposta...'}
+                </span>
               </div>
             )}
 
@@ -533,19 +859,29 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
               className="flex items-center gap-2"
             >
               <input
-                type="text"
+                type={bookingDraft?.step === 'awaiting_phone' ? 'tel' : 'text'}
                 placeholder={
                   activeAnamnesis
                     ? 'Digite sua resposta da anamnese...'
+                    : bookingDraft?.step === 'awaiting_name'
+                    ? 'Digite seu nome completo...'
+                    : bookingDraft?.step === 'awaiting_phone'
+                    ? 'Digite seu WhatsApp com DDD...'
                     : 'Pergunte sobre serviços ou horários...'
                 }
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
+                onChange={(e) => {
+                  if (bookingDraft?.step === 'awaiting_phone') {
+                    setInputValue(maskPhone(e.target.value));
+                  } else {
+                    setInputValue(e.target.value);
+                  }
+                }}
                 className="flex-1 px-3 py-2 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden focus:border-[#C4837A]"
               />
               <button
                 type="submit"
-                disabled={isSending || isSubmittingAnamnesis || !inputValue.trim()}
+                disabled={isSending || isSubmittingAnamnesis || isBookingSubmitting || !inputValue.trim()}
                 className="w-8 h-8 rounded-xl text-white flex items-center justify-center disabled:opacity-40 transition-colors shadow-2xs shrink-0 cursor-pointer"
                 style={{ backgroundColor: primaryColor }}
               >
