@@ -306,16 +306,20 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
         bookingDraft.date
       );
 
-      const freshSlots = freshSlotsRes.success && freshSlotsRes.slots && freshSlotsRes.slots.length > 0
-        ? freshSlotsRes.slots.slice(0, 4).map((s) => ({
-            time: s.slot_time,
-            professionalName: s.professional_name,
-            professionalId: s.professional_id,
-            date: bookingDraft.date,
-            serviceId: bookingDraft.serviceId,
-            serviceName: bookingDraft.serviceName,
-          }))
+      // Filtra os slots garantindo que o horário que acabou de ser rejeitado não seja oferecido novamente
+      const rejectedTime = bookingDraft.time;
+      const filteredSlots = (freshSlotsRes.success && freshSlotsRes.slots)
+        ? freshSlotsRes.slots.filter((s) => s.slot_time !== rejectedTime)
         : [];
+
+      const freshSlots = filteredSlots.slice(0, 4).map((s) => ({
+        time: s.slot_time,
+        professionalName: s.professional_name,
+        professionalId: s.professional_id,
+        date: bookingDraft.date,
+        serviceId: bookingDraft.serviceId,
+        serviceName: bookingDraft.serviceName,
+      }));
 
       const retryMsg: AIChatMessage = {
         id: crypto.randomUUID(),
