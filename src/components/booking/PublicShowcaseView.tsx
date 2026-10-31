@@ -217,7 +217,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
           <div
             className="absolute inset-0 bg-cover bg-center pointer-events-none"
             style={{
-              backgroundImage: "url('/img/bg_hero1_mobile.png')",
+              backgroundImage: "url('/img/bg_hero01_mobile.png')",
               backgroundPosition: 'center 20%',
               backgroundRepeat: 'no-repeat',
             }}
@@ -248,7 +248,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
         <div
           className="absolute inset-0 bg-cover bg-right lg:bg-center pointer-events-none"
           style={{
-            backgroundImage: "url('/img/bg_hero1.png')",
+            backgroundImage: "url('/img/bg_hero01.png')",
             backgroundRepeat: 'no-repeat',
           }}
         />
