@@ -1,28 +1,40 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
   Calendar,
   Clock,
-  Sparkles,
   MapPin,
-  MessageCircle,
-  Phone,
-  Bot,
-  Globe,
   ArrowRight,
-  X,
-  ChevronRight,
+  Gem,
+  Flower2,
   ShieldCheck,
-  Star,
-  CheckCircle2,
   Heart,
-  Share2,
+  Phone,
+  MessageCircle,
 } from 'lucide-react';
-import { PublicCatalogData, PortfolioItem, PublicService } from '@/types/publicBooking';
+import { PublicCatalogData, PublicProfessional } from '@/types/publicBooking';
 import { AIChatWidget } from './AIChatWidget';
+
+function InstagramIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+    </svg>
+  );
+}
+
+function FacebookIcon({ className = 'w-4 h-4' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+    </svg>
+  );
+}
 
 interface PublicShowcaseViewProps {
   catalog: PublicCatalogData;
@@ -32,658 +44,628 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
   const { tenant, services = [], professionals = [], portfolio = [] } = catalog;
 
   const bookingSettings = tenant.settings?.booking_settings;
-  const primaryColor = bookingSettings?.primary_color || '#C4837A';
-  const secondaryColor = bookingSettings?.secondary_color || '#2D1F27';
-  const logoUrl = bookingSettings?.logo_url;
-  const coverUrl = bookingSettings?.cover_url;
   const businessName = bookingSettings?.business_name || tenant.name;
-  const businessDescription =
-    bookingSettings?.business_description ||
-    'Atendimento especializado, beleza e bem-estar com horário marcado e experiência exclusiva.';
+  const logoUrl = bookingSettings?.logo_url;
   const businessAddress = bookingSettings?.address || tenant.settings?.address;
   const businessCity = bookingSettings?.city || tenant.settings?.city;
   const businessWhatsapp = bookingSettings?.whatsapp || tenant.settings?.whatsapp;
   const businessPhone = bookingSettings?.phone || tenant.settings?.phone;
   const instagram = bookingSettings?.instagram;
   const facebook = bookingSettings?.facebook;
-  const website = bookingSettings?.website;
-  const bookingNotice = bookingSettings?.booking_notice || tenant.settings?.booking_notice;
-  const allowedStart = bookingSettings?.allowed_start_time || '08:00';
-  const allowedEnd = bookingSettings?.allowed_end_time || '20:00';
-
-  // Modal para foto ampliada do portfólio
-  const [selectedPhoto, setSelectedPhoto] = useState<PortfolioItem | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('Todos');
+  const allowedStart = bookingSettings?.allowed_start_time || '08h';
+  const allowedEnd = bookingSettings?.allowed_end_time || '20h';
 
   // Formatação de Moeda
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
   };
 
-  // Categorias únicas de serviços
-  const serviceCategories = useMemo(() => {
-    const cats = Array.from(new Set(services.map((s) => s.category || 'Geral')));
-    return cats;
-  }, [services]);
+  // Imagens padrão de fallback para serviços caso o serviço não possua foto cadastrada
+  const sampleServiceImages = [
+    '/img/service_1.png',
+    '/img/service_2.png',
+    '/img/service_3.png',
+    '/img/service_4.png',
+  ];
 
-  // Serviços filtrados por categoria
-  const filteredServices = useMemo(() => {
-    if (selectedCategory === 'Todos') return services;
-    return services.filter((s) => (s.category || 'Geral') === selectedCategory);
-  }, [services, selectedCategory]);
+  // Profissional em destaque (o primeiro ativo cadastrado)
+  const featuredProf: PublicProfessional | undefined = professionals[0];
 
-  // Lista de especialidades únicas para exibir no Hero
-  const specialtyTags = useMemo(() => {
-    const fromServices = Array.from(new Set(services.map((s) => s.category).filter(Boolean)));
-    const fromProfs = Array.from(new Set(professionals.map((p) => p.specialty).filter(Boolean)));
-    const combined = Array.from(new Set([...fromServices, ...fromProfs])).slice(0, 4);
-    return combined;
-  }, [services, professionals]);
-
-  // Iniciais elegantes para avatar fallback
-  const initials = businessName
-    ? businessName
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((w) => w[0])
-        .join('')
-        .toUpperCase()
-    : 'ZL';
-
-  const hasServices = services.length > 0;
-  const hasProfessionals = professionals.length > 0;
-  const hasPortfolio = portfolio.length > 0;
-  const hasAnyPublicContent = hasServices || hasProfessionals || hasPortfolio;
+  // Galeria de imagens reais cadastradas pelo tenant
+  const galleryItems = useMemo(() => {
+    if (portfolio && portfolio.length > 0) {
+      return portfolio.slice(0, 4);
+    }
+    return [];
+  }, [portfolio]);
 
   return (
-    <div className="min-h-screen bg-[#FAF6F3] flex flex-col font-sans text-[#2C1810] selection:bg-[#EADBCE] selection:text-[#2C1810]">
-      {/* ── 1. CABEÇALHO FROSTED GLASS TRANSLÚCIDO ──────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-[#FAF6F3]/85 backdrop-blur-md border-b border-[#EAD9D3]/70 transition-all">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-4">
-          {/* Marca / Estabelecimento */}
-          <Link href={`/p/${tenant.slug}`} className="flex items-center gap-3 group min-w-0">
-            {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={logoUrl}
-                alt={businessName}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl object-cover border border-[#EAD9D3] shadow-xs group-hover:scale-105 transition-transform"
-              />
-            ) : (
-              <div
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center font-serif font-bold text-base sm:text-lg text-white shadow-xs group-hover:scale-105 transition-transform"
-                style={{ backgroundColor: primaryColor }}
-              >
-                {initials}
-              </div>
-            )}
-            <div className="min-w-0">
-              <span className="block font-serif font-bold text-sm sm:text-base text-[#2C1810] truncate tracking-tight">
-                {businessName}
-              </span>
-              <span className="block text-[11px] font-medium text-[#8C7A74] truncate">
-                {businessCity || 'Clínica & Bem-Estar'}
-              </span>
-            </div>
-          </Link>
+    <div
+      className="min-h-screen flex flex-col font-sans selection:bg-[#EADBCE] selection:text-[#211C1B]"
+      style={{ backgroundColor: '#FCF8F5', color: '#211C1B' }}
+    >
+      {/* ── 1. HEADER (ALTURA 100px) ────────────────────────────────────────── */}
+      <header
+        className="w-full sticky top-0 z-40 border-b border-[#EAD9D3]/40 shadow-xs"
+        style={{ height: '100px', backgroundColor: '#FCF8F5' }}
+      >
+        <div className="max-w-[1360px] mx-auto px-6 lg:px-10 h-full flex items-center justify-between">
+          {/* Logo / Nome do Estabelecimento (à esquerda, max 280x64px) */}
+          <div className="flex items-center min-w-0 max-w-[280px]">
+            <Link href={`/p/${tenant.slug}`} className="flex items-center gap-3 group">
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={logoUrl}
+                  alt={businessName}
+                  className="max-h-16 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+                />
+              ) : (
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#F4E4E1] text-[#BD7165]">
+                    <Flower2 className="w-6 h-6 stroke-[1.5]" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-serif text-2xl font-bold tracking-tight text-[#9F4039] leading-tight">
+                      {businessName}
+                    </span>
+                    <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-[#625D5A]">
+                      Estética & Bem-Estar
+                    </span>
+                  </div>
+                </div>
+              )}
+            </Link>
+          </div>
 
-          {/* Ações Topo */}
-          <div className="flex items-center gap-2.5 shrink-0">
-            {businessWhatsapp && (
-              <a
-                href={`https://wa.me/55${businessWhatsapp.replace(/\D/g, '')}?text=Olá,%20gostaria%20de%20informações%20sobre%20os%20serviços.`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 hover:bg-emerald-100 transition-colors shadow-2xs"
-                title="Conversar pelo WhatsApp"
-              >
-                <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                <span>WhatsApp</span>
-              </a>
-            )}
+          {/* Navegação Central: Início, Serviços, Profissionais, Sobre, Contato */}
+          <nav className="hidden md:flex items-center gap-8 text-[15px] font-medium text-[#625D5A]">
+            <Link
+              href="#inicio"
+              className="text-[#9F4039] font-semibold transition-colors hover:text-[#BD7165]"
+            >
+              Início
+            </Link>
+            <Link
+              href="#servicos"
+              className="hover:text-[#211C1B] transition-colors"
+            >
+              Serviços
+            </Link>
+            <Link
+              href="#profissionais"
+              className="hover:text-[#211C1B] transition-colors"
+            >
+              Profissionais
+            </Link>
+            <Link
+              href="#sobre"
+              className="hover:text-[#211C1B] transition-colors"
+            >
+              Sobre
+            </Link>
+            <Link
+              href="#contato"
+              className="hover:text-[#211C1B] transition-colors"
+            >
+              Contato
+            </Link>
+          </nav>
 
+          {/* Botão Superior Direito: Agende seu horário (aprox 205x48px) */}
+          <div className="flex items-center shrink-0">
             <Link
               href={`/agendar/${tenant.slug}`}
-              className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white shadow-xs hover:opacity-95 hover:shadow-md transition-all active:scale-98"
-              style={{ backgroundColor: primaryColor }}
+              className="inline-flex items-center justify-center gap-2 px-6 h-12 rounded-[12px] text-sm font-medium text-white transition-all shadow-xs hover:opacity-95 active:scale-98"
+              style={{ backgroundColor: '#BD7165' }}
             >
-              <Calendar className="w-4 h-4" />
-              <span>Agendar</span>
+              <Calendar className="w-4 h-4 stroke-[2]" />
+              <span>Agende seu horário</span>
             </Link>
           </div>
         </div>
       </header>
 
-      {/* ── 2. HERO PRINCIPAL PREMIUM ────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#2E1F26] via-[#35252D] to-[#251820] text-white">
-        {/* Imagem de Capa ou Textura de Fundo Refinada */}
-        {coverUrl ? (
-          <div className="absolute inset-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={coverUrl}
-              alt="Capa do Estabelecimento"
-              className="w-full h-full object-cover opacity-30 sm:opacity-35"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#251820] via-[#2E1F26]/70 to-transparent" />
-          </div>
-        ) : (
-          <div className="absolute inset-0 opacity-20 pointer-events-none">
-            <div
-              className="w-96 h-96 rounded-full blur-3xl absolute -top-20 -right-20"
-              style={{ backgroundColor: primaryColor }}
-            />
-            <div className="w-80 h-80 rounded-full blur-3xl bg-[#B87070] absolute -bottom-20 -left-20" />
-          </div>
-        )}
+      {/* ── 2. HERO SECTION (ALTURA DESKTOP 960px) ─────────────────────────── */}
+      <section
+        id="inicio"
+        className="relative w-full overflow-hidden"
+        style={{
+          minHeight: '620px',
+          backgroundColor: '#FCF8F5',
+        }}
+      >
+        {/* Imagem de Fundo Oficial em Cover com transição inferior orgânica suave */}
+        <div
+          className="absolute inset-0 bg-cover bg-right lg:bg-center pointer-events-none"
+          style={{
+            backgroundImage: "url('/img/showcase_hero_bg.png')",
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
 
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-20 lg:py-24">
-          <div className="max-w-3xl space-y-5 text-center sm:text-left">
-            {/* Badge de Destaque */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-medium text-[#F4DDD5] shadow-xs">
-              <Sparkles className="w-3.5 h-3.5 text-[#F2C0B8]" />
-              <span>Espaço Oficial de Atendimento & Beleza</span>
+        {/* Camada suave semi-transparente para garantir contraste legível da coluna de texto */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#FCF8F5] via-[#FCF8F5]/85 via-50% to-transparent pointer-events-none md:via-40%" />
+
+        <div className="relative max-w-[1360px] mx-auto px-6 lg:px-10 h-full min-h-[620px] lg:min-h-[860px] flex items-center">
+          {/* Área Textual: alinhada à esquerda a 7%, largura max 610px */}
+          <div className="w-full max-w-[610px] z-10 py-16 lg:py-24 space-y-6">
+            {/* Eyebrow */}
+            <div className="inline-block">
+              <span className="text-[13px] sm:text-[15px] font-semibold tracking-[5px] uppercase text-[#BD7165] font-sans">
+                Estética • Beleza • Bem-estar
+              </span>
             </div>
 
-            {/* Nome e Título */}
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-serif font-normal tracking-tight text-white leading-tight">
-              {businessName}
+            {/* Título Principal Serifado 72px (quebrado em 3 linhas) */}
+            <h1 className="font-serif text-4xl sm:text-6xl lg:text-[70px] leading-[1.08] tracking-tight font-normal">
+              <span className="block text-[#211C1B]">Mais que estética,</span>
+              <span className="block text-[#BD7165] italic font-normal">
+                um cuidado completo
+              </span>
+              <span className="block text-[#BD7165]">para você.</span>
             </h1>
 
-            {/* Descrição Comercial */}
-            <p className="text-sm sm:text-base text-[#EADBCE] leading-relaxed max-w-2xl font-light">
-              {businessDescription}
+            {/* Parágrafo de Apoio (21px, line-height 1.65, max-w 490px) */}
+            <p className="text-base sm:text-lg lg:text-[20px] text-[#625D5A] leading-[1.65] max-w-[490px] pt-2">
+              Beleza, saúde e bem-estar em um só lugar. Profissionais qualificados, atendimento
+              humanizado e um ambiente pensado para a sua melhor experiência.
             </p>
 
-            {/* Especialidades / Tags */}
-            {specialtyTags.length > 0 && (
-              <div className="pt-1 flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                {specialtyTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 rounded-full text-xs font-medium bg-white/10 backdrop-blur-xs text-[#FAF0EC] border border-white/10"
-                  >
-                    • {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* Localização e Horário */}
-            <div className="pt-2 flex flex-col sm:flex-row items-center sm:items-center gap-3 sm:gap-6 text-xs text-[#DEC5BC]">
-              {businessAddress && (
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-[#F2C0B8] shrink-0" />
-                  <span>
-                    {businessAddress}
-                    {businessCity ? `, ${businessCity}` : ''}
-                  </span>
+            {/* CTA Principal (360x68px, terracotta, ícone calendário e seta) */}
+            <div className="pt-4">
+              <Link
+                href={`/agendar/${tenant.slug}`}
+                className="inline-flex items-center justify-between px-7 h-[64px] sm:h-[68px] w-full sm:w-[360px] rounded-[12px] text-base sm:text-[17px] font-medium text-white transition-all shadow-md hover:opacity-95 active:scale-98"
+                style={{ backgroundColor: '#BD7165' }}
+              >
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-5 h-5 stroke-[2]" />
+                  <span>Agende seu horário agora</span>
                 </div>
-              )}
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-[#F2C0B8] shrink-0" />
-                <span>
-                  Segunda a Sábado • {allowedStart} às {allowedEnd}
-                </span>
+                <ArrowRight className="w-5 h-5 stroke-[2]" />
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Transição inferior orgânica suave */}
+        <div className="relative w-full overflow-hidden leading-none z-10">
+          <svg
+            className="w-full h-8 sm:h-12 lg:h-14 fill-[#FCF8F5]"
+            viewBox="0 0 1440 60"
+            preserveAspectRatio="none"
+          >
+            <path d="M0,0 C320,50 720,60 1440,20 L1440,60 L0,60 Z" />
+          </svg>
+        </div>
+      </section>
+
+      {/* ── 3. BENEFÍCIOS (ALTURA APROX. 215px) ────────────────────────────── */}
+      <section
+        id="sobre"
+        className="w-full py-12 lg:py-16 border-b border-[#EAD9D3]/40"
+        style={{ backgroundColor: '#FCF8F5' }}
+      >
+        <div className="max-w-[1360px] mx-auto px-6 lg:px-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8 items-start">
+            {/* Benefício 1 */}
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-[86px] h-[86px] rounded-full flex items-center justify-center bg-[#F7ECE9] text-[#BD7165] border border-[#EAD9D3]/70">
+                <Gem className="w-8 h-8 stroke-[1.5]" />
+              </div>
+              <p className="text-base sm:text-[18px] font-medium text-[#211C1B] leading-snug">
+                Profissionais
+                <br />
+                qualificados
+              </p>
+            </div>
+
+            {/* Benefício 2 */}
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-[86px] h-[86px] rounded-full flex items-center justify-center bg-[#F7ECE9] text-[#BD7165] border border-[#EAD9D3]/70">
+                <Flower2 className="w-8 h-8 stroke-[1.5]" />
+              </div>
+              <p className="text-base sm:text-[18px] font-medium text-[#211C1B] leading-snug">
+                Ambiente
+                <br />
+                acolhedor
+              </p>
+            </div>
+
+            {/* Benefício 3 */}
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-[86px] h-[86px] rounded-full flex items-center justify-center bg-[#F7ECE9] text-[#BD7165] border border-[#EAD9D3]/70">
+                <ShieldCheck className="w-8 h-8 stroke-[1.5]" />
+              </div>
+              <p className="text-base sm:text-[18px] font-medium text-[#211C1B] leading-snug">
+                Atendimento
+                <br />
+                personalizado
+              </p>
+            </div>
+
+            {/* Benefício 4 */}
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-[86px] h-[86px] rounded-full flex items-center justify-center bg-[#F7ECE9] text-[#BD7165] border border-[#EAD9D3]/70">
+                <Heart className="w-8 h-8 stroke-[1.5]" />
+              </div>
+              <p className="text-base sm:text-[18px] font-medium text-[#211C1B] leading-snug">
+                Beleza com
+                <br />
+                saúde e bem-estar
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 4. SERVIÇOS (SEÇÃO APROX. 760px) ─────────────────────────────────── */}
+      <section
+        id="servicos"
+        className="w-full py-20 lg:py-24"
+        style={{ backgroundColor: '#FCF8F5' }}
+      >
+        <div className="max-w-[1360px] mx-auto px-6 lg:px-10 space-y-12">
+          {/* Cabeçalho Central */}
+          <div className="text-center space-y-3">
+            <span className="text-[13px] font-semibold tracking-[5px] uppercase text-[#BD7165]">
+              Nossos Serviços
+            </span>
+            <h2 className="font-serif text-3xl sm:text-5xl lg:text-[54px] font-normal text-[#211C1B] tracking-tight">
+              Cuidados para realçar a sua melhor versão
+            </h2>
+            <p className="text-sm sm:text-[18px] text-[#625D5A] max-w-xl mx-auto font-light">
+              Escolha o serviço ideal e agende seu horário de forma rápida e prática.
+            </p>
+          </div>
+
+          {/* Grid de Serviços reais do tenant */}
+          {services.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {services.map((service, idx) => {
+                const imgFallback = sampleServiceImages[idx % sampleServiceImages.length];
+                return (
+                  <div
+                    key={service.id}
+                    className="bg-white rounded-[18px] overflow-hidden border border-[#EAD9D3]/60 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                  >
+                    {/* Imagem do Serviço (210px altura cover) */}
+                    <div className="relative w-full h-[210px] bg-[#F2E0DC] overflow-hidden">
+                      <Image
+                        src={imgFallback}
+                        alt={service.name}
+                        fill
+                        className="object-cover transition-transform duration-300 hover:scale-105"
+                      />
+                    </div>
+
+                    {/* Conteúdo Interno (padding 24px) */}
+                    <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                      <div className="space-y-1">
+                        <h3 className="font-semibold text-[20px] text-[#211C1B] leading-snug">
+                          {service.name}
+                        </h3>
+                        <p className="text-[14px] text-[#625D5A]">
+                          {service.category || 'Procedimento'}
+                        </p>
+                        <div className="flex items-center gap-1.5 text-[14px] text-[#625D5A] pt-1">
+                          <Clock className="w-3.5 h-3.5 text-[#BD7165]" />
+                          <span>{service.duration_minutes} min</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2">
+                        <span className="block font-serif text-[26px] font-bold text-[#BD7165]">
+                          {formatCurrency(service.price)}
+                        </span>
+                      </div>
+
+                      <div className="pt-2">
+                        <Link
+                          href={`/agendar/${tenant.slug}?serviceId=${service.id}`}
+                          className="w-full inline-flex items-center justify-center h-[52px] rounded-[12px] text-sm font-semibold text-white transition-all shadow-xs hover:opacity-95"
+                          style={{ backgroundColor: '#BD7165' }}
+                        >
+                          Agendar
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12 px-6 rounded-2xl bg-white border border-[#EAD9D3]">
+              <p className="text-sm text-[#625D5A]">
+                Nenhum serviço disponível no momento para reserva online.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ── 5. PROFISSIONAIS (SEÇÃO APROX. 540px) ────────────────────────────── */}
+      <section
+        id="profissionais"
+        className="w-full py-20 lg:py-24 border-t border-[#EAD9D3]/40"
+        style={{ backgroundColor: '#FCF8F5' }}
+      >
+        <div className="max-w-[1360px] mx-auto px-6 lg:px-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+            {/* Esquerda: 40% (5 colunas) */}
+            <div className="lg:col-span-5 space-y-5">
+              <span className="text-[13px] font-semibold tracking-[5px] uppercase text-[#BD7165]">
+                Nossos Profissionais
+              </span>
+              <h2 className="font-serif text-3xl sm:text-5xl lg:text-[52px] font-normal text-[#211C1B] leading-tight tracking-tight">
+                Especialistas
+                <br />
+                para cuidar de você
+              </h2>
+              <p className="text-base sm:text-[18px] text-[#625D5A] leading-relaxed max-w-md font-light">
+                Nossa equipe está pronta para oferecer o melhor atendimento, com técnica,
+                experiência e muito carinho.
+              </p>
+              <div className="pt-3">
+                <Link
+                  href={`/agendar/${tenant.slug}`}
+                  className="inline-flex items-center justify-center gap-2 px-7 h-[56px] rounded-[12px] text-sm sm:text-base font-medium text-white transition-all shadow-xs hover:opacity-95"
+                  style={{ backgroundColor: '#BD7165' }}
+                >
+                  <span>Agendar com nossa equipe</span>
+                  <ArrowRight className="w-4 h-4 stroke-[2]" />
+                </Link>
               </div>
             </div>
 
-            {/* Ações de Conversão no Hero */}
-            <div className="pt-4 flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-3">
-              <Link
-                href={`/agendar/${tenant.slug}`}
-                className="w-full sm:w-auto px-7 py-3.5 rounded-2xl text-white text-xs sm:text-sm font-bold uppercase tracking-wider shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
-                style={{ backgroundColor: primaryColor }}
-              >
-                <Calendar className="w-4 h-4" />
-                <span>Agendar Horário Online</span>
-                <ChevronRight className="w-4 h-4" />
-              </Link>
+            {/* Direita: 60% (7 colunas) — Card Horizontal 740x380px */}
+            <div className="lg:col-span-7">
+              {featuredProf ? (
+                <div className="bg-white rounded-[18px] border border-[#EAD9D3]/70 shadow-xs overflow-hidden flex flex-col sm:flex-row items-center">
+                  {/* Foto do Profissional (285x380px) */}
+                  <div className="relative w-full sm:w-[285px] h-[320px] sm:h-[380px] shrink-0 bg-[#F2E0DC]">
+                    <Image
+                      src={featuredProf.avatar_url || '/img/showcase_prof_default.png'}
+                      alt={featuredProf.full_name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
 
-              {businessWhatsapp && (
-                <a
-                  href={`https://wa.me/55${businessWhatsapp.replace(/\D/g, '')}?text=Olá,%20gostaria%20de%20informações%20sobre%20os%20serviços.`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-white/10 hover:bg-white/15 backdrop-blur-md text-white text-xs sm:text-sm font-semibold border border-white/20 transition-all flex items-center justify-center gap-2"
-                >
-                  <MessageCircle className="w-4 h-4 text-emerald-300" />
-                  <span>Falar no WhatsApp</span>
-                </a>
+                  {/* Conteúdo à Direita (padding 36px) */}
+                  <div className="p-6 sm:p-9 flex-1 space-y-3">
+                    <h3 className="font-serif text-2xl sm:text-[28px] font-normal text-[#211C1B]">
+                      {featuredProf.full_name}
+                    </h3>
+                    <p className="text-[16px] font-medium text-[#BD7165]">
+                      {featuredProf.specialty || 'Especialista em Beleza & Estética'}
+                    </p>
+                    <p className="text-[15px] text-[#625D5A] leading-relaxed font-light">
+                      {featuredProf.bio ||
+                        'Especialista em procedimentos corporais e estéticos, com foco em relaxamento, saúde e bem-estar.'}
+                    </p>
+
+                    <div className="pt-4">
+                      <Link
+                        href={`/agendar/${tenant.slug}?professionalId=${featuredProf.id}`}
+                        className="inline-flex items-center justify-center gap-2 px-6 h-[50px] rounded-[12px] text-sm font-medium border border-[#BD7165] text-[#BD7165] hover:bg-[#FAF0EC] transition-all"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        <span>Ver horários</span>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white p-8 rounded-[18px] border border-[#EAD9D3] text-center">
+                  <p className="text-sm text-[#625D5A]">
+                    Equipe em preparação para agendamento online.
+                  </p>
+                </div>
               )}
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── 3. AVISO COMERCIAL DISCRETO (SE CONFIGURADO) ───────────────────── */}
-      {bookingNotice && (
-        <aside className="bg-[#FAF0EC] border-b border-[#EADBCE] py-3 px-4">
-          <div className="max-w-6xl mx-auto flex items-center justify-center gap-2.5 text-xs text-[#5C4540] text-center">
-            <span className="font-bold text-[#2C1810] px-2 py-0.5 rounded bg-white/80 border border-[#EADBCE]">
-              Aviso
-            </span>
-            <span>{bookingNotice}</span>
-          </div>
-        </aside>
-      )}
-
-      {/* ── 4. CORPO DA VITRINE COM ESTADOS VAZIOS INTELIGENTES ──────────────── */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-10 sm:py-16 space-y-16">
-        {/* SEÇÃO 1: CATÁLOGO DE SERVIÇOS E TRATAMENTOS */}
-        {hasServices && (
-          <section id="servicos" className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#EAD9D3]/80 pb-4">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#A86B62]">
-                  Cardápio de Procedimentos
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#2C1810] mt-0.5">
-                  Serviços & Tratamentos
-                </h2>
-                <p className="text-xs sm:text-sm text-[#7D6B65] mt-1 font-light">
-                  Selecione o procedimento desejado para agendar o seu momento com facilidade.
-                </p>
-              </div>
-
-              <Link
-                href={`/agendar/${tenant.slug}`}
-                className="inline-flex items-center gap-1.5 text-xs font-bold hover:underline self-start sm:self-auto"
-                style={{ color: primaryColor }}
-              >
-                <span>Ver todos na Agenda</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            {/* Pílulas de Filtro por Categoria */}
-            {serviceCategories.length > 1 && (
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategory('Todos')}
-                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 cursor-pointer ${
-                    selectedCategory === 'Todos'
-                      ? 'bg-[#2C1810] text-white shadow-2xs'
-                      : 'bg-white text-[#7D6B65] border border-[#EAD9D3] hover:border-[#2C1810]'
-                  }`}
-                >
-                  Todos ({services.length})
-                </button>
-                {serviceCategories.map((cat) => {
-                  const count = services.filter((s) => (s.category || 'Geral') === cat).length;
-                  const isCatSelected = selectedCategory === cat;
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setSelectedCategory(cat)}
-                      className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all shrink-0 cursor-pointer ${
-                        isCatSelected
-                          ? 'bg-[#2C1810] text-white shadow-2xs'
-                          : 'bg-white text-[#7D6B65] border border-[#EAD9D3] hover:border-[#2C1810]'
-                      }`}
-                    >
-                      {cat} ({count})
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Grid de Cards de Serviços */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-              {filteredServices.map((srv) => (
-                <article
-                  key={srv.id}
-                  className="group bg-white rounded-2xl border border-[#EADBCE] p-5 hover:border-[#C4837A] hover:shadow-md transition-all flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#FAF0EC] text-[#A86B62] border border-[#F2DDD5]">
-                        {srv.category || 'Geral'}
-                      </span>
-                      <span className="text-base font-serif font-bold text-[#2C1810]">
-                        {formatCurrency(srv.price)}
-                      </span>
-                    </div>
-
-                    <div>
-                      <h3 className="text-sm sm:text-base font-bold text-[#2C1810] group-hover:text-[#A86B62] transition-colors">
-                        {srv.name}
-                      </h3>
-                      {srv.description && (
-                        <p className="text-xs text-[#7D6B65] mt-1.5 line-clamp-2 leading-relaxed font-light">
-                          {srv.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-5 pt-3.5 border-t border-[#F5EDE8] flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-xs text-[#8C7A74]">
-                      <Clock className="w-3.5 h-3.5 text-[#C4837A]" />
-                      <span>{srv.duration_minutes} min</span>
-                    </div>
-
-                    <Link
-                      href={`/agendar/${tenant.slug}?serviceId=${srv.id}`}
-                      className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-xl text-xs font-bold text-white transition-all shadow-2xs group-hover:shadow-xs hover:opacity-95"
-                      style={{ backgroundColor: primaryColor }}
-                    >
-                      <span>Agendar</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* SEÇÃO 2: EQUIPE DE PROFISSIONAIS */}
-        {hasProfessionals && (
-          <section id="equipe" className="space-y-6">
-            <div className="border-b border-[#EAD9D3]/80 pb-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#A86B62]">
-                Especialistas
+      {/* ── 6. GALERIA / NOSSO ESPAÇO (SEÇÃO APROX. 510px) ──────────────────── */}
+      {galleryItems.length > 0 && (
+        <section
+          className="w-full py-20 lg:py-24 border-t border-[#EAD9D3]/40"
+          style={{ backgroundColor: '#FCF8F5' }}
+        >
+          <div className="max-w-[1360px] mx-auto px-6 lg:px-10 space-y-12">
+            <div className="text-center space-y-2">
+              <span className="text-[13px] font-semibold tracking-[5px] uppercase text-[#BD7165]">
+                Nosso Espaço
               </span>
-              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#2C1810] mt-0.5">
-                Nossa Equipe
+              <h2 className="font-serif text-3xl sm:text-5xl font-normal text-[#211C1B]">
+                Um ambiente pensado para o seu bem-estar
               </h2>
-              <p className="text-xs sm:text-sm text-[#7D6B65] mt-1 font-light">
-                Profissionais qualificados e apaixonados pelo cuidado individual de cada cliente.
-              </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {professionals.map((prof) => (
-                <div
-                  key={prof.id}
-                  className="bg-white rounded-3xl border border-[#EADBCE] p-6 text-center flex flex-col items-center justify-between hover:border-[#C4837A] hover:shadow-md transition-all space-y-4"
-                >
-                  <div className="flex flex-col items-center space-y-3">
-                    {prof.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={prof.avatar_url}
-                        alt={prof.full_name}
-                        className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-2 border-white shadow-sm ring-2 ring-[#EADBCE]"
-                      />
-                    ) : (
-                      <div
-                        className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center font-serif font-bold text-xl text-white shadow-sm ring-2 ring-[#EADBCE]"
-                        style={{ backgroundColor: primaryColor }}
-                      >
-                        {prof.full_name
-                          .split(' ')
-                          .filter(Boolean)
-                          .slice(0, 2)
-                          .map((n) => n[0])
-                          .join('')
-                          .toUpperCase()}
-                      </div>
-                    )}
-
-                    <div className="space-y-1">
-                      <h3 className="text-base font-bold text-[#2C1810]">{prof.full_name}</h3>
-                      <p className="text-xs font-semibold text-[#A86B62]">{prof.specialty}</p>
-                      {prof.bio && (
-                        <p className="text-xs text-[#7D6B65] line-clamp-3 font-light leading-relaxed pt-1">
-                          {prof.bio}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <Link
-                    href={`/agendar/${tenant.slug}?professionalId=${prof.id}`}
-                    className="w-full py-2.5 rounded-xl border border-[#EADBCE] text-xs font-semibold text-[#2C1810] hover:bg-[#FAF0EC] hover:border-[#C4837A] hover:text-[#A86B62] transition-all flex items-center justify-center gap-1.5"
-                  >
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>Ver Horários com {prof.full_name.split(' ')[0]}</span>
-                  </Link>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* SEÇÃO 3: PORTFÓLIO / GALERIA DE TRANSFORMAÇÕES */}
-        {hasPortfolio && (
-          <section id="portfolio" className="space-y-6">
-            <div className="border-b border-[#EAD9D3]/80 pb-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#A86B62]">
-                Resultados
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#2C1810] mt-0.5">
-                Galeria de Trabalhos
-              </h2>
-              <p className="text-xs sm:text-sm text-[#7D6B65] mt-1 font-light">
-                Inspire-se com os resultados e transformações realizados em nosso espaço.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-              {portfolio.map((item) => (
+            {/* Grid de 4 imagens */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {galleryItems.map((item) => (
                 <div
                   key={item.id}
-                  onClick={() => setSelectedPhoto(item)}
-                  className="group relative aspect-square rounded-2xl overflow-hidden bg-[#2D1F27] cursor-pointer shadow-2xs border border-[#EAD9D3]"
+                  className="relative w-full h-[220px] sm:h-[265px] rounded-[14px] overflow-hidden shadow-2xs border border-[#EAD9D3]/60 group"
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={item.image_url}
                     alt={item.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    fill
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end text-white text-xs">
-                    <span className="font-bold truncate">{item.title}</span>
-                    <span className="text-[10px] text-rose-200">{item.category}</span>
-                  </div>
                 </div>
               ))}
             </div>
-          </section>
-        )}
-
-        {/* ESTADO VAZIO ELEGANTE (CASO O ESTABELECIMENTO AINDA NÃO TENHA PUBLICADO ITENS) */}
-        {!hasAnyPublicContent && (
-          <section className="text-center py-12 px-6 rounded-3xl bg-white border border-[#EADBCE] shadow-xs space-y-4 max-w-xl mx-auto">
-            <div
-              className="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center text-white shadow-xs"
-              style={{ backgroundColor: primaryColor }}
-            >
-              <Calendar className="w-7 h-7" />
-            </div>
-            <div className="space-y-1.5">
-              <h2 className="text-xl font-serif font-bold text-[#2C1810]">
-                Agendamento Online Disponível
-              </h2>
-              <p className="text-xs sm:text-sm text-[#7D6B65] font-light leading-relaxed">
-                Estamos finalizando a apresentação dos nossos procedimentos neste espaço. Você já pode
-                consultar datas e reservar seu atendimento diretamente pelo calendário.
-              </p>
-            </div>
-            <div className="pt-2">
-              <Link
-                href={`/agendar/${tenant.slug}`}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-md hover:opacity-95 transition-all"
-                style={{ backgroundColor: primaryColor }}
-              >
-                <span>Acessar Calendário de Horários</span>
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
-          </section>
-        )}
-
-        {/* SEÇÃO 4: CTA INSTITUCIONAL CONSOLIDADO & CONVITE AO CHAT */}
-        <section className="rounded-3xl bg-gradient-to-br from-[#FDF8F5] via-[#F8EEEA] to-[#F1DFD9] border border-[#EADBCE] p-8 sm:p-12 shadow-xs flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="space-y-3 text-center md:text-left max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/70 border border-[#EADBCE] text-[11px] font-semibold text-[#A86B62]">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Experiência & Praticidade</span>
-            </div>
-            <h3 className="text-2xl sm:text-3xl font-serif font-bold text-[#2C1810] leading-tight">
-              Pronta para viver o seu momento de cuidado em {businessName}?
-            </h3>
-            <p className="text-xs sm:text-sm text-[#7D6B65] font-light leading-relaxed">
-              Reserve seu horário em segundos com confirmação imediata. Dúvidas sobre procedimentos?
-              Utilize nossa Recepcionista Virtual no chat ao lado.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full sm:w-auto">
-            <Link
-              href={`/agendar/${tenant.slug}`}
-              className="w-full sm:w-auto px-7 py-3.5 rounded-2xl text-white text-xs sm:text-sm font-bold uppercase tracking-wider shadow-md hover:shadow-lg transition-all text-center"
-              style={{ backgroundColor: primaryColor }}
-            >
-              Agendar Meu Horário
-            </Link>
-
-            {businessWhatsapp && (
-              <a
-                href={`https://wa.me/55${businessWhatsapp.replace(/\D/g, '')}?text=Olá,%20gostaria%20de%20informações.`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-white border border-[#EADBCE] text-[#2C1810] text-xs sm:text-sm font-semibold hover:bg-[#FAF0EC] transition-colors text-center"
-              >
-                Falar Conosco
-              </a>
-            )}
           </div>
         </section>
-      </main>
-
-      {/* ── 5. MODAL DE FOTO DO PORTFÓLIO AMPLIAÇÃO ─────────────────────────── */}
-      {selectedPhoto && (
-        <div
-          onClick={() => setSelectedPhoto(null)}
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 cursor-pointer animate-in fade-in"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="max-w-xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl relative cursor-default"
-          >
-            <button
-              onClick={() => setSelectedPhoto(null)}
-              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
-              title="Fechar"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={selectedPhoto.image_url}
-              alt={selectedPhoto.title}
-              className="w-full max-h-[70vh] object-contain bg-[#1E1115]"
-            />
-            <div className="p-5 space-y-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-[#A86B62]">
-                {selectedPhoto.category}
-              </span>
-              <h3 className="text-base font-bold text-[#2C1810]">{selectedPhoto.title}</h3>
-              {selectedPhoto.description && (
-                <p className="text-xs text-[#7D6B65] font-light">{selectedPhoto.description}</p>
-              )}
-            </div>
-          </div>
-        </div>
       )}
 
-      {/* ── 6. RODAPÉ REFINADO E INFORMAÇÕES DE CONTATO ────────────────────── */}
-      <footer className="border-t border-[#EAD9D3] bg-white text-xs text-[#7D6B65] mt-auto">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-            {/* Coluna 1: Dados do Estabelecimento */}
-            <div className="space-y-2">
-              <span className="font-serif font-bold text-base text-[#2C1810]">{businessName}</span>
-              <p className="text-xs text-[#8C7A74] font-light leading-relaxed max-w-sm">
-                {businessDescription}
-              </p>
-            </div>
+      {/* ── 7. FAIXA DE CONTATO / AGENDAMENTO (ALTURA 260px) ────────────────── */}
+      <section
+        id="contato"
+        className="relative w-full overflow-hidden text-white mt-auto"
+        style={{
+          backgroundColor: '#BF7569',
+          minHeight: '220px',
+        }}
+      >
+        {/* Background botânico suave de apoio */}
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-30 pointer-events-none"
+          style={{ backgroundImage: "url('/img/showcase_contact_bg.png')" }}
+        />
 
-            {/* Coluna 2: Localização e Atendimento */}
-            <div className="space-y-2 text-xs">
-              <span className="font-bold text-[#2C1810] uppercase tracking-wider text-[11px]">
-                Atendimento
-              </span>
-              {businessAddress && (
-                <p className="flex items-start gap-1.5 text-[#7D6B65]">
-                  <MapPin className="w-3.5 h-3.5 text-[#C4837A] shrink-0 mt-0.5" />
-                  <span>
-                    {businessAddress}
-                    {businessCity ? ` • ${businessCity}` : ''}
-                  </span>
-                </p>
-              )}
-              <p className="flex items-center gap-1.5 text-[#7D6B65]">
-                <Clock className="w-3.5 h-3.5 text-[#C4837A] shrink-0" />
-                <span>
-                  Segunda a Sábado • {allowedStart} às {allowedEnd}
-                </span>
-              </p>
+        <div className="relative max-w-[1360px] mx-auto px-6 lg:px-16 py-12 lg:py-14 flex flex-col lg:flex-row items-center justify-between gap-8">
+          {/* Bloco A: Endereço */}
+          <div className="flex items-center gap-4 text-left">
+            <div className="w-[56px] h-[56px] rounded-full flex items-center justify-center bg-white/20 border border-white/25 shrink-0">
+              <MapPin className="w-6 h-6 stroke-[1.8]" />
             </div>
-
-            {/* Coluna 3: Contato & Redes */}
-            <div className="space-y-2.5">
-              <span className="font-bold text-[#2C1810] uppercase tracking-wider text-[11px]">
-                Conecte-se
+            <div>
+              <span className="block text-[17px] font-medium leading-tight">
+                Nosso Endereço
               </span>
-              <div className="flex flex-wrap items-center gap-2">
-                {instagram && (
-                  <a
-                    href={
-                      instagram.startsWith('http')
-                        ? instagram
-                        : `https://instagram.com/${instagram.replace('@', '')}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-full bg-[#FAF0EC] border border-[#EADBCE] text-[#A86B62] font-semibold text-xs hover:bg-[#F2DDD5] transition-colors"
-                  >
-                    Instagram
-                  </a>
-                )}
-                {facebook && (
-                  <a
-                    href={facebook.startsWith('http') ? facebook : `https://facebook.com/${facebook}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-full bg-[#FAF0EC] border border-[#EADBCE] text-[#A86B62] font-semibold text-xs hover:bg-[#F2DDD5] transition-colors"
-                  >
-                    Facebook
-                  </a>
-                )}
-                {website && (
-                  <a
-                    href={website.startsWith('http') ? website : `https://${website}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-3 py-1.5 rounded-full bg-[#FAF0EC] border border-[#EADBCE] text-[#A86B62] font-semibold text-xs hover:bg-[#F2DDD5] transition-colors flex items-center gap-1"
-                  >
-                    <Globe className="w-3 h-3" />
-                    <span>Site</span>
-                  </a>
-                )}
-              </div>
+              <span className="block text-[15px] opacity-90 font-light mt-0.5">
+                {businessAddress || 'Endereço sob consulta'}
+                {businessCity ? `, ${businessCity}` : ''}
+              </span>
             </div>
           </div>
 
-          <div className="pt-6 border-t border-[#F2E5E0] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[#A3928B]">
-            <p>© {new Date().getFullYear()} {businessName}. Todos os direitos reservados.</p>
-            <p className="flex items-center gap-1">
-              <span>Tecnologia & Gestão por</span>
-              <strong className="text-[#8C5D55] font-semibold">ZELUNIA</strong>
+          {/* Bloco B: Horário de Atendimento */}
+          <div className="flex items-center gap-4 text-left">
+            <div className="w-[56px] h-[56px] rounded-full flex items-center justify-center bg-white/20 border border-white/25 shrink-0">
+              <Clock className="w-6 h-6 stroke-[1.8]" />
+            </div>
+            <div>
+              <span className="block text-[17px] font-medium leading-tight">
+                Horário de Atendimento
+              </span>
+              <span className="block text-[15px] opacity-90 font-light mt-0.5">
+                Segunda a Sábado • {allowedStart} às {allowedEnd}
+              </span>
+            </div>
+          </div>
+
+          {/* Bloco C: CTA Branco 'Agende seu horário' */}
+          <div className="flex flex-col items-center">
+            <Link
+              href={`/agendar/${tenant.slug}`}
+              className="inline-flex items-center justify-center gap-2.5 px-8 h-[60px] sm:h-[66px] w-full sm:w-[330px] rounded-[12px] text-base font-semibold transition-all shadow-md active:scale-98"
+              style={{ backgroundColor: '#FFFFFF', color: '#BD7165' }}
+            >
+              <Calendar className="w-5 h-5 text-[#BD7165]" />
+              <span>Agende seu horário</span>
+            </Link>
+            <span className="text-[13px] opacity-80 mt-2 font-light">
+              É rápido, prático e seguro
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 8. FOOTER (ALTURA APROX. 200px) ─────────────────────────────────── */}
+      <footer
+        className="w-full py-10 lg:py-12 border-t border-[#EAD9D3]/50"
+        style={{ backgroundColor: '#FCF8F5' }}
+      >
+        <div className="max-w-[1360px] mx-auto px-6 lg:px-10 space-y-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            {/* Logo / Nome do Estabelecimento à esquerda */}
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F4E4E1] text-[#BD7165]">
+                <Flower2 className="w-5 h-5" />
+              </div>
+              <span className="font-serif font-bold text-xl text-[#9F4039]">
+                {businessName}
+              </span>
+            </div>
+
+            {/* Links Centrais */}
+            <nav className="flex flex-wrap items-center justify-center gap-6 text-[14px] text-[#625D5A]">
+              <Link href="#inicio" className="hover:text-[#211C1B] transition-colors">
+                Início
+              </Link>
+              <Link href="#servicos" className="hover:text-[#211C1B] transition-colors">
+                Serviços
+              </Link>
+              <Link href="#profissionais" className="hover:text-[#211C1B] transition-colors">
+                Profissionais
+              </Link>
+              <Link href="#sobre" className="hover:text-[#211C1B] transition-colors">
+                Sobre
+              </Link>
+              <Link href="#contato" className="hover:text-[#211C1B] transition-colors">
+                Contato
+              </Link>
+            </nav>
+
+            {/* Redes Sociais à direita (36x36px) */}
+            <div className="flex items-center gap-3">
+              {businessWhatsapp && (
+                <a
+                  href={`https://wa.me/55${businessWhatsapp.replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-full flex items-center justify-center bg-white border border-[#EAD9D3] text-[#211C1B] hover:text-[#BD7165] hover:border-[#BD7165] transition-all shadow-2xs"
+                  title="WhatsApp"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </a>
+              )}
+              {instagram && (
+                <a
+                  href={
+                    instagram.startsWith('http')
+                      ? instagram
+                      : `https://instagram.com/${instagram.replace('@', '')}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-full flex items-center justify-center bg-white border border-[#EAD9D3] text-[#211C1B] hover:text-[#BD7165] hover:border-[#BD7165] transition-all shadow-2xs"
+                  title="Instagram"
+                >
+                  <InstagramIcon className="w-4 h-4" />
+                </a>
+              )}
+              {facebook && (
+                <a
+                  href={facebook.startsWith('http') ? facebook : `https://facebook.com/${facebook}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-full flex items-center justify-center bg-white border border-[#EAD9D3] text-[#211C1B] hover:text-[#BD7165] hover:border-[#BD7165] transition-all shadow-2xs"
+                  title="Facebook"
+                >
+                  <FacebookIcon className="w-4 h-4" />
+                </a>
+              )}
+              {businessPhone && !businessWhatsapp && (
+                <a
+                  href={`tel:${businessPhone.replace(/\D/g, '')}`}
+                  className="w-9 h-9 rounded-full flex items-center justify-center bg-white border border-[#EAD9D3] text-[#211C1B] hover:text-[#BD7165] transition-all shadow-2xs"
+                  title="Telefone"
+                >
+                  <Phone className="w-4 h-4" />
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Copyright Centralizado Abaixo */}
+          <div className="pt-4 border-t border-[#EAD9D3]/40 text-center text-[13px] text-[#625D5A]">
+            <p>
+              © {new Date().getFullYear()} {businessName}. Todos os direitos reservados.
             </p>
           </div>
         </div>
       </footer>
 
-      {/* ── 7. WIDGET DE RECEPCIONISTA VIRTUAL FLUTUANTE ────────────────────── */}
+      {/* ── 9. RECEPCIONISTA VIRTUAL COM IA (FLUTUANTE) ──────────────────────── */}
       <AIChatWidget catalog={catalog} />
     </div>
   );
