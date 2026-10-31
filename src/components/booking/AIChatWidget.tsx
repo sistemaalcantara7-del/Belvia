@@ -672,16 +672,20 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
 
   return (
     <>
-      {/* Botão Flutuante Discreto no Canto Inferior Direito */}
+      {/* Botão Flutuante Discreto no Canto Inferior Direito (com safe area e tamanho adaptado ao mobile) */}
       {!isOpen && (
         <button
           type="button"
           onClick={handleOpenChat}
-          className="fixed bottom-5 right-5 z-40 px-4 py-3 rounded-full text-white shadow-xl hover:scale-105 transition-all flex items-center gap-2.5 group cursor-pointer"
-          style={{ backgroundColor: primaryColor }}
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 p-3 sm:px-4 sm:py-3 rounded-full text-white shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group cursor-pointer border border-white/20"
+          style={{
+            backgroundColor: primaryColor,
+            marginBottom: 'env(safe-area-inset-bottom, 0px)',
+          }}
+          aria-label="Abrir atendimento virtual com IA"
         >
-          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-            <Bot className="w-5 h-5 text-white" />
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+            <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
           <div className="text-left hidden sm:block">
             <p className="text-[10px] font-bold uppercase tracking-wider text-rose-100 leading-none">
@@ -689,7 +693,7 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
             </p>
             <p className="text-xs font-semibold leading-tight mt-0.5">Falar com Assistente</p>
           </div>
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
         </button>
       )}
 

@@ -84,32 +84,31 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
       className="min-h-screen flex flex-col font-sans selection:bg-[#EADBCE] selection:text-[#211C1B]"
       style={{ backgroundColor: '#FCF8F5', color: '#211C1B' }}
     >
-      {/* ── 1. HEADER (ALTURA 100px) ────────────────────────────────────────── */}
+      {/* ── 1. HEADER (ALTURA 100px DESKTOP / 76px MOBILE) ────────────────── */}
       <header
-        className="w-full sticky top-0 z-40 border-b border-[#EAD9D3]/40 shadow-xs"
-        style={{ height: '100px', backgroundColor: '#FCF8F5' }}
+        className="w-full sticky top-0 z-40 border-b border-[#EAD9D3]/40 shadow-xs h-[76px] md:h-[100px] bg-[#FCF8F5]"
       >
-        <div className="max-w-[1360px] mx-auto px-6 lg:px-10 h-full flex items-center justify-between">
-          {/* Logo / Nome do Estabelecimento (à esquerda, max 280x64px) */}
-          <div className="flex items-center min-w-0 max-w-[280px]">
-            <Link href={`/p/${tenant.slug}`} className="flex items-center gap-3 group">
+        <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-10 h-full flex items-center justify-between">
+          {/* Logo / Nome do Estabelecimento (à esquerda, max 155px mobile / 280px desktop) */}
+          <div className="flex items-center min-w-0 max-w-[155px] sm:max-w-[220px] md:max-w-[280px]">
+            <Link href={`/p/${tenant.slug}`} className="flex items-center gap-2.5 sm:gap-3 group">
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={logoUrl}
                   alt={businessName}
-                  className="max-h-16 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+                  className="max-h-11 sm:max-h-14 md:max-h-16 w-auto object-contain transition-transform group-hover:scale-[1.02]"
                 />
               ) : (
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#F4E4E1] text-[#BD7165]">
-                    <Flower2 className="w-6 h-6 stroke-[1.5]" />
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-[#F4E4E1] text-[#BD7165] shrink-0">
+                    <Flower2 className="w-5 h-5 sm:w-6 sm:h-6 stroke-[1.5]" />
                   </div>
-                  <div className="flex flex-col">
-                    <span className="font-serif text-2xl font-bold tracking-tight text-[#9F4039] leading-tight">
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-serif text-lg sm:text-2xl font-bold tracking-tight text-[#9F4039] leading-tight truncate">
                       {businessName}
                     </span>
-                    <span className="text-[10px] tracking-[0.2em] uppercase font-semibold text-[#625D5A]">
+                    <span className="text-[9px] sm:text-[10px] tracking-[0.15em] uppercase font-semibold text-[#625D5A] truncate">
                       Estética & Bem-Estar
                     </span>
                   </div>
@@ -152,24 +151,94 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
             </Link>
           </nav>
 
-          {/* Botão Superior Direito: Agende seu horário (aprox 205x48px) */}
+          {/* Botão Superior Direito: Agende seu horário (max 170px mobile, h: 42px / ~205x48px desktop) */}
           <div className="flex items-center shrink-0">
             <Link
               href={`/agendar/${tenant.slug}`}
-              className="inline-flex items-center justify-center gap-2 px-6 h-12 rounded-[12px] text-sm font-medium text-white transition-all shadow-xs hover:opacity-95 active:scale-98"
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 h-[42px] md:h-12 max-w-[170px] sm:max-w-none rounded-[12px] text-xs sm:text-sm font-medium text-white transition-all shadow-xs hover:opacity-95 active:scale-98"
               style={{ backgroundColor: '#BD7165' }}
             >
-              <Calendar className="w-4 h-4 stroke-[2]" />
-              <span>Agende seu horário</span>
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2] shrink-0" />
+              <span className="truncate">Agende seu horário</span>
             </Link>
           </div>
         </div>
       </header>
 
-      {/* ── 2. HERO SECTION (ALTURA AJUSTADA MAIS ENXUTA) ─────────────────────────── */}
+      {/* ── 2. HERO SECTION ────────────────────────────────────────────────── */}
+      {/* COMPOSIÇÃO MOBILE (até 767px): Vertical independente (Texto no topo + Foto abaixo) */}
       <section
         id="inicio"
-        className="relative w-full overflow-hidden"
+        className="block md:hidden w-full overflow-hidden"
+        style={{ backgroundColor: '#FCF8F5' }}
+      >
+        {/* A) Conteúdo Textual no Topo (fundo marfim sólido #FCF8F5) */}
+        <div className="w-full px-5 pt-6 pb-7 space-y-0 text-left">
+          {/* Eyebrow: 10px, letter-spacing 2px */}
+          <div className="inline-block pb-3">
+            <span className="text-[10px] font-semibold tracking-[2px] uppercase text-[#BD7165] font-sans">
+              Estética • Beleza • Bem-estar
+            </span>
+          </div>
+
+          {/* Título: 36px, line-height 1.08, largura 100%, serifado; destaque terracota */}
+          <h1 className="font-serif text-[36px] leading-[1.08] tracking-tight font-normal w-full">
+            <span className="block text-[#211C1B]">Mais que estética,</span>
+            <span className="block text-[#BD7165] italic font-normal">
+              um cuidado completo
+            </span>
+            <span className="block text-[#BD7165]">para você.</span>
+          </h1>
+
+          {/* Descrição: 15px, line-height 1.6; margem superior 20px */}
+          <p className="text-[15px] text-[#625D5A] leading-[1.6] mt-5">
+            Beleza, saúde e bem-estar em um só lugar. Profissionais qualificados, atendimento
+            humanizado e um ambiente pensado para a sua melhor experiência.
+          </p>
+
+          {/* CTA: largura 100%, altura 54px; margem superior 24px */}
+          <div className="mt-6">
+            <Link
+              href={`/agendar/${tenant.slug}`}
+              className="inline-flex items-center justify-between px-6 h-[54px] w-full rounded-[12px] text-[15px] font-medium text-white transition-all shadow-md active:scale-98"
+              style={{ backgroundColor: '#BD7165' }}
+            >
+              <div className="flex items-center gap-2.5">
+                <Calendar className="w-4 h-4 stroke-[2]" />
+                <span>Agende seu horário agora</span>
+              </div>
+              <ArrowRight className="w-4 h-4 stroke-[2]" />
+            </Link>
+          </div>
+        </div>
+
+        {/* B) Área Fotográfica Abaixo: Ocupando 100% da largura, altura 340px a 440px */}
+        <div className="relative w-full h-[360px] min-[390px]:h-[390px] min-[430px]:h-[420px] overflow-hidden">
+          <div
+            className="absolute inset-0 bg-cover bg-center pointer-events-none"
+            style={{
+              backgroundImage: "url('/img/bg_hero1_mobile.png')",
+              backgroundPosition: 'center 20%',
+              backgroundRepeat: 'no-repeat',
+            }}
+          />
+        </div>
+
+        {/* Transição inferior orgânica suave no mobile */}
+        <div className="relative w-full overflow-hidden leading-none z-10 -mt-1">
+          <svg
+            className="w-full h-6 fill-[#FCF8F5]"
+            viewBox="0 0 1440 60"
+            preserveAspectRatio="none"
+          >
+            <path d="M0,0 C320,50 720,60 1440,20 L1440,60 L0,60 Z" />
+          </svg>
+        </div>
+      </section>
+
+      {/* COMPOSIÇÃO DESKTOP (768px em diante): Layout Preservado Integralmente */}
+      <section
+        className="hidden md:block relative w-full overflow-hidden"
         style={{
           minHeight: '560px',
           backgroundColor: '#FCF8F5',
@@ -184,7 +253,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
           }}
         />
 
-        {/* Camada suave semi-transparente recuada para a esquerda para manter a modelo 100% nítida e livre */}
+        {/* Camada suave semi-transparente recuada para a esquerda */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#FCF8F5]/90 via-[#FCF8F5]/40 via-35% to-transparent pointer-events-none md:max-w-[45%] lg:max-w-[38%]" />
 
         <div className="relative max-w-[1360px] mx-auto px-6 lg:px-10 h-full min-h-[560px] lg:min-h-[660px] flex items-center">
@@ -197,7 +266,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
               </span>
             </div>
 
-            {/* Título Principal Serifado (ajustado de forma elegante) */}
+            {/* Título Principal Serifado */}
             <h1 className="font-serif text-3xl sm:text-5xl lg:text-[62px] leading-[1.1] tracking-tight font-normal">
               <span className="block text-[#211C1B]">Mais que estética,</span>
               <span className="block text-[#BD7165] italic font-normal">
@@ -241,20 +310,21 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
         </div>
       </section>
 
-      {/* ── 3. BENEFÍCIOS (ALTURA APROX. 215px) ────────────────────────────── */}
+      {/* ── 3. BENEFÍCIOS ──────────────────────────────────────────────────── */}
       <section
         id="sobre"
-        className="w-full py-12 lg:py-16 border-b border-[#EAD9D3]/40"
+        className="w-full py-9 md:py-12 lg:py-16 border-b border-[#EAD9D3]/40"
         style={{ backgroundColor: '#FCF8F5' }}
       >
-        <div className="max-w-[1360px] mx-auto px-6 lg:px-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 lg:gap-8 items-start">
+        <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-10">
+          {/* Grid 2 colunas no mobile (gap 16px), 4 colunas no desktop */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 items-start">
             {/* Benefício 1 */}
-            <div className="flex flex-col items-center text-center space-y-3">
-              <div className="w-[86px] h-[86px] rounded-full flex items-center justify-center bg-[#F7ECE9] text-[#BD7165] border border-[#EAD9D3]/70">
-                <Gem className="w-8 h-8 stroke-[1.5]" />
+            <div className="flex flex-col items-center text-center space-y-2.5 sm:space-y-3">
+              <div className="w-16 h-16 sm:w-[86px] sm:h-[86px] rounded-full flex items-center justify-center bg-[#F7ECE9] text-[#BD7165] border border-[#EAD9D3]/70">
+                <Gem className="w-6 h-6 sm:w-8 sm:h-8 stroke-[1.5]" />
               </div>
-              <p className="text-base sm:text-[18px] font-medium text-[#211C1B] leading-snug">
+              <p className="text-sm sm:text-base md:text-[18px] font-medium text-[#211C1B] leading-snug">
                 Profissionais
                 <br />
                 qualificados
@@ -262,11 +332,11 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
             </div>
 
             {/* Benefício 2 */}
-            <div className="flex flex-col items-center text-center space-y-3">
-              <div className="w-[86px] h-[86px] rounded-full flex items-center justify-center bg-[#F7ECE9] text-[#BD7165] border border-[#EAD9D3]/70">
-                <Flower2 className="w-8 h-8 stroke-[1.5]" />
+            <div className="flex flex-col items-center text-center space-y-2.5 sm:space-y-3">
+              <div className="w-16 h-16 sm:w-[86px] sm:h-[86px] rounded-full flex items-center justify-center bg-[#F7ECE9] text-[#BD7165] border border-[#EAD9D3]/70">
+                <Flower2 className="w-6 h-6 sm:w-8 sm:h-8 stroke-[1.5]" />
               </div>
-              <p className="text-base sm:text-[18px] font-medium text-[#211C1B] leading-snug">
+              <p className="text-sm sm:text-base md:text-[18px] font-medium text-[#211C1B] leading-snug">
                 Ambiente
                 <br />
                 acolhedor
@@ -274,11 +344,11 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
             </div>
 
             {/* Benefício 3 */}
-            <div className="flex flex-col items-center text-center space-y-3">
-              <div className="w-[86px] h-[86px] rounded-full flex items-center justify-center bg-[#F7ECE9] text-[#BD7165] border border-[#EAD9D3]/70">
-                <ShieldCheck className="w-8 h-8 stroke-[1.5]" />
+            <div className="flex flex-col items-center text-center space-y-2.5 sm:space-y-3">
+              <div className="w-16 h-16 sm:w-[86px] sm:h-[86px] rounded-full flex items-center justify-center bg-[#F7ECE9] text-[#BD7165] border border-[#EAD9D3]/70">
+                <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 stroke-[1.5]" />
               </div>
-              <p className="text-base sm:text-[18px] font-medium text-[#211C1B] leading-snug">
+              <p className="text-sm sm:text-base md:text-[18px] font-medium text-[#211C1B] leading-snug">
                 Atendimento
                 <br />
                 personalizado
@@ -286,11 +356,11 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
             </div>
 
             {/* Benefício 4 */}
-            <div className="flex flex-col items-center text-center space-y-3">
-              <div className="w-[86px] h-[86px] rounded-full flex items-center justify-center bg-[#F7ECE9] text-[#BD7165] border border-[#EAD9D3]/70">
-                <Heart className="w-8 h-8 stroke-[1.5]" />
+            <div className="flex flex-col items-center text-center space-y-2.5 sm:space-y-3">
+              <div className="w-16 h-16 sm:w-[86px] sm:h-[86px] rounded-full flex items-center justify-center bg-[#F7ECE9] text-[#BD7165] border border-[#EAD9D3]/70">
+                <Heart className="w-6 h-6 sm:w-8 sm:h-8 stroke-[1.5]" />
               </div>
-              <p className="text-base sm:text-[18px] font-medium text-[#211C1B] leading-snug">
+              <p className="text-sm sm:text-base md:text-[18px] font-medium text-[#211C1B] leading-snug">
                 Beleza com
                 <br />
                 saúde e bem-estar
