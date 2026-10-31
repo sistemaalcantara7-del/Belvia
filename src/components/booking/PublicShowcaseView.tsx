@@ -166,12 +166,12 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
         </div>
       </header>
 
-      {/* ── 2. HERO SECTION (ALTURA DESKTOP 960px) ─────────────────────────── */}
+      {/* ── 2. HERO SECTION (ALTURA AJUSTADA MAIS ENXUTA) ─────────────────────────── */}
       <section
         id="inicio"
         className="relative w-full overflow-hidden"
         style={{
-          minHeight: '620px',
+          minHeight: '560px',
           backgroundColor: '#FCF8F5',
         }}
       >
@@ -179,26 +179,26 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
         <div
           className="absolute inset-0 bg-cover bg-right lg:bg-center pointer-events-none"
           style={{
-            backgroundImage: "url('/img/showcase_hero_bg.png')",
+            backgroundImage: "url('/img/bg_hero1.png')",
             backgroundRepeat: 'no-repeat',
           }}
         />
 
         {/* Camada suave semi-transparente para garantir contraste legível da coluna de texto */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#FCF8F5] via-[#FCF8F5]/85 via-50% to-transparent pointer-events-none md:via-40%" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#FCF8F5] via-[#FCF8F5]/85 via-55% to-transparent pointer-events-none md:via-45%" />
 
-        <div className="relative max-w-[1360px] mx-auto px-6 lg:px-10 h-full min-h-[620px] lg:min-h-[860px] flex items-center">
-          {/* Área Textual: alinhada à esquerda a 7%, largura max 610px */}
-          <div className="w-full max-w-[610px] z-10 py-16 lg:py-24 space-y-6">
+        <div className="relative max-w-[1360px] mx-auto px-6 lg:px-10 h-full min-h-[560px] lg:min-h-[660px] flex items-center">
+          {/* Área Textual: alinhada à esquerda, largura max 610px */}
+          <div className="w-full max-w-[610px] z-10 py-12 lg:py-16 space-y-5">
             {/* Eyebrow */}
             <div className="inline-block">
-              <span className="text-[13px] sm:text-[15px] font-semibold tracking-[5px] uppercase text-[#BD7165] font-sans">
+              <span className="text-[13px] sm:text-[14px] font-semibold tracking-[4px] uppercase text-[#BD7165] font-sans">
                 Estética • Beleza • Bem-estar
               </span>
             </div>
 
-            {/* Título Principal Serifado 72px (quebrado em 3 linhas) */}
-            <h1 className="font-serif text-4xl sm:text-6xl lg:text-[70px] leading-[1.08] tracking-tight font-normal">
+            {/* Título Principal Serifado (ajustado de forma elegante) */}
+            <h1 className="font-serif text-3xl sm:text-5xl lg:text-[62px] leading-[1.1] tracking-tight font-normal">
               <span className="block text-[#211C1B]">Mais que estética,</span>
               <span className="block text-[#BD7165] italic font-normal">
                 um cuidado completo
@@ -206,17 +206,17 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
               <span className="block text-[#BD7165]">para você.</span>
             </h1>
 
-            {/* Parágrafo de Apoio (21px, line-height 1.65, max-w 490px) */}
-            <p className="text-base sm:text-lg lg:text-[20px] text-[#625D5A] leading-[1.65] max-w-[490px] pt-2">
+            {/* Parágrafo de Apoio */}
+            <p className="text-base sm:text-lg lg:text-[19px] text-[#625D5A] leading-[1.6] max-w-[490px] pt-1">
               Beleza, saúde e bem-estar em um só lugar. Profissionais qualificados, atendimento
               humanizado e um ambiente pensado para a sua melhor experiência.
             </p>
 
-            {/* CTA Principal (360x68px, terracotta, ícone calendário e seta) */}
-            <div className="pt-4">
+            {/* CTA Principal */}
+            <div className="pt-2">
               <Link
                 href={`/agendar/${tenant.slug}`}
-                className="inline-flex items-center justify-between px-7 h-[64px] sm:h-[68px] w-full sm:w-[360px] rounded-[12px] text-base sm:text-[17px] font-medium text-white transition-all shadow-md hover:opacity-95 active:scale-98"
+                className="inline-flex items-center justify-between px-7 h-[58px] sm:h-[62px] w-full sm:w-[350px] rounded-[12px] text-base sm:text-[16px] font-medium text-white transition-all shadow-md hover:opacity-95 active:scale-98"
                 style={{ backgroundColor: '#BD7165' }}
               >
                 <div className="flex items-center gap-3">
@@ -232,7 +232,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
         {/* Transição inferior orgânica suave */}
         <div className="relative w-full overflow-hidden leading-none z-10">
           <svg
-            className="w-full h-8 sm:h-12 lg:h-14 fill-[#FCF8F5]"
+            className="w-full h-8 sm:h-10 lg:h-12 fill-[#FCF8F5]"
             viewBox="0 0 1440 60"
             preserveAspectRatio="none"
           >
