@@ -184,8 +184,8 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
           }}
         />
 
-        {/* Camada suave semi-transparente para garantir contraste legível da coluna de texto */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#FCF8F5] via-[#FCF8F5]/85 via-55% to-transparent pointer-events-none md:via-45%" />
+        {/* Camada suave semi-transparente recuada para a esquerda para manter a modelo 100% nítida e livre */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#FCF8F5]/90 via-[#FCF8F5]/40 via-35% to-transparent pointer-events-none md:max-w-[45%] lg:max-w-[38%]" />
 
         <div className="relative max-w-[1360px] mx-auto px-6 lg:px-10 h-full min-h-[560px] lg:min-h-[660px] flex items-center">
           {/* Área Textual: alinhada à esquerda, largura max 610px */}
