@@ -293,22 +293,17 @@ export default function HomePage() {
       <section
         className="zelunia-vitrine-section relative w-full overflow-hidden bg-[#FAF4EE]"
       >
-        {/* Estilo responsivo inline para background perfeito sem cortes */}
+        {/* Estilo responsivo inline para background perfeito cobrindo toda a largura */}
         <style dangerouslySetInnerHTML={{ __html: `
           .zelunia-vitrine-section {
-            background-image: url('/img/bg_app2.png');
+            background-image: url('/img/bg_app.png');
             background-repeat: no-repeat;
-          }
-          @media (min-width: 1024px) {
-            .zelunia-vitrine-section {
-              background-position: right center !important;
-              background-size: contain !important;
-            }
+            background-size: cover !important;
+            background-position: right center !important;
           }
           @media (max-width: 1023px) {
             .zelunia-vitrine-section {
               background-position: right bottom !important;
-              background-size: cover !important;
             }
           }
         `}} />
