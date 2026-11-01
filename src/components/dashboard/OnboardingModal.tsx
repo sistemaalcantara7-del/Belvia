@@ -23,15 +23,27 @@ interface OnboardingModalProps {
   tenantSlug: string;
   tenantName: string;
   isOwner: boolean;
-  progress: OnboardingProgress;
+  progress?: OnboardingProgress | null;
 }
+
+const DEFAULT_ONBOARDING_PROGRESS: OnboardingProgress = {
+  hasConfiguredBusiness: false,
+  hasProfessionals: false,
+  hasServices: false,
+  hasClients: false,
+  hasSharedPublicPage: false,
+  isDismissed: false,
+  completedCount: 0,
+  totalSteps: 5,
+};
 
 export function OnboardingModal({
   tenantSlug,
   tenantName,
   isOwner,
-  progress: initialProgress,
+  progress: initialProgressProp,
 }: OnboardingModalProps) {
+  const initialProgress = initialProgressProp || DEFAULT_ONBOARDING_PROGRESS;
   const [progress, setProgress] = useState<OnboardingProgress>(initialProgress);
   // Abre automaticamente se for owner, não tiver sido dispensado e ainda faltar alguma etapa
   const [isOpen, setIsOpen] = useState<boolean>(() => {

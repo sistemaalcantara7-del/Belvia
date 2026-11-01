@@ -51,9 +51,9 @@ export function DashboardSidebar({
     <>
       {/* ── Topbar Mobile Hamburger ─────────────────────────────────── */}
       <div
-        className="md:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between px-4 h-16 bg-[#35272D] bg-cover bg-center border-b border-[#433139]"
+        className="md:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between px-4 h-16 bg-[#2D1F27] bg-cover bg-bottom border-b border-[#433139]"
         style={{
-          backgroundImage: "linear-gradient(to right, rgba(45, 31, 39, 0.78), rgba(45, 31, 39, 0.88)), url('/img/bg_menu.png')",
+          backgroundImage: "url('/img/bg_menu.png')",
         }}
       >
         <div className="flex items-center gap-3">
@@ -96,7 +96,7 @@ export function DashboardSidebar({
 
       {/* ── Sidebar Desktop / Drawer Mobile ────────────────────────── */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-[#2D1F27] bg-cover bg-center bg-no-repeat border-r border-[#433139] transition-all duration-300 ease-in-out relative overflow-hidden ${
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-[#2D1F27] bg-cover bg-bottom bg-no-repeat border-r border-[#433139] transition-all duration-300 ease-in-out relative overflow-hidden shadow-xl ${
           collapsed ? 'w-20' : 'w-64'
         } ${
           mobileOpen
@@ -104,7 +104,7 @@ export function DashboardSidebar({
             : '-translate-x-full md:translate-x-0'
         }`}
         style={{
-          backgroundImage: "linear-gradient(to bottom, rgba(45, 31, 39, 0.75), rgba(45, 31, 39, 0.85)), url('/img/bg_menu.png')",
+          backgroundImage: "url('/img/bg_menu.png')",
         }}
       >
         {/* Topo: Logo ZELUNIA com flor e tipografia da referência */}

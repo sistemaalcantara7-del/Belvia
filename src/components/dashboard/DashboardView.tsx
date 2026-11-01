@@ -226,8 +226,8 @@ export function DashboardView({
           {/* Botão permanente e visível Minha Página Pública */}
           <PublicPageButton tenantSlug={tenantSlug} />
 
-          {/* Modal / Botão discreto de Onboarding (Primeiros Passos) */}
-          {onboardingProgress && (
+          {/* Modal / Botão discreto de Onboarding (Primeiros Passos) para o Proprietário */}
+          {isOwner && (
             <OnboardingModal
               tenantSlug={tenantSlug}
               tenantName={tenantName}
