@@ -2,9 +2,17 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const requestUrl = new URL(request.url);
+  const searchParams = requestUrl.searchParams;
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/';
+
+  // Garante que o redirecionamento final nunca caia em localhost se estiver em produção
+  const isProd = process.env.NODE_ENV === 'production';
+  const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const effectiveOrigin = isProd
+    ? (configuredAppUrl && !configuredAppUrl.includes('localhost') ? configuredAppUrl.replace(/\/$/, '') : 'https://zelunia.com.br')
+    : requestUrl.origin;
 
   if (code) {
     const supabase = await createClient();
@@ -33,7 +41,7 @@ export async function GET(request: NextRequest) {
         const typedMemberships = memberships as unknown as MembershipRow[];
 
         if (typedMemberships && typedMemberships.length > 0 && typedMemberships[0].tenants) {
-          return NextResponse.redirect(`${origin}/${typedMemberships[0].tenants.slug}`);
+          return NextResponse.redirect(`${effectiveOrigin}/${typedMemberships[0].tenants.slug}`);
         }
 
         // Se não possui tenant ainda, cria utilizando os metadados preservados no momento do cadastro
@@ -50,15 +58,15 @@ export async function GET(request: NextRequest) {
           });
 
           if (!rpcError) {
-            return NextResponse.redirect(`${origin}/${clinicSlug}`);
+            return NextResponse.redirect(`${effectiveOrigin}/${clinicSlug}`);
           }
         }
       }
 
-      return NextResponse.redirect(`${origin}${next}`);
+      return NextResponse.redirect(`${effectiveOrigin}${next}`);
     }
   }
 
   // Em caso de falha no token de confirmação, redireciona para a página de erro/login
-  return NextResponse.redirect(`${origin}/login?error=email_confirmation_failed`);
+  return NextResponse.redirect(`${effectiveOrigin}/login?error=email_confirmation_failed`);
 }

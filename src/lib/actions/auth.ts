@@ -97,11 +97,23 @@ export async function registerTenantAction(formData: FormData): Promise<AuthActi
 
   const supabase = await createClient();
 
-  // 1. Criar o usuário no Supabase Auth preservando dados do tenant nos metadados
+  // Resolve a URL base canônica:
+  // 1. Em produção, utiliza obrigatoriamente https://zelunia.com.br (ou NEXT_PUBLIC_APP_URL configurado)
+  // 2. Em desenvolvimento local, utiliza NEXT_PUBLIC_APP_URL ou http://localhost:3000
+  const isProd = process.env.NODE_ENV === 'production';
+  const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const baseUrl = isProd
+    ? (configuredAppUrl && !configuredAppUrl.includes('localhost') ? configuredAppUrl : 'https://zelunia.com.br')
+    : (configuredAppUrl || 'http://localhost:3000');
+
+  const emailRedirectTo = `${baseUrl.replace(/\/$/, '')}/auth/callback`;
+
+  // 1. Criar o usuário no Supabase Auth preservando dados do tenant nos metadados e redirecionamento canônico
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
     options: {
+      emailRedirectTo,
       data: {
         full_name: fullName,
         clinic_name: clinicName,
