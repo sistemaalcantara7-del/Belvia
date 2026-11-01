@@ -54,7 +54,8 @@ export async function loginAction(formData: FormData): Promise<AuthActionRespons
     // verifica se os metadados contêm dados de onboarding pendente
     const pendingClinic = user.user_metadata?.clinic_name;
     const pendingSlug = user.user_metadata?.clinic_slug;
-    const pendingPlan = user.user_metadata?.plan || 'essential';
+    const rawPendingPlan = user.user_metadata?.plan;
+    const pendingPlan: PlanType = rawPendingPlan === 'smart' ? 'smart' : 'essential';
 
     if (pendingClinic && pendingSlug) {
       const { error: rpcError } = await supabase.rpc('create_tenant_and_owner', {
@@ -77,7 +78,9 @@ export async function registerTenantAction(formData: FormData): Promise<AuthActi
   const fullName = formData.get('fullName') as string;
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
-  const plan = (formData.get('plan') as PlanType) || 'essential';
+  // Validação estrita do plano no servidor para evitar manipulação pelo cliente
+  const rawPlan = formData.get('plan') as string;
+  const plan: PlanType = rawPlan === 'smart' ? 'smart' : 'essential';
 
   if (!clinicName || !fullName || !email || !password) {
     return { error: 'Todos os campos são obrigatórios.' };
@@ -117,7 +120,7 @@ export async function registerTenantAction(formData: FormData): Promise<AuthActi
     return {
       success: true,
       emailConfirmationRequired: true,
-      message: 'Cadastro realizado com sucesso! Enviamos um link de confirmação para o seu e-mail. Ao confirmar, seu estabelecimento será ativado automaticamente.',
+      message: 'Cadastro realizado com sucesso! Enviamos um link de confirmação para o seu e-mail. Ao confirmar, seu estabelecimento será ativado automaticamente com 7 dias de teste gratuito.',
     };
   }
 

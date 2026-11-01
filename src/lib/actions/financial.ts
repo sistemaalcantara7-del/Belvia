@@ -16,6 +16,7 @@ import {
   OperatingExpenseStatus,
   ExpensePaymentSource,
 } from '@/types/financial';
+import { assertActiveSubscription } from '@/lib/plans/entitlements';
 import { revalidatePath } from 'next/cache';
 
 export interface FinancialActionResponse<T = unknown> {
@@ -39,6 +40,12 @@ export async function openCashRegisterAction(
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
     return { error: 'Acesso negado ou estabelecimento não encontrado.' };
+  }
+
+  // Validação estrita de assinatura no backend (Prompt 142)
+  const subCheck = assertActiveSubscription(context);
+  if (!subCheck.allowed) {
+    return { error: subCheck.error };
   }
 
   // Apenas owner, admin e receptionist podem operar o caixa
@@ -370,6 +377,12 @@ export async function getOrCreatePaymentOrderForAppointmentAction(
     return { error: 'Acesso negado.' };
   }
 
+  // Validação estrita de assinatura no backend (Prompt 142)
+  const subCheck = assertActiveSubscription(context);
+  if (!subCheck.allowed) {
+    return { error: subCheck.error };
+  }
+
   if (!['owner', 'admin', 'receptionist'].includes(context.role)) {
     return { error: 'Seu perfil de acesso não possui permissão para gerenciar pagamentos.' };
   }
@@ -545,6 +558,12 @@ export async function processPaymentOrderAction(
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
     return { error: 'Acesso negado.' };
+  }
+
+  // Validação estrita de assinatura no backend (Prompt 142)
+  const subCheck = assertActiveSubscription(context);
+  if (!subCheck.allowed) {
+    return { error: subCheck.error };
   }
 
   if (!['owner', 'admin', 'receptionist'].includes(context.role)) {

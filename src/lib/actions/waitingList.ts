@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedTenantContext } from '@/lib/tenant/context';
 import { revalidatePath } from 'next/cache';
+import { assertActiveSubscription } from '@/lib/plans/entitlements';
 import {
   WaitingListItem,
   WaitingListCandidate,
@@ -25,6 +26,12 @@ export async function createWaitingListEntryAction(
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
     return { error: 'Acesso negado.' };
+  }
+
+  // Validação estrita de assinatura no backend (Prompt 142)
+  const subCheck = assertActiveSubscription(context);
+  if (!subCheck.allowed) {
+    return { error: subCheck.error };
   }
 
   const allowedRoles = ['owner', 'admin', 'receptionist'];

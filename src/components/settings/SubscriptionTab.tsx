@@ -9,6 +9,10 @@ import {
   Sparkles,
   ExternalLink,
   Ban,
+  QrCode,
+  Copy,
+  Check,
+  X,
 } from 'lucide-react';
 import { SubscriptionOverviewData } from '@/types/subscriptions';
 import { PlanType } from '@/types/tenant';
@@ -17,6 +21,7 @@ import {
   subscribeToPlanAction,
   changePlanAction,
   cancelSubscriptionAction,
+  SubscribeActionResult,
 } from '@/lib/actions/saasSubscriptions';
 
 interface SubscriptionTabProps {
@@ -64,6 +69,12 @@ export function SubscriptionTab({ tenantSlug, initialData }: SubscriptionTabProp
   const [data, setData] = useState(initialData);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [paymentModal, setPaymentModal] = useState<{
+    open: boolean;
+    billingType: 'PIX' | 'CREDIT_CARD';
+    result?: SubscribeActionResult;
+  } | null>(null);
+  const [copiedPix, setCopiedPix] = useState(false);
 
   const sub = data.subscription;
   const statusInfo = STATUS_BADGES[sub.status] || STATUS_BADGES.trial;
@@ -93,15 +104,17 @@ export function SubscriptionTab({ tenantSlug, initialData }: SubscriptionTabProp
 
     const res = await subscribeToPlanAction(tenantSlug, sub.plan, billingType);
     if (res.success) {
+      if (billingType === 'PIX' || billingType === 'CREDIT_CARD') {
+        setPaymentModal({
+          open: true,
+          billingType,
+          result: res,
+        });
+      }
       setMessage({
         type: 'success',
-        text: 'Assinatura gerada com sucesso via Asaas! O status foi sincronizado.',
+        text: 'Cobrança gerada com sucesso via Asaas! Conclua o pagamento para ativação automática.',
       });
-      // Atualização otimista
-      setData((prev) => ({
-        ...prev,
-        subscription: { ...prev.subscription, status: 'active' },
-      }));
     } else {
       setMessage({ type: 'error', text: res.error || 'Erro ao processar assinatura.' });
     }
@@ -363,6 +376,132 @@ export function SubscriptionTab({ tenantSlug, initialData }: SubscriptionTabProp
           </div>
         )}
       </div>
+
+      {/* Modal de Conclusão do Pagamento (Pix / Cartão Asaas) */}
+      {paymentModal?.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-[#EADBCE] relative animate-in fade-in zoom-in-95 duration-200">
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentModal(null);
+                setCopiedPix(false);
+              }}
+              className="absolute top-5 right-5 p-2 rounded-full text-[#7D6B65] hover:bg-[#FAF6F4] hover:text-[#2C1810] transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-[#FAF0EC] text-[#B87070] mx-auto flex items-center justify-center">
+                {paymentModal.billingType === 'PIX' ? (
+                  <QrCode className="w-6 h-6 stroke-[2]" />
+                ) : (
+                  <CreditCard className="w-6 h-6 stroke-[2]" />
+                )}
+              </div>
+              <h3 className="text-xl font-serif font-bold text-[#1E1115]">
+                {paymentModal.billingType === 'PIX' ? 'Pagamento via PIX' : 'Pagamento por Cartão'}
+              </h3>
+              <p className="text-xs text-[#7D6B65]">
+                Plano {currentPlanConfig.name} • {formatCurrency(sub.amount)}
+              </p>
+            </div>
+
+            {paymentModal.billingType === 'PIX' ? (
+              <div className="mt-6 space-y-4">
+                {paymentModal.result?.pixQrCodeImage ? (
+                  <div className="flex justify-center p-4 bg-white rounded-2xl border border-[#EADBCE] shadow-2xs">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`data:image/png;base64,${paymentModal.result.pixQrCodeImage}`}
+                      alt="QR Code Pix"
+                      className="w-48 h-48 object-contain"
+                    />
+                  </div>
+                ) : null}
+
+                {paymentModal.result?.pixQrCodePayload && (
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-semibold text-[#7D6B65] uppercase tracking-wider block">
+                      Pix Copia e Cola
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        readOnly
+                        value={paymentModal.result.pixQrCodePayload}
+                        className="flex-1 px-3 py-2 text-xs bg-[#FAF6F4] rounded-xl border border-[#EADBCE] text-[#2C1810] font-mono truncate select-all focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(paymentModal.result?.pixQrCodePayload || '');
+                          setCopiedPix(true);
+                          setTimeout(() => setCopiedPix(false), 3000);
+                        }}
+                        className="px-3 py-2 rounded-xl text-xs font-semibold bg-[#B87070] text-white hover:opacity-95 transition-all flex items-center gap-1.5 shrink-0"
+                      >
+                        {copiedPix ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedPix ? 'Copiado!' : 'Copiar'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-3.5 rounded-xl bg-[#FAF0ED] border border-[#EADBCE] text-[11px] text-[#7D6B65] space-y-1">
+                  <p className="font-semibold text-[#2C1810]">
+                    ⚡ Confirmação Automática e Segura
+                  </p>
+                  <p>
+                    Assim que o pagamento for concluído no seu banco, o webhook oficial do Asaas ativará o plano do seu estabelecimento de forma instantânea.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-6 space-y-4">
+                <p className="text-xs text-[#7D6B65] text-center leading-relaxed">
+                  Para efetuar o pagamento com cartão de crédito com segurança certificada PCI, acesse o link de fatura do gateway Asaas:
+                </p>
+
+                {paymentModal.result?.invoiceUrl && (
+                  <a
+                    href={paymentModal.result.invoiceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-semibold text-white bg-[#B87070] hover:opacity-95 shadow-2xs transition-all"
+                  >
+                    <span>Ir para Fatura Asaas no Cartão</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
+
+                <div className="p-3.5 rounded-xl bg-[#FAF0ED] border border-[#EADBCE] text-[11px] text-[#7D6B65] space-y-1">
+                  <p className="font-semibold text-[#2C1810]">
+                    🔒 Segurança Bancária
+                  </p>
+                  <p>
+                    A confirmação do cartão é processada diretamente pela infraestrutura bancária da Alcântara Sistemas. Seu acesso será liberado assim que o gateway confirmar a transação.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-6 pt-4 border-t border-[#F5EBE6] flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setPaymentModal(null);
+                  setCopiedPix(false);
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[#7D6B65] hover:text-[#2C1810] hover:bg-[#FAF6F4] transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -35,6 +35,7 @@ interface SettingsTabsContainerProps {
   } | null;
   services: Service[];
   professionals: Professional[];
+  initialTab?: 'booking' | 'reminders' | 'whatsapp' | 'subscription' | 'ai';
 }
 
 export function SettingsTabsContainer({
@@ -50,8 +51,11 @@ export function SettingsTabsContainer({
   aiUsageData,
   services,
   professionals,
+  initialTab = 'booking',
 }: SettingsTabsContainerProps) {
-  const [currentTab, setCurrentTab] = useState<'booking' | 'reminders' | 'whatsapp' | 'subscription' | 'ai'>('booking');
+  const [currentTab, setCurrentTab] = useState<'booking' | 'reminders' | 'whatsapp' | 'subscription' | 'ai'>(
+    initialTab || 'booking'
+  );
 
   return (
     <div className="space-y-6">

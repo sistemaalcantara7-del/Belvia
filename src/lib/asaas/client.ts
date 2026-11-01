@@ -86,8 +86,13 @@ export async function asaasRequest<T>(
 export async function findOrCreateAsaasCustomer(
   payload: AsaasCustomerPayload
 ): Promise<{ success: boolean; customerId?: string; error?: string }> {
-  // Se não houver chave, simula id de cliente no sandbox
   if (!ASAAS_API_KEY) {
+    if (ASAAS_ENV === 'production') {
+      return {
+        success: false,
+        error: 'Chave de API do Asaas de produção não configurada no servidor.',
+      };
+    }
     const mockId = `cus_mock_${Math.random().toString(36).substring(2, 9)}`;
     return { success: true, customerId: mockId };
   }
@@ -122,6 +127,12 @@ export async function createAsaasSubscription(
   payload: AsaasSubscriptionPayload
 ): Promise<{ success: boolean; subscriptionId?: string; error?: string }> {
   if (!ASAAS_API_KEY) {
+    if (ASAAS_ENV === 'production') {
+      return {
+        success: false,
+        error: 'Chave de API do Asaas de produção não configurada no servidor.',
+      };
+    }
     const mockSubId = `sub_mock_${Math.random().toString(36).substring(2, 9)}`;
     return { success: true, subscriptionId: mockSubId };
   }
@@ -147,7 +158,13 @@ export async function updateAsaasSubscriptionValue(
   newValue: number,
   newDescription: string
 ): Promise<{ success: boolean; error?: string }> {
-  if (!ASAAS_API_KEY || subscriptionId.startsWith('sub_mock_')) {
+  if (!ASAAS_API_KEY) {
+    if (ASAAS_ENV === 'production') {
+      return {
+        success: false,
+        error: 'Chave de API do Asaas de produção não configurada no servidor.',
+      };
+    }
     return { success: true };
   }
 
@@ -170,7 +187,13 @@ export async function updateAsaasSubscriptionValue(
 export async function cancelAsaasSubscription(
   subscriptionId: string
 ): Promise<{ success: boolean; error?: string }> {
-  if (!ASAAS_API_KEY || subscriptionId.startsWith('sub_mock_')) {
+  if (!ASAAS_API_KEY) {
+    if (ASAAS_ENV === 'production') {
+      return {
+        success: false,
+        error: 'Chave de API do Asaas de produção não configurada no servidor.',
+      };
+    }
     return { success: true };
   }
 
@@ -180,4 +203,108 @@ export async function cancelAsaasSubscription(
   );
 
   return { success: canceled.success, error: canceled.error };
+}
+
+/**
+ * Obtém a lista de cobranças vinculadas a uma assinatura
+ */
+export async function getAsaasSubscriptionPayments(
+  subscriptionId: string
+): Promise<{
+  success: boolean;
+  payments?: Array<{
+    id: string;
+    invoiceUrl?: string;
+    bankSlipUrl?: string;
+    value: number;
+    status: string;
+    dueDate: string;
+    billingType: string;
+  }>;
+  error?: string;
+}> {
+  if (!ASAAS_API_KEY) {
+    if (ASAAS_ENV === 'production') {
+      return {
+        success: false,
+        error: 'Chave de API do Asaas de produção não configurada no servidor.',
+      };
+    }
+    return {
+      success: true,
+      payments: [
+        {
+          id: `pay_mock_${subscriptionId}`,
+          invoiceUrl: 'https://sandbox.asaas.com/i/mock-invoice',
+          value: 59.90,
+          status: 'PENDING',
+          dueDate: new Date().toISOString().split('T')[0],
+          billingType: 'PIX',
+        },
+      ],
+    };
+  }
+
+  const res = await asaasRequest<{
+    data: Array<{
+      id: string;
+      invoiceUrl?: string;
+      bankSlipUrl?: string;
+      value: number;
+      status: string;
+      dueDate: string;
+      billingType: string;
+    }>;
+  }>(`/subscriptions/${subscriptionId}/payments`);
+
+  if (res.success && res.data) {
+    return { success: true, payments: res.data.data };
+  }
+
+  return { success: false, error: res.error || 'Falha ao buscar faturas da assinatura.' };
+}
+
+/**
+ * Obtém QRCode e Payload Copia-e-Cola para pagamento via Pix
+ */
+export async function getAsaasPaymentPixQrCode(
+  paymentId: string
+): Promise<{
+  success: boolean;
+  encodedImage?: string;
+  payload?: string;
+  expirationDate?: string;
+  error?: string;
+}> {
+  if (!ASAAS_API_KEY) {
+    if (ASAAS_ENV === 'production') {
+      return {
+        success: false,
+        error: 'Chave de API do Asaas de produção não configurada no servidor.',
+      };
+    }
+    return {
+      success: true,
+      encodedImage: '',
+      payload: '00020126580014br.gov.bcb.pix0136mock-zelunia-key520400005303986540559.905802BR5916ALCANTARA SISTEMAS6009SAO PAULO62070503***6304MOCK',
+      expirationDate: new Date(Date.now() + 86400000).toISOString(),
+    };
+  }
+
+  const res = await asaasRequest<{
+    encodedImage?: string;
+    payload?: string;
+    expirationDate?: string;
+  }>(`/payments/${paymentId}/pixQrCode`);
+
+  if (res.success && res.data) {
+    return {
+      success: true,
+      encodedImage: res.data.encodedImage,
+      payload: res.data.payload,
+      expirationDate: res.data.expirationDate,
+    };
+  }
+
+  return { success: false, error: res.error || 'Falha ao gerar QR Code Pix.' };
 }

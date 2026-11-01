@@ -14,7 +14,7 @@ import {
 import { PaymentOrder } from '@/types/financial';
 import { Appointment } from '@/types/appointments';
 import { sanitizeDigits, isValidCPF } from '@/lib/utils/masks';
-import { getPlanLimits } from '@/lib/plans/entitlements';
+import { getPlanLimits, assertActiveSubscription } from '@/lib/plans/entitlements';
 import { revalidatePath } from 'next/cache';
 
 export interface ClientActionResponse {
@@ -33,6 +33,12 @@ export async function saveClientAction(
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
     return { error: 'Acesso negado ou estabelecimento não encontrado.' };
+  }
+
+  // Validação estrita de assinatura no backend (Prompt 142)
+  const subCheck = assertActiveSubscription(context);
+  if (!subCheck.allowed) {
+    return { error: subCheck.error };
   }
 
   // Apenas owner, admin e receptionist podem criar ou editar clientes

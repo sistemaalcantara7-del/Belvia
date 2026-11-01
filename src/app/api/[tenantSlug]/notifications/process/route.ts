@@ -20,6 +20,18 @@ export async function POST(
     return NextResponse.json({ error: 'Acesso negado.' }, { status: 401 });
   }
 
+  // Validação estrita de assinatura no backend (Prompt 142)
+  if (tenantCtx.isSubscriptionValid === false) {
+    return NextResponse.json(
+      {
+        error: tenantCtx.isTrialExpired
+          ? 'Período gratuito de 7 dias encerrado. Regularize a assinatura para reativar os disparos.'
+          : 'Assinatura suspensa. Regularize o plano para processar notificações.',
+      },
+      { status: 402 }
+    );
+  }
+
   if (!['owner', 'admin'].includes(tenantCtx.role)) {
     return NextResponse.json(
       { error: 'Permissão insuficiente para processar a fila de notificações.' },

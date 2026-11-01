@@ -2,6 +2,7 @@ import { getAuthenticatedTenantContext } from '@/lib/tenant/context';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { DashboardView } from '@/components/dashboard/DashboardView';
+import { TrialExpiredView } from '@/components/settings/TrialExpiredView';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,19 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
     redirect('/login');
+  }
+
+  // Se o período de testes ou assinatura expirou, exibe a tela profissional de bloqueio e regularização
+  if (context.isSubscriptionValid === false) {
+    return (
+      <TrialExpiredView
+        tenantSlug={tenantSlug}
+        tenantName={context.tenantName}
+        plan={context.plan}
+        trialEndsAt={context.trialEndsAt}
+        canManage={context.role === 'owner' || context.role === 'admin'}
+      />
+    );
   }
 
   const supabase = await createClient();

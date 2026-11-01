@@ -39,7 +39,8 @@ export async function GET(request: NextRequest) {
         // Se não possui tenant ainda, cria utilizando os metadados preservados no momento do cadastro
         const clinicName = user.user_metadata?.clinic_name;
         const clinicSlug = user.user_metadata?.clinic_slug;
-        const plan = user.user_metadata?.plan || 'essential';
+        const rawPlan = user.user_metadata?.plan;
+        const plan = rawPlan === 'smart' ? 'smart' : 'essential';
 
         if (clinicName && clinicSlug) {
           const { error: rpcError } = await supabase.rpc('create_tenant_and_owner', {

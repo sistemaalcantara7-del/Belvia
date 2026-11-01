@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedTenantContext } from '@/lib/tenant/context';
 import { ProfessionalTimeBlock, TimeBlockFormData } from '@/types/professionals';
+import { assertActiveSubscription } from '@/lib/plans/entitlements';
 import { localDateTimeToUtcIso } from '@/lib/utils/timezone';
 import { revalidatePath } from 'next/cache';
 
@@ -26,6 +27,12 @@ export async function saveTimeBlockAction(
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
     return { error: 'Acesso negado ou estabelecimento não encontrado.' };
+  }
+
+  // Validação estrita de assinatura no backend (Prompt 142)
+  const subCheck = assertActiveSubscription(context);
+  if (!subCheck.allowed) {
+    return { error: subCheck.error };
   }
 
   const { professional_id, date, start_time, end_time, reason, id } = formData;

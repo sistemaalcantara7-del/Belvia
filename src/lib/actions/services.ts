@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedTenantContext } from '@/lib/tenant/context';
 import { Service, ServiceFormData } from '@/types/services';
+import { assertActiveSubscription } from '@/lib/plans/entitlements';
 import { revalidatePath } from 'next/cache';
 
 export interface ServiceActionResponse {
@@ -21,6 +22,12 @@ export async function saveServiceAction(
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
     return { error: 'Acesso negado ou estabelecimento não encontrado.' };
+  }
+
+  // Validação estrita de assinatura no backend (Prompt 142)
+  const subCheck = assertActiveSubscription(context);
+  if (!subCheck.allowed) {
+    return { error: subCheck.error };
   }
 
   // Validação de papel (apenas owner ou admin podem gerenciar serviços)

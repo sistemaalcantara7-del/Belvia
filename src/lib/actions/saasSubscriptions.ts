@@ -14,6 +14,8 @@ import {
   createAsaasSubscription,
   updateAsaasSubscriptionValue,
   cancelAsaasSubscription,
+  getAsaasSubscriptionPayments,
+  getAsaasPaymentPixQrCode,
   IS_ASAAS_SANDBOX,
 } from '@/lib/asaas/client';
 import { revalidatePath } from 'next/cache';
@@ -56,9 +58,9 @@ export async function getSubscriptionOverviewAction(
         asaas_customer_id: null,
         asaas_subscription_id: null,
         current_period_start: new Date().toISOString(),
-        current_period_end: new Date(Date.now() + 14 * 86400000).toISOString(),
+        current_period_end: new Date(Date.now() + 7 * 86400000).toISOString(),
         grace_period_days: 5,
-        trial_ends_at: new Date(Date.now() + 14 * 86400000).toISOString(),
+        trial_ends_at: new Date(Date.now() + 7 * 86400000).toISOString(),
         canceled_at: null,
         cancellation_reason: null,
         last_payment_at: null,
@@ -112,11 +114,26 @@ export async function getSubscriptionOverviewAction(
 /**
  * Cria ou ativa a assinatura recorrente via Asaas
  */
+export interface SubscribeActionResult {
+  success: boolean;
+  error?: string;
+  invoiceUrl?: string;
+  bankSlipUrl?: string;
+  pixQrCodePayload?: string;
+  pixQrCodeImage?: string;
+  status?: string;
+}
+
+/**
+ * Cria ou ativa a assinatura recorrente via Asaas
+ * ATENÇÃO (Regra de Ouro): NÃO altera status para 'active' nem libera acesso antes
+ * da confirmação de pagamento autenticada pelo webhook do Asaas.
+ */
 export async function subscribeToPlanAction(
   tenantSlug: string,
   targetPlan: PlanType,
   billingType: 'PIX' | 'CREDIT_CARD' | 'BOLETO'
-): Promise<{ success: boolean; error?: string; invoiceUrl?: string }> {
+): Promise<SubscribeActionResult> {
   try {
     const context = await getAuthenticatedTenantContext(tenantSlug);
     if (!context || (context.role !== 'owner' && context.role !== 'admin')) {
@@ -137,65 +154,136 @@ export async function subscribeToPlanAction(
       .eq('id', context.userId)
       .single();
 
-    const customerRes = await findOrCreateAsaasCustomer({
-      name: profile?.full_name || context.tenantName,
-      email: profile?.email || `${tenantSlug}@zelunia.com.br`,
-      phone: profile?.phone || undefined,
-      externalReference: context.tenantId,
-    });
+    // 2. Busca assinatura atual existente no banco
+    const { data: currentSub } = await supabase
+      .from('saas_subscriptions')
+      .select('*')
+      .eq('tenant_id', context.tenantId)
+      .maybeSingle();
 
-    if (!customerRes.success || !customerRes.customerId) {
-      return { success: false, error: customerRes.error || 'Falha ao registrar cliente no gateway.' };
+    // 3. Localiza ou cria cliente corporativo no Asaas vinculado ao tenant
+    let asaasCustomerId = currentSub?.asaas_customer_id;
+    if (!asaasCustomerId) {
+      const customerRes = await findOrCreateAsaasCustomer({
+        name: profile?.full_name || context.tenantName,
+        email: profile?.email || `${tenantSlug}@zelunia.com.br`,
+        phone: profile?.phone || undefined,
+        externalReference: context.tenantId,
+      });
+
+      if (!customerRes.success || !customerRes.customerId) {
+        return { success: false, error: customerRes.error || 'Falha ao registrar cliente no gateway.' };
+      }
+      asaasCustomerId = customerRes.customerId;
     }
 
-    // 2. Data de primeiro vencimento (hoje para Pix ou em 1 dia)
+    // 4. Data de primeiro vencimento: hoje para Pix ou amanhã
     const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 1);
+    if (billingType !== 'PIX') {
+      dueDate.setDate(dueDate.getDate() + 1);
+    }
     const dueDateStr = dueDate.toISOString().split('T')[0];
 
-    // 3. Cria a assinatura no Asaas
-    const subRes = await createAsaasSubscription({
-      customer: customerRes.customerId,
-      billingType,
-      value: planConfig.priceMonthly,
-      nextDueDate: dueDateStr,
-      cycle: 'MONTHLY',
-      description: `Assinatura ZELUNIA — Plano ${planConfig.name} (${context.tenantName})`,
-      externalReference: context.tenantId,
-    });
+    // 5. Criação ou reutilização da assinatura no Asaas
+    let asaasSubscriptionId = currentSub?.asaas_subscription_id;
 
-    if (!subRes.success || !subRes.subscriptionId) {
-      return { success: false, error: subRes.error || 'Falha ao gerar assinatura no Asaas.' };
+    if (!asaasSubscriptionId) {
+      const subRes = await createAsaasSubscription({
+        customer: asaasCustomerId,
+        billingType,
+        value: planConfig.priceMonthly,
+        nextDueDate: dueDateStr,
+        cycle: 'MONTHLY',
+        description: `Assinatura ZELUNIA — Plano ${planConfig.name} (${context.tenantName})`,
+        externalReference: context.tenantId,
+      });
+
+      if (!subRes.success || !subRes.subscriptionId) {
+        return { success: false, error: subRes.error || 'Falha ao gerar assinatura no Asaas.' };
+      }
+      asaasSubscriptionId = subRes.subscriptionId;
+    } else if (currentSub && currentSub.amount !== planConfig.priceMonthly) {
+      // Se já existia assinatura e houve mudança de plano, sincroniza valor
+      await updateAsaasSubscriptionValue(
+        asaasSubscriptionId,
+        planConfig.priceMonthly,
+        `Assinatura ZELUNIA — Plano ${planConfig.name} (${context.tenantName})`
+      );
     }
 
-    // 4. Atualiza saas_subscriptions e tenants
+    // 6. Obtém a primeira cobrança/fatura gerada para exibir link / QR code Pix
+    let invoiceUrl: string | undefined;
+    let bankSlipUrl: string | undefined;
+    let pixQrCodePayload: string | undefined;
+    let pixQrCodeImage: string | undefined;
+
+    const paymentsRes = await getAsaasSubscriptionPayments(asaasSubscriptionId);
+    if (paymentsRes.success && paymentsRes.payments && paymentsRes.payments.length > 0) {
+      const pendingPayment = paymentsRes.payments.find(p => p.status === 'PENDING') || paymentsRes.payments[0];
+      invoiceUrl = pendingPayment.invoiceUrl;
+      bankSlipUrl = pendingPayment.bankSlipUrl;
+
+      // Se for Pix, busca QR Code gerado pelo Asaas
+      if (billingType === 'PIX' && pendingPayment.id) {
+        const pixRes = await getAsaasPaymentPixQrCode(pendingPayment.id);
+        if (pixRes.success) {
+          pixQrCodePayload = pixRes.payload;
+          pixQrCodeImage = pixRes.encodedImage;
+        }
+      }
+
+      // Registra de forma idempotente em saas_invoices se houver paymentId
+      if (pendingPayment.id) {
+        await supabase.from('saas_invoices').upsert(
+          {
+            tenant_id: context.tenantId,
+            subscription_id: currentSub?.id || undefined,
+            asaas_payment_id: pendingPayment.id,
+            amount: pendingPayment.value || planConfig.priceMonthly,
+            status: 'pending',
+            billing_type: billingType,
+            due_date: pendingPayment.dueDate || dueDateStr,
+            invoice_url: invoiceUrl || null,
+            bank_slip_url: bankSlipUrl || null,
+            pix_qr_code: pixQrCodePayload || null,
+          },
+          { onConflict: 'asaas_payment_id' }
+        );
+      }
+    }
+
+    // 7. Atualiza saas_subscriptions SEM liberar acesso ('active') prematuramente.
+    // Preserva 'trial' se ainda estiver válido, ou mantém 'overdue'/'suspended' aguardando pagamento
+    const currentStatus = currentSub?.status || 'trial';
+    const preservedStatus = currentStatus === 'trial' ? 'trial' : 'overdue';
+
     await supabase
       .from('saas_subscriptions')
       .upsert(
         {
           tenant_id: context.tenantId,
           plan: targetPlan,
-          status: 'active',
+          status: preservedStatus,
           amount: planConfig.priceMonthly,
-          asaas_customer_id: customerRes.customerId,
-          asaas_subscription_id: subRes.subscriptionId,
-          current_period_start: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + 30 * 86400000).toISOString(),
-          last_payment_at: new Date().toISOString(),
+          asaas_customer_id: asaasCustomerId,
+          asaas_subscription_id: asaasSubscriptionId,
         },
         { onConflict: 'tenant_id' }
       );
 
-    await supabase
-      .from('tenants')
-      .update({ plan: targetPlan, status: 'active' })
-      .eq('id', context.tenantId);
-
     revalidatePath(`/${tenantSlug}/configuracoes`);
-    return { success: true };
+
+    return {
+      success: true,
+      invoiceUrl,
+      bankSlipUrl,
+      pixQrCodePayload,
+      pixQrCodeImage,
+      status: preservedStatus,
+    };
   } catch (err: unknown) {
     const error = err as Error;
-    return { success: false, error: error?.message || 'Falha ao processar assinatura.' };
+    return { success: false, error: error?.message || 'Falha ao processar contratação da assinatura.' };
   }
 }
 

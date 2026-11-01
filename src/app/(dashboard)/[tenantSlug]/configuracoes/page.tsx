@@ -19,10 +19,19 @@ export const dynamic = 'force-dynamic';
 
 interface ConfiguracoesPageProps {
   params: Promise<{ tenantSlug: string }>;
+  searchParams?: Promise<{ tab?: string }>;
 }
 
-export default async function ConfiguracoesPage({ params }: ConfiguracoesPageProps) {
+export default async function ConfiguracoesPage({ params, searchParams }: ConfiguracoesPageProps) {
   const { tenantSlug } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const requestedTab = resolvedSearchParams?.tab as
+    | 'booking'
+    | 'reminders'
+    | 'whatsapp'
+    | 'subscription'
+    | 'ai'
+    | undefined;
 
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
@@ -131,6 +140,7 @@ export default async function ConfiguracoesPage({ params }: ConfiguracoesPagePro
         aiUsageData={aiUsageData}
         services={services}
         professionals={professionals}
+        initialTab={requestedTab || 'booking'}
       />
     </div>
   );

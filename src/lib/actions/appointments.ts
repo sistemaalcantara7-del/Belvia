@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedTenantContext } from '@/lib/tenant/context';
 import { Appointment, AppointmentFormData, AppointmentStatus } from '@/types/appointments';
 import { localDateTimeToUtcIso } from '@/lib/utils/timezone';
+import { assertActiveSubscription } from '@/lib/plans/entitlements';
 import { revalidatePath } from 'next/cache';
 
 export interface AppointmentActionResponse {
@@ -23,6 +24,12 @@ export async function saveAppointmentAction(
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
     return { error: 'Acesso negado ou estabelecimento não encontrado.' };
+  }
+
+  // Validação estrita de assinatura no backend (Prompt 142)
+  const subCheck = assertActiveSubscription(context);
+  if (!subCheck.allowed) {
+    return { error: subCheck.error };
   }
 
   // Apenas owner, admin e receptionist podem criar agendamentos
@@ -204,6 +211,12 @@ export async function checkInAppointmentAction(
     return { error: 'Acesso negado.' };
   }
 
+  // Validação estrita de assinatura no backend (Prompt 142)
+  const subCheck = assertActiveSubscription(context);
+  if (!subCheck.allowed) {
+    return { error: subCheck.error };
+  }
+
   const allowedRoles = ['owner', 'admin', 'receptionist'];
   if (!allowedRoles.includes(context.role)) {
     return { error: 'Apenas a recepção ou administração podem registrar a chegada do cliente.' };
@@ -267,6 +280,12 @@ export async function updateAppointmentStatusAction(
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
     return { error: 'Acesso negado.' };
+  }
+
+  // Validação estrita de assinatura no backend (Prompt 142)
+  const subCheck = assertActiveSubscription(context);
+  if (!subCheck.allowed) {
+    return { error: subCheck.error };
   }
 
   const supabase = await createClient();

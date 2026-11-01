@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
 
     // 4. Atualização de status da assinatura e do tenant
     if (['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED'].includes(event)) {
-      // Pagamento confirmado: Ativa assinatura e o estabelecimento
+      // Pagamento confirmado via webhook autenticado: ativa assinatura e tenant
       await supabase
         .from('saas_subscriptions')
         .update({
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
         .update({ status: 'active' })
         .eq('id', tenantId);
     } else if (event === 'PAYMENT_OVERDUE') {
-      // Pagamento atrasado: entra em período de tolerância ('overdue')
+      // Pagamento atrasado: entra em tolerância ('overdue') ou suspensão ('suspended')
       const { data: sub } = await supabase
         .from('saas_subscriptions')
         .select('grace_period_days, current_period_end')
@@ -129,12 +129,34 @@ export async function POST(req: NextRequest) {
         .eq('tenant_id', tenantId);
 
       if (nextStatus === 'suspended') {
-        // Bloqueio controlado sem exclusão de nenhum dado
+        // Bloqueio controlado de operações sem exclusão de dados
         await supabase
           .from('tenants')
           .update({ status: 'suspended' })
           .eq('id', tenantId);
       }
+    } else if (['PAYMENT_REFUNDED', 'PAYMENT_CHARGEBACK_REQUESTED', 'PAYMENT_CHARGEBACK_DISPUTE'].includes(event)) {
+      // Estorno ou contestação: suspende acesso imediatamente para análise
+      await supabase
+        .from('saas_subscriptions')
+        .update({
+          status: 'suspended',
+          last_webhook_event: event,
+        })
+        .eq('tenant_id', tenantId);
+
+      await supabase
+        .from('tenants')
+        .update({ status: 'suspended' })
+        .eq('id', tenantId);
+    } else if (['PAYMENT_DELETED'].includes(event)) {
+      // Cobrança excluída / cancelada
+      await supabase
+        .from('saas_subscriptions')
+        .update({
+          last_webhook_event: event,
+        })
+        .eq('tenant_id', tenantId);
     }
 
     return NextResponse.json({ success: true, processed_event: event });

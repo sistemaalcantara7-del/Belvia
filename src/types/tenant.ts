@@ -45,4 +45,10 @@ export interface UserTenantContext {
   tenantStatus?: TenantStatus;
   tenantName: string;
   timezone?: string;
+  // Controle de acesso comercial e validade da assinatura (Prompt 142)
+  subscriptionStatus?: string;
+  isSubscriptionValid?: boolean;
+  isTrialExpired?: boolean;
+  trialEndsAt?: string | null;
+  subscriptionEndsAt?: string | null;
 }

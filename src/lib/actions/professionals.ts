@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedTenantContext } from '@/lib/tenant/context';
-import { getPlanLimits } from '@/lib/plans/entitlements';
+import { getPlanLimits, assertActiveSubscription } from '@/lib/plans/entitlements';
 import { Professional, ProfessionalFormData } from '@/types/professionals';
 import { sanitizeDigits } from '@/lib/utils/masks';
 import { revalidatePath } from 'next/cache';
@@ -24,6 +24,12 @@ export async function saveProfessionalAction(
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
     return { error: 'Acesso negado ou estabelecimento não encontrado.' };
+  }
+
+  // Validação estrita de assinatura no backend (Prompt 142)
+  const subCheck = assertActiveSubscription(context);
+  if (!subCheck.allowed) {
+    return { error: subCheck.error };
   }
 
   // Apenas owner ou admin podem cadastrar ou editar profissionais

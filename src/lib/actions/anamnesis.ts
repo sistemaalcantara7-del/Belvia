@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedTenantContext } from '@/lib/tenant/context';
 import { AnamnesisFormData, AnamnesisForm, AnamnesisTemplate } from '@/types/anamnesis';
+import { assertActiveSubscription } from '@/lib/plans/entitlements';
 import { revalidatePath } from 'next/cache';
 
 export interface ActionResponse<T = unknown> {
@@ -308,6 +309,12 @@ export async function saveAnamnesisFormAction(tenantSlug: string, payload: Anamn
     const context = await getAuthenticatedTenantContext(tenantSlug);
     if (!context) {
       return { error: 'Acesso não autorizado.' };
+    }
+
+    // Validação estrita de assinatura no backend (Prompt 142)
+    const subCheck = assertActiveSubscription(context);
+    if (!subCheck.allowed) {
+      return { error: subCheck.error };
     }
 
     if (!payload.clientId || !payload.templateId) {

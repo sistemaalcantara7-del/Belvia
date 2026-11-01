@@ -4,6 +4,7 @@ import { UserTenantContext, TenantRole, PlanType, TenantStatus } from '@/types/t
 /**
  * Obtém e valida o contexto multi-tenant do usuário autenticado no servidor.
  * NUNCA confia em parâmetros fornecidos pelo cliente sem cruzar com a tabela tenant_users.
+ * Realiza validação estrita no backend do ciclo de vida da assinatura SaaS (trial e ativa).
  */
 export async function getAuthenticatedTenantContext(
   targetTenantSlug?: string
@@ -31,7 +32,8 @@ export async function getAuthenticatedTenantContext(
         slug,
         plan,
         status,
-        settings
+        settings,
+        created_at
       )
     `)
     .eq('user_id', user.id)
@@ -55,6 +57,7 @@ export async function getAuthenticatedTenantContext(
       plan: PlanType;
       status: string;
       settings: Record<string, unknown> | null;
+      created_at?: string;
     } | null;
   }
 
@@ -73,11 +76,59 @@ export async function getAuthenticatedTenantContext(
     selected = matched;
   }
 
-  // Permite acesso normal se estiver 'active' ou 'trial'
-  // Se estiver 'suspended' (por inadimplência), permite prosseguir apenas para que o layout
-  // apresente a tela de regularização / configurações da assinatura, preservando os dados.
-  if (!selected.tenants || (selected.tenants.status !== 'active' && selected.tenants.status !== 'trial' && selected.tenants.status !== 'suspended')) {
+  // Se o tenant foi cancelado/deletado
+  if (!selected.tenants) {
     return null;
+  }
+
+  // ── VALIDAÇÃO DE ASSINATURA E TRIAL NO BACKEND (PROMPT 142) ──
+  // Busca a assinatura do tenant diretamente em public.saas_subscriptions
+  const { data: subscription } = await supabase
+    .from('saas_subscriptions')
+    .select('status, trial_ends_at, current_period_end, grace_period_days')
+    .eq('tenant_id', selected.tenants.id)
+    .maybeSingle();
+
+  const nowTime = Date.now();
+  let isSubscriptionValid = true;
+  let isTrialExpired = false;
+  let subStatus = subscription?.status || selected.tenants.status;
+
+  if (subscription) {
+    if (subscription.status === 'trial') {
+      const trialEnd = subscription.trial_ends_at
+        ? new Date(subscription.trial_ends_at).getTime()
+        : new Date(selected.tenants.created_at || 0).getTime() + 7 * 86400000;
+
+      if (nowTime > trialEnd) {
+        isTrialExpired = true;
+        isSubscriptionValid = false;
+        subStatus = 'suspended';
+      }
+    } else if (subscription.status === 'active') {
+      isSubscriptionValid = true;
+    } else if (subscription.status === 'suspended' || subscription.status === 'canceled') {
+      isSubscriptionValid = false;
+    } else if (subscription.status === 'overdue') {
+      const graceDays = subscription.grace_period_days ?? 5;
+      const endWithGrace = new Date(subscription.current_period_end).getTime() + graceDays * 86400000;
+      if (nowTime > endWithGrace) {
+        isSubscriptionValid = false;
+        subStatus = 'suspended';
+      }
+    }
+  } else {
+    // Tenant legado ou sem registro formal em saas_subscriptions
+    if (selected.tenants.status === 'trial') {
+      const trialEnd = new Date(selected.tenants.created_at || 0).getTime() + 7 * 86400000;
+      if (nowTime > trialEnd) {
+        isTrialExpired = true;
+        isSubscriptionValid = false;
+        subStatus = 'suspended';
+      }
+    } else if (selected.tenants.status === 'suspended') {
+      isSubscriptionValid = false;
+    }
   }
 
   const timezone = (selected.tenants.settings?.timezone as string) || 'America/Sao_Paulo';
@@ -89,7 +140,12 @@ export async function getAuthenticatedTenantContext(
     tenantName: selected.tenants.name,
     role: selected.role,
     plan: selected.tenants.plan,
-    tenantStatus: selected.tenants.status as TenantStatus,
+    tenantStatus: (isSubscriptionValid ? selected.tenants.status : 'suspended') as TenantStatus,
     timezone,
+    subscriptionStatus: subStatus,
+    isSubscriptionValid,
+    isTrialExpired,
+    trialEndsAt: subscription?.trial_ends_at || null,
+    subscriptionEndsAt: subscription?.current_period_end || null,
   };
 }

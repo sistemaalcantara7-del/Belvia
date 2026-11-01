@@ -10,6 +10,7 @@ import { AgendaManager } from '@/components/agenda/AgendaManager';
 import { getWhatsAppInboundMessagesAction } from '@/lib/actions/whatsapp';
 import { getWaitingListEntriesAction } from '@/lib/actions/waitingList';
 import { WaitingListItem } from '@/types/waitingList';
+import { TrialExpiredView } from '@/components/settings/TrialExpiredView';
 
 interface AgendaPageProps {
   params: Promise<{ tenantSlug: string }>;
@@ -22,6 +23,19 @@ export default async function AgendaPage({ params }: AgendaPageProps) {
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
     redirect('/login');
+  }
+
+  // Se o período de testes ou assinatura expirou, exibe a tela de regularização
+  if (context.isSubscriptionValid === false) {
+    return (
+      <TrialExpiredView
+        tenantSlug={tenantSlug}
+        tenantName={context.tenantName}
+        plan={context.plan}
+        trialEndsAt={context.trialEndsAt}
+        canManage={context.role === 'owner' || context.role === 'admin'}
+      />
+    );
   }
 
   const supabase = await createClient();
