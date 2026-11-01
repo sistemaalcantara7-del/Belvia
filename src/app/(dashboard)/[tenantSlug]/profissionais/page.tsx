@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { Professional, ProfessionalSchedule } from '@/types/professionals';
 import { Service } from '@/types/services';
 import { ProfessionalsManager } from '@/components/professionals/ProfessionalsManager';
+import { TrialExpiredView } from '@/components/settings/TrialExpiredView';
 
 interface ProfessionalsPageProps {
   params: Promise<{ tenantSlug: string }>;
@@ -18,6 +19,19 @@ export default async function ProfessionalsPage({ params }: ProfessionalsPagePro
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
     redirect('/login');
+  }
+
+  // Se o período de testes ou assinatura expirou, bloqueia operações e exibe tela de regularização
+  if (context.isSubscriptionValid === false) {
+    return (
+      <TrialExpiredView
+        tenantSlug={tenantSlug}
+        tenantName={context.tenantName}
+        plan={context.plan}
+        trialEndsAt={context.trialEndsAt}
+        canManage={context.role === 'owner' || context.role === 'admin'}
+      />
+    );
   }
 
   const supabase = await createClient();

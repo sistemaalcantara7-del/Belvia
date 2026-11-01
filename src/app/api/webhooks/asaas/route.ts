@@ -98,7 +98,16 @@ export async function POST(req: NextRequest) {
 
     // 4. Atualização de status da assinatura e do tenant
     if (['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED'].includes(event)) {
-      // Pagamento confirmado via webhook autenticado: ativa assinatura e tenant
+      // 1. Verifica se esta fatura já havia sido confirmada anteriormente (idempotência estrita)
+      const { data: existingInvoice } = await supabase
+        .from('saas_invoices')
+        .select('status, paid_at')
+        .eq('asaas_payment_id', asaasPaymentId)
+        .maybeSingle();
+
+      const wasAlreadyPaid = existingInvoice?.status === 'paid' && !!existingInvoice?.paid_at;
+
+      // Pagamento confirmado via webhook autenticado: ativa assinatura e tenant com o plano contratado
       const nextDueDateStr = new Date(Date.now() + 30 * 86400000).toISOString();
 
       const { data: updatedSub } = await supabase
@@ -113,20 +122,27 @@ export async function POST(req: NextRequest) {
         .select('plan')
         .maybeSingle();
 
+      const effectivePlan = (updatedSub?.plan || 'essential') as PlanType;
+
+      // Sincroniza o plano efetivo e status ativo na tabela tenants
       await supabase
         .from('tenants')
-        .update({ status: 'active' })
+        .update({
+          status: 'active',
+          plan: effectivePlan,
+        })
         .eq('id', tenantId);
 
-      // Dispara e-mail transacional de pagamento confirmado para o proprietário do estabelecimento
-      try {
-        const { data: ownerUser } = await supabase
-          .from('tenant_users')
-          .select('user_id, tenants(name, slug)')
-          .eq('tenant_id', tenantId)
-          .eq('role', 'owner')
-          .eq('status', 'active')
-          .maybeSingle();
+      // Dispara e-mail transacional de pagamento confirmado apenas se não era pagamento previamente processado
+      if (!wasAlreadyPaid) {
+        try {
+          const { data: ownerUser } = await supabase
+            .from('tenant_users')
+            .select('user_id, tenants(name, slug)')
+            .eq('tenant_id', tenantId)
+            .eq('role', 'owner')
+            .eq('status', 'active')
+            .maybeSingle();
 
         if (ownerUser) {
           const { data: profile } = await supabase
@@ -165,6 +181,7 @@ export async function POST(req: NextRequest) {
       } catch (mailErr) {
         console.error('[Resend Owner Lookup Error]', mailErr);
       }
+    }
     } else if (event === 'PAYMENT_OVERDUE') {
       // Pagamento atrasado: entra em tolerância ('overdue') ou suspensão ('suspended')
       const { data: sub } = await supabase

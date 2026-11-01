@@ -29,6 +29,76 @@ export function hasRolePermission(role: TenantRole, permission: string): boolean
 }
 
 /**
+ * Avalia se o status e período de assinatura ou trial do tenant estão vigentes.
+ * Regra idêntica utilizada tanto no contexto autenticado quanto nas páginas públicas.
+ */
+export function checkTenantSubscriptionValidity(params: {
+  tenantStatus: string;
+  tenantCreatedAt?: string | null;
+  subscription?: {
+    status?: string | null;
+    trial_ends_at?: string | null;
+    current_period_end?: string | null;
+    grace_period_days?: number | null;
+  } | null;
+}): {
+  isValid: boolean;
+  isTrialExpired: boolean;
+  status: string;
+} {
+  const { tenantStatus, tenantCreatedAt, subscription } = params;
+  const nowTime = Date.now();
+
+  if (subscription) {
+    if (subscription.status === 'trial') {
+      const trialEnd = subscription.trial_ends_at
+        ? new Date(subscription.trial_ends_at).getTime()
+        : new Date(tenantCreatedAt || 0).getTime() + 7 * 86400000;
+
+      if (nowTime > trialEnd) {
+        return { isValid: false, isTrialExpired: true, status: 'suspended' };
+      }
+      return { isValid: true, isTrialExpired: false, status: 'trial' };
+    }
+
+    if (subscription.status === 'active') {
+      return { isValid: true, isTrialExpired: false, status: 'active' };
+    }
+
+    if (subscription.status === 'suspended' || subscription.status === 'canceled') {
+      return { isValid: false, isTrialExpired: false, status: 'suspended' };
+    }
+
+    if (subscription.status === 'overdue') {
+      const graceDays = subscription.grace_period_days ?? 5;
+      const endWithGrace = subscription.current_period_end
+        ? new Date(subscription.current_period_end).getTime() + graceDays * 86400000
+        : nowTime;
+      if (nowTime > endWithGrace) {
+        return { isValid: false, isTrialExpired: false, status: 'suspended' };
+      }
+      // Dentro da tolerância de dias de carência
+      return { isValid: true, isTrialExpired: false, status: 'overdue' };
+    }
+  }
+
+  // Fallback caso não haja registro em saas_subscriptions
+  if (tenantStatus === 'trial') {
+    const trialEnd = new Date(tenantCreatedAt || 0).getTime() + 7 * 86400000;
+    if (nowTime > trialEnd) {
+      return { isValid: false, isTrialExpired: true, status: 'suspended' };
+    }
+    return { isValid: true, isTrialExpired: false, status: 'trial' };
+  }
+
+  if (tenantStatus === 'active') {
+    return { isValid: true, isTrialExpired: false, status: 'active' };
+  }
+
+  return { isValid: false, isTrialExpired: false, status: 'suspended' };
+}
+
+/**
  * Valida se o estabelecimento possui assinatura ativa ou trial válido.
  * Lança ou retorna erro caso o período de teste tenha expirado ou a assinatura esteja suspensa,
  * bloqueando operações como criação/edição de clientes, agendamentos, comandas e caixa.

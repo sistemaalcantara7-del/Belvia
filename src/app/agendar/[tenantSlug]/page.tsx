@@ -37,6 +37,23 @@ export default async function PublicBookingPage({ params, searchParams }: PagePr
   const res = await getPublicTenantCatalogAction(tenantSlug);
 
   if (!res.success || !res.data) {
+    if (res.error?.includes('indisponível')) {
+      return (
+        <div className="min-h-screen bg-[#FAF5F3] flex items-center justify-center p-6 text-[#2C1810]">
+          <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-[#EAD9D3] shadow-md text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-[#FAF0ED] text-[#C4837A] mx-auto flex items-center justify-center text-2xl font-serif">
+              ✨
+            </div>
+            <h1 className="text-xl font-serif font-bold text-[#2C1810]">
+              Agendamento Online Temporariamente Indisponível
+            </h1>
+            <p className="text-xs sm:text-sm text-[#7D6B65] leading-relaxed">
+              O agendamento online deste estabelecimento está temporariamente pausado. Por favor, retorne em breve ou entre em contato diretamente com a equipe do estabelecimento.
+            </p>
+          </div>
+        </div>
+      );
+    }
     notFound();
   }
 

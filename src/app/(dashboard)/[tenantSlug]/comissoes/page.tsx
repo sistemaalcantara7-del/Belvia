@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { getCommissionsAction } from '@/lib/actions/financial';
 import { CommissionManager } from '@/components/financial/CommissionManager';
 import { Professional } from '@/types/professionals';
+import { TrialExpiredView } from '@/components/settings/TrialExpiredView';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,19 @@ export default async function ComissoesPage({ params }: ComissoesPageProps) {
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
     redirect('/login');
+  }
+
+  // Se o período de testes ou assinatura expirou, exibe tela de regularização
+  if (context.isSubscriptionValid === false) {
+    return (
+      <TrialExpiredView
+        tenantSlug={tenantSlug}
+        tenantName={context.tenantName}
+        plan={context.plan}
+        trialEndsAt={context.trialEndsAt}
+        canManage={context.role === 'owner' || context.role === 'admin'}
+      />
+    );
   }
 
   // Regra de segurança BELVIA: Recepção NÃO tem acesso a comissões

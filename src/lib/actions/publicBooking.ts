@@ -9,6 +9,7 @@ import {
 } from '@/types/publicBooking';
 import { localDateTimeToUtcIso } from '@/lib/utils/timezone';
 import { sanitizeDigits } from '@/lib/utils/masks';
+import { checkTenantSubscriptionValidity } from '@/lib/plans/entitlements';
 
 /**
  * Cria cliente público anon seguro sem expor tokens ou exigir autenticação
@@ -54,7 +55,37 @@ export async function getPublicTenantCatalogAction(
   try {
     const supabase = getPublicSupabase();
 
-    // 1. Tenta via RPC dedicada de catálogo público
+    // 1. Consulta dados do tenant e da assinatura para garantir vigência de trial e status
+    const { data: tenant, error: tErr } = await supabase
+      .from('tenants')
+      .select('id, name, slug, plan, status, settings, created_at')
+      .eq('slug', tenantSlug)
+      .maybeSingle();
+
+    if (tErr || !tenant) {
+      return { success: false, error: 'Estabelecimento não encontrado.' };
+    }
+
+    const { data: subscription } = await supabase
+      .from('saas_subscriptions')
+      .select('status, trial_ends_at, current_period_end, grace_period_days')
+      .eq('tenant_id', tenant.id)
+      .maybeSingle();
+
+    const validity = checkTenantSubscriptionValidity({
+      tenantStatus: tenant.status,
+      tenantCreatedAt: tenant.created_at,
+      subscription,
+    });
+
+    if (!validity.isValid) {
+      return {
+        success: false,
+        error: 'Este estabelecimento está temporariamente indisponível para agendamento online.',
+      };
+    }
+
+    // 2. Tenta via RPC dedicada de catálogo público
     const { data: rpcData, error: rpcErr } = await supabase.rpc('get_public_tenant_catalog', {
       p_slug: tenantSlug,
     });
@@ -68,24 +99,6 @@ export async function getPublicTenantCatalogAction(
           professionals: rpcData.professionals || [],
           portfolio: rpcData.portfolio || [],
         },
-      };
-    }
-
-    // 2. Fallback resiliente: caso a migration 31 ainda esteja pendente de execução manual
-    const { data: tenant, error: tErr } = await supabase
-      .from('tenants')
-      .select('id, name, slug, plan, status, settings')
-      .eq('slug', tenantSlug)
-      .maybeSingle();
-
-    if (tErr || !tenant) {
-      return { success: false, error: 'Estabelecimento não encontrado.' };
-    }
-
-    if (tenant.status !== 'active') {
-      return {
-        success: false,
-        error: 'Este estabelecimento está temporariamente indisponível para agendamento online.',
       };
     }
 
@@ -444,14 +457,30 @@ export async function lookupClientByPhoneAction(params: {
 
     const adminSupabase = getServiceRoleSupabase();
 
-    // 1. Localiza tenant
+    // 1. Localiza tenant e valida vigência de trial/assinatura
     const { data: tenant, error: tErr } = await adminSupabase
       .from('tenants')
-      .select('id, status')
+      .select('id, status, created_at')
       .eq('slug', tenantSlug)
       .maybeSingle();
 
-    if (tErr || !tenant || tenant.status !== 'active') {
+    if (tErr || !tenant) {
+      return { success: false, error: 'Estabelecimento indisponível.' };
+    }
+
+    const { data: subscription } = await adminSupabase
+      .from('saas_subscriptions')
+      .select('status, trial_ends_at, current_period_end, grace_period_days')
+      .eq('tenant_id', tenant.id)
+      .maybeSingle();
+
+    const validity = checkTenantSubscriptionValidity({
+      tenantStatus: tenant.status,
+      tenantCreatedAt: tenant.created_at,
+      subscription,
+    });
+
+    if (!validity.isValid) {
       return { success: false, error: 'Estabelecimento indisponível.' };
     }
 

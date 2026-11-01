@@ -2,6 +2,7 @@ import { getAuthenticatedTenantContext } from '@/lib/tenant/context';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { ReportsView } from '@/components/reports/ReportsView';
+import { TrialExpiredView } from '@/components/settings/TrialExpiredView';
 import {
   ClientRetentionMetrics,
   ClientInactivityItem,
@@ -30,6 +31,19 @@ export default async function RelatoriosPage({
   const context = await getAuthenticatedTenantContext(tenantSlug);
   if (!context) {
     redirect('/login');
+  }
+
+  // Se o período de testes ou assinatura expirou, exibe tela de regularização
+  if (context.isSubscriptionValid === false) {
+    return (
+      <TrialExpiredView
+        tenantSlug={tenantSlug}
+        tenantName={context.tenantName}
+        plan={context.plan}
+        trialEndsAt={context.trialEndsAt}
+        canManage={context.role === 'owner' || context.role === 'admin'}
+      />
+    );
   }
 
   // Acesso financeiro gerencial (proprietário, admin ou recepcionista com máscara controlada)

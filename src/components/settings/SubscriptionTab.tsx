@@ -96,13 +96,14 @@ export function SubscriptionTab({ tenantSlug, initialData }: SubscriptionTabProp
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
   };
 
-  // Contratar / Ativar assinatura
-  async function handleSubscribe(billingType: 'PIX' | 'CREDIT_CARD' | 'BOLETO') {
+  // Contratar / Ativar assinatura (permite escolher diretamente o plano desejado)
+  async function handleSubscribe(billingType: 'PIX' | 'CREDIT_CARD' | 'BOLETO', targetPlan?: PlanType) {
     if (!data.canManage) return;
     setLoading(true);
     setMessage(null);
 
-    const res = await subscribeToPlanAction(tenantSlug, sub.plan, billingType);
+    const planToSubscribe = targetPlan || sub.plan;
+    const res = await subscribeToPlanAction(tenantSlug, planToSubscribe, billingType);
     if (res.success) {
       if (billingType === 'PIX' || billingType === 'CREDIT_CARD') {
         setPaymentModal({
@@ -113,8 +114,17 @@ export function SubscriptionTab({ tenantSlug, initialData }: SubscriptionTabProp
       }
       setMessage({
         type: 'success',
-        text: 'Cobrança gerada com sucesso via Asaas! Conclua o pagamento para ativação automática.',
+        text: `Cobrança do Plano ${PLAN_CONFIGS[planToSubscribe].name} gerada via Asaas! Conclua o pagamento para ativação imediata.`,
       });
+      // Atualiza localmente o plano selecionado e valor
+      setData((prev) => ({
+        ...prev,
+        subscription: {
+          ...prev.subscription,
+          plan: planToSubscribe,
+          amount: PLAN_CONFIGS[planToSubscribe].priceMonthly,
+        },
+      }));
     } else {
       setMessage({ type: 'error', text: res.error || 'Erro ao processar assinatura.' });
     }
@@ -246,25 +256,67 @@ export function SubscriptionTab({ tenantSlug, initialData }: SubscriptionTabProp
 
         {/* Ações de Gestão da Assinatura */}
         {data.canManage && (
-          <div className="pt-2 flex flex-wrap items-center gap-3">
+          <div className="pt-2 space-y-4">
             {sub.status === 'trial' || sub.status === 'overdue' ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleSubscribe('PIX')}
-                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-[#B87070] hover:opacity-95 shadow-2xs transition-all disabled:opacity-50"
-                >
-                  Ativar Assinatura via Pix
-                </button>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleSubscribe('CREDIT_CARD')}
-                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#4A3B36] bg-white border border-[#EADBCE] hover:border-[#B87070] shadow-2xs transition-all disabled:opacity-50"
-                >
-                  Cartão de Crédito
-                </button>
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-[#1E1115]">
+                  Escolha o plano e a forma de pagamento desejada:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Opção Plano Essencial */}
+                  <div className={`p-4 rounded-xl border transition-all ${sub.plan === 'essential' ? 'border-[#B87070] bg-[#FAF0ED]/40' : 'border-[#EADBCE] bg-[#FAF6F4]/50'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#1E1115]">Plano Essencial</span>
+                      <span className="text-xs font-semibold text-[#B87070]">{formatCurrency(PLAN_CONFIGS.essential.priceMonthly)}/mês</span>
+                    </div>
+                    <p className="text-[11px] text-[#7D6B65] mt-1">1 Profissional atendendo • Agenda e Financeiro</p>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => handleSubscribe('PIX', 'essential')}
+                        className="flex-1 py-2 px-2.5 rounded-lg text-[11px] font-semibold text-white bg-[#B87070] hover:opacity-95 shadow-2xs transition-all disabled:opacity-50"
+                      >
+                        Contratar via Pix
+                      </button>
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => handleSubscribe('CREDIT_CARD', 'essential')}
+                        className="flex-1 py-2 px-2.5 rounded-lg text-[11px] font-semibold text-[#4A3B36] bg-white border border-[#EADBCE] hover:border-[#B87070] shadow-2xs transition-all disabled:opacity-50"
+                      >
+                        Cartão
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Opção Plano Inteligente */}
+                  <div className={`p-4 rounded-xl border transition-all ${sub.plan === 'smart' ? 'border-[#B87070] bg-[#FAF0ED]/40' : 'border-[#EADBCE] bg-[#FAF6F4]/50'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#1E1115]">Plano Inteligente</span>
+                      <span className="text-xs font-semibold text-[#B87070]">{formatCurrency(PLAN_CONFIGS.smart.priceMonthly)}/mês</span>
+                    </div>
+                    <p className="text-[11px] text-[#7D6B65] mt-1">Até 5 Profissionais • Comissões e Relatórios</p>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => handleSubscribe('PIX', 'smart')}
+                        className="flex-1 py-2 px-2.5 rounded-lg text-[11px] font-semibold text-white bg-[#B87070] hover:opacity-95 shadow-2xs transition-all disabled:opacity-50"
+                      >
+                        Contratar via Pix
+                      </button>
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => handleSubscribe('CREDIT_CARD', 'smart')}
+                        className="flex-1 py-2 px-2.5 rounded-lg text-[11px] font-semibold text-[#4A3B36] bg-white border border-[#EADBCE] hover:border-[#B87070] shadow-2xs transition-all disabled:opacity-50"
+                      >
+                        Cartão
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : null}
 

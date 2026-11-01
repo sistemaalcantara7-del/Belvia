@@ -253,9 +253,14 @@ export async function subscribeToPlanAction(
     }
 
     // 7. Atualiza saas_subscriptions SEM liberar acesso ('active') prematuramente.
-    // Preserva 'trial' se ainda estiver válido, ou mantém 'overdue'/'suspended' aguardando pagamento
-    const currentStatus = currentSub?.status || 'trial';
-    const preservedStatus = currentStatus === 'trial' ? 'trial' : 'overdue';
+    // Preserva 'trial' (com seu término original) se ainda estiver válido, ou mantém 'active'/'overdue'/'suspended'
+    const isCurrentlyActive = currentSub?.status === 'active';
+    const isCurrentlyTrial = currentSub?.status === 'trial' || (!currentSub && context.subscriptionStatus === 'trial');
+    
+    // Se ainda está em trial válido (conforme verificado no contexto)
+    const preservedStatus = isCurrentlyActive
+      ? 'active'
+      : (isCurrentlyTrial && !context.isTrialExpired ? 'trial' : 'overdue');
 
     await supabase
       .from('saas_subscriptions')
@@ -267,6 +272,8 @@ export async function subscribeToPlanAction(
           amount: planConfig.priceMonthly,
           asaas_customer_id: asaasCustomerId,
           asaas_subscription_id: asaasSubscriptionId,
+          trial_ends_at: currentSub?.trial_ends_at || context.trialEndsAt || undefined,
+          current_period_end: currentSub?.current_period_end || undefined,
         },
         { onConflict: 'tenant_id' }
       );

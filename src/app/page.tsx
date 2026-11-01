@@ -291,17 +291,32 @@ export default function HomePage() {
 
       {/* ── 5. SEÇÃO COMERCIAL: VITRINE DIGITAL DO SEU NEGÓCIO ────────── */}
       <section
-        className="relative w-full overflow-hidden bg-cover bg-no-repeat bg-[#FAF4EE]"
-        style={{
-          backgroundImage: "url('/img/bg_app2.png')",
-          backgroundPosition: 'right center',
-          backgroundSize: 'cover',
-        }}
+        className="zelunia-vitrine-section relative w-full overflow-hidden bg-[#FAF4EE]"
       >
+        {/* Estilo responsivo inline para background perfeito sem cortes */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          .zelunia-vitrine-section {
+            background-image: url('/img/bg_app2.png');
+            background-repeat: no-repeat;
+          }
+          @media (min-width: 1024px) {
+            .zelunia-vitrine-section {
+              background-position: right center !important;
+              background-size: contain !important;
+            }
+          }
+          @media (max-width: 1023px) {
+            .zelunia-vitrine-section {
+              background-position: right bottom !important;
+              background-size: cover !important;
+            }
+          }
+        `}} />
+
         {/* Camada sutil para dispositivos menores garantir contraste de leitura */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#FAF4EE]/95 via-[#FAF4EE]/85 to-transparent lg:hidden pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-6 py-10 sm:py-12 lg:py-14 relative z-10">
+        <div className="max-w-7xl mx-auto px-6 py-12 sm:py-16 lg:py-20 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             {/* Conteúdo HTML no espaço livre à esquerda (7 colunas no desktop) */}
             <div className="lg:col-span-7 xl:col-span-6 space-y-4 sm:space-y-5 max-w-xl">
