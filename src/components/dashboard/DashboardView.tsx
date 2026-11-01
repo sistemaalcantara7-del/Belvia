@@ -26,6 +26,7 @@ import {
 import { OnboardingProgress } from '@/lib/actions/onboarding';
 import { OnboardingModal } from '@/components/dashboard/OnboardingModal';
 import { PublicPageButton } from '@/components/dashboard/PublicPageButton';
+import { PublicPageCard } from '@/components/dashboard/PublicPageCard';
 
 interface AppointmentItem {
   id: string;
@@ -246,6 +247,9 @@ export function DashboardView({
           </Link>
         </div>
       </div>
+
+      {/* ── CARD DESTACADO: MINHA PÁGINA PÚBLICA ── */}
+      <PublicPageCard tenantSlug={tenantSlug} tenantName={tenantName} />
 
       {/* ── BARRA DE AÇÕES RÁPIDAS DA ROTINA (FASE 7.1) ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

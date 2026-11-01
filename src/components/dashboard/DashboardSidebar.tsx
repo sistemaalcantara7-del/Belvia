@@ -96,7 +96,7 @@ export function DashboardSidebar({
 
       {/* ── Sidebar Desktop / Drawer Mobile ────────────────────────── */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-[#2D1F27] bg-cover bg-bottom bg-no-repeat border-r border-[#433139] transition-all duration-300 ease-in-out relative overflow-hidden shadow-xl ${
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col h-screen h-[100dvh] max-h-[100dvh] bg-[#2D1F27] bg-cover bg-bottom bg-no-repeat border-r border-[#433139] transition-all duration-300 ease-in-out overflow-hidden shadow-xl ${
           collapsed ? 'w-20' : 'w-64'
         } ${
           mobileOpen
@@ -107,7 +107,7 @@ export function DashboardSidebar({
           backgroundImage: "url('/img/bg_menu.png')",
         }}
       >
-        {/* Topo: Logo ZELUNIA com flor e tipografia da referência */}
+        {/* Topo: Logo ZELUNIA fixo */}
         <div className="pt-6 pb-4 px-5 flex flex-col items-center justify-center border-b border-[#433139]/80 shrink-0 relative bg-black/15 backdrop-blur-[2px]">
           {!collapsed ? (
             <Link href={`/${tenantSlug}`} className="flex flex-col items-center text-center group">

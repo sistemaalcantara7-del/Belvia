@@ -2,11 +2,7 @@
 
 import React, { useState, useTransition } from 'react';
 import {
-  Globe,
-  Palette,
   Share2,
-  Copy,
-  ExternalLink,
   CheckCircle2,
   AlertCircle,
   Eye,
@@ -15,11 +11,11 @@ import {
   Smartphone,
   Save,
   Loader2,
-  Check,
   Plus,
   Trash2,
   ImageIcon,
-  Link2,
+  Upload,
+  Building2,
 } from 'lucide-react';
 import { OnlineBookingSettings, PortfolioItem } from '@/types/publicBooking';
 import { Service } from '@/types/services';
@@ -57,7 +53,6 @@ export function OnlineBookingCustomizer({
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>(initialPortfolio);
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [copiedLink, setCopiedLink] = useState(false);
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'desktop'>('mobile');
 
   // Novo item de portfólio modal/form
@@ -75,12 +70,6 @@ export function OnlineBookingCustomizer({
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
     shortUrl
   )}`;
-
-  const handleCopyLink = (url: string) => {
-    navigator.clipboard.writeText(url);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2500);
-  };
 
   const handleUpdateSlug = () => {
     if (!isOwnerOrAdmin || slugInput === currentSlug) return;
@@ -119,6 +108,30 @@ export function OnlineBookingCustomizer({
         });
       }
     });
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Selecione um arquivo de imagem válido (PNG, JPG, SVG ou WEBP).');
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('A imagem é muito grande. Escolha uma imagem de até 2MB para garantir carregamento rápido.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        setSettings((prev) => ({ ...prev, logo_url: dataUrl }));
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleAddPortfolioPhoto = () => {
@@ -170,47 +183,240 @@ export function OnlineBookingCustomizer({
 
   return (
     <div className="space-y-6">
-      {/* ── CARD DE URL CURTA & DIVULGAÇÃO ────────────────────────────────────── */}
-      <div className="p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-2xs space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#F5EDE8] pb-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <Link2 className="w-4 h-4 text-[#B87070]" />
-              <h2 className="text-sm font-bold text-[#1E1115]">
-                Endereço Curto e Vitrine Digital
-              </h2>
+      {/* ── 1. SEÇÃO PRINCIPAL NO TOPO: DADOS DO ESTABELECIMENTO ─────────────── */}
+      <div className="p-5 sm:p-6 rounded-2xl bg-white border border-[#EADBCE] shadow-xs space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F5EDE8] pb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#FAF0EC] text-[#B87070] flex items-center justify-center shrink-0">
+              <Building2 className="w-4 h-4 stroke-[2.2]" />
             </div>
-            <p className="text-xs text-[#7D6B65] mt-0.5">
-              Sua vitrine completa em <strong>zelunia.com.br/p/{currentSlug}</strong> e agendamento direto em <strong>/agendar/{currentSlug}</strong>
-            </p>
+            <div>
+              <h2 className="text-base font-bold text-[#1E1115]">
+                Dados do Estabelecimento
+              </h2>
+              <p className="text-xs text-[#7D6B65]">
+                Informações institucionais, logomarca oficial e identidade visual que alimentam a vitrine pública e cabeçalhos de relatórios.
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {isOwnerOrAdmin && (
             <button
               type="button"
-              onClick={() => handleCopyLink(shortUrl)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#EADBCE] bg-[#FAF6F3] hover:bg-[#F2E0DC] text-xs font-semibold text-[#1E1115] transition-colors"
+              disabled={isPending}
+              onClick={handleSaveSettings}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#B87070] hover:bg-[#A86B62] text-white text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 shadow-2xs self-start sm:self-auto shrink-0"
             >
-              {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedLink ? 'Copiado!' : 'Copiar Vitrine'}</span>
+              {isPending ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Salvando...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Salvar Dados</span>
+                </>
+              )}
             </button>
+          )}
+        </div>
 
-            <a
-              href={`/p/${currentSlug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#B87070] hover:bg-[#A86B62] text-white text-xs font-semibold shadow-2xs transition-colors"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>Ver Vitrine</span>
-            </a>
+        {/* Bloco de Logomarca com Upload e Pré-visualização */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 p-4 rounded-xl bg-[#FAF6F3] border border-[#EADBCE]">
+          <div className="md:col-span-4 flex flex-col items-center justify-center text-center p-3 border-b md:border-b-0 md:border-r border-[#EADBCE]/80">
+            <label className="block text-xs font-bold text-[#1E1115] mb-2">
+              Logomarca Oficial
+            </label>
+            <div className="w-28 h-28 rounded-2xl border-2 border-dashed border-[#CDB8B0] bg-white flex items-center justify-center overflow-hidden p-2 shadow-2xs relative group">
+              {settings.logo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={settings.logo_url}
+                  alt="Logomarca"
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="text-center p-2">
+                  <ImageIcon className="w-8 h-8 text-[#A8948D] mx-auto mb-1" />
+                  <span className="text-[10px] text-[#A8948D] font-medium block">Sem logo</span>
+                </div>
+              )}
+            </div>
+            {settings.logo_url && (
+              <button
+                type="button"
+                disabled={!isOwnerOrAdmin}
+                onClick={() => setSettings({ ...settings, logo_url: '' })}
+                className="mt-2 text-[11px] text-red-600 hover:underline font-medium"
+              >
+                Remover logomarca
+              </button>
+            )}
+          </div>
+
+          <div className="md:col-span-8 flex flex-col justify-center space-y-3">
+            <div>
+              <span className="block text-xs font-semibold text-[#1E1115] mb-1">
+                Upload de Imagem (PNG / JPG / WEBP)
+              </span>
+              <label
+                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#EADBCE] bg-white hover:bg-[#F2E0DC] text-xs font-bold text-[#1E1115] transition-colors cursor-pointer shadow-2xs ${
+                  !isOwnerOrAdmin ? 'opacity-50 pointer-events-none' : ''
+                }`}
+              >
+                <Upload className="w-4 h-4 text-[#B87070]" />
+                <span>Escolher arquivo no computador</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                  disabled={!isOwnerOrAdmin}
+                />
+              </label>
+              <p className="text-[11px] text-[#7D6B65] mt-1.5">
+                Recomendado formato PNG transparente, até 2MB. A imagem será sincronizada automaticamente com seus relatórios e página pública.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-[#7D6B65] mb-1">
+                Ou informe a URL direta da imagem:
+              </label>
+              <input
+                type="url"
+                placeholder="https://..."
+                disabled={!isOwnerOrAdmin}
+                value={settings.logo_url || ''}
+                onChange={(e) => setSettings({ ...settings, logo_url: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-[#EADBCE] bg-white focus:outline-hidden"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Formulário de Edição do Slug */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        {/* Nome Comercial e Dados Cadastrais */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-[#1E1115] mb-1">
+              Nome Comercial do Estabelecimento
+            </label>
+            <input
+              type="text"
+              placeholder="Ex: Clínica Belvia Estética"
+              disabled={!isOwnerOrAdmin}
+              value={settings.business_name || ''}
+              onChange={(e) => setSettings({ ...settings, business_name: e.target.value })}
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#1E1115] mb-1">
+              WhatsApp Oficial de Atendimento
+            </label>
+            <input
+              type="tel"
+              placeholder="Ex: 11987654321"
+              disabled={!isOwnerOrAdmin}
+              value={settings.whatsapp || ''}
+              onChange={(e) => setSettings({ ...settings, whatsapp: e.target.value })}
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden"
+            />
+          </div>
+        </div>
+
+        {/* Apresentação e Redes Sociais */}
+        <div>
+          <label className="block text-xs font-semibold text-[#1E1115] mb-1">
+            Apresentação Comercial / Sobre o Estabelecimento
+          </label>
+          <textarea
+            rows={2}
+            placeholder="Ex: Cuidamos da sua autoestima com atendimento personalizado e tecnologias de ponta."
+            disabled={!isOwnerOrAdmin}
+            value={settings.business_description || ''}
+            onChange={(e) => setSettings({ ...settings, business_description: e.target.value })}
+            className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden resize-none"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-[#1E1115] mb-1">
+              Instagram (@ ou link)
+            </label>
+            <input
+              type="text"
+              placeholder="Ex: @belviaestetica"
+              disabled={!isOwnerOrAdmin}
+              value={settings.instagram || ''}
+              onChange={(e) => setSettings({ ...settings, instagram: e.target.value })}
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-[#1E1115] mb-1">
+              Endereço Físico Completo
+            </label>
+            <input
+              type="text"
+              placeholder="Ex: Rua Oscar Freire, 1200 - Jardins, São Paulo"
+              disabled={!isOwnerOrAdmin}
+              value={settings.address || ''}
+              onChange={(e) => setSettings({ ...settings, address: e.target.value })}
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden"
+            />
+          </div>
+        </div>
+
+        {/* Identidade Visual, Cores e Foto de Capa */}
+        <div className="pt-2 border-t border-[#F5EDE8]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-[#1E1115] mb-1">
+                Cor Principal da Marca
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  disabled={!isOwnerOrAdmin}
+                  value={settings.primary_color || '#C4837A'}
+                  onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
+                  className="w-10 h-9 p-0.5 rounded-lg border border-[#EADBCE] cursor-pointer"
+                />
+                <input
+                  type="text"
+                  disabled={!isOwnerOrAdmin}
+                  value={settings.primary_color || '#C4837A'}
+                  onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
+                  className="flex-1 px-3 py-2 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#1E1115] mb-1">
+                URL da Foto de Capa / Fachada (Opcional)
+              </label>
+              <input
+                type="url"
+                placeholder="https://images.unsplash.com/..."
+                disabled={!isOwnerOrAdmin}
+                value={settings.cover_url || ''}
+                onChange={(e) => setSettings({ ...settings, cover_url: e.target.value })}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Gerenciamento do Endereço Curto (Slug) Sem botões de cópia redundantes */}
+        <div className="pt-2 border-t border-[#F5EDE8] flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <div className="flex-1 flex items-center rounded-xl border border-[#EADBCE] bg-[#FAF6F3] px-3 py-2 text-xs">
-            <span className="text-[#9B8985] select-none font-medium">zelunia.com.br/p/</span>
+            <span className="text-[#9B8985] select-none font-medium">Endereço público do estabelecimento: zelunia.com.br/p/</span>
             <input
               type="text"
               disabled={!isOwnerOrAdmin || slugPending}
@@ -268,11 +474,11 @@ export function OnlineBookingCustomizer({
         </div>
       )}
 
-      {/* Grid: Configurações & Pré-visualização Responsiva */}
+      {/* Grid: Configurações Técnicas de Agendamento & Pré-visualização Responsiva */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Coluna de Configurações (7 colunas) */}
+        {/* Coluna de Configurações Técnicas (7 colunas) */}
         <div className="lg:col-span-7 space-y-6">
-          {/* Card 1: Chave Geral e Regras de Antecedência */}
+          {/* Card: Chave Geral e Regras de Antecedência */}
           <div className="p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-2xs space-y-4">
             <div className="flex items-center gap-2 border-b border-[#F5EDE8] pb-3">
               <Sliders className="w-4 h-4 text-[#B87070]" />
@@ -371,151 +577,6 @@ export function OnlineBookingCustomizer({
             </div>
           </div>
 
-          {/* Card 2: Identidade Visual e Cores */}
-          <div className="p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-2xs space-y-4">
-            <div className="flex items-center gap-2 border-b border-[#F5EDE8] pb-3">
-              <Palette className="w-4 h-4 text-[#B87070]" />
-              <h3 className="text-xs uppercase tracking-wider font-bold text-[#1E1115]">
-                Identidade Visual e Cores
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-[#1E1115] mb-1">
-                  Cor Principal da Sua Marca
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    disabled={!isOwnerOrAdmin}
-                    value={settings.primary_color || '#C4837A'}
-                    onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
-                    className="w-10 h-9 p-0.5 rounded-lg border border-[#EADBCE] cursor-pointer"
-                  />
-                  <input
-                    type="text"
-                    disabled={!isOwnerOrAdmin}
-                    value={settings.primary_color || '#C4837A'}
-                    onChange={(e) => setSettings({ ...settings, primary_color: e.target.value })}
-                    className="flex-1 px-3 py-2 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#1E1115] mb-1">
-                  URL da Logomarca (PNG/JPG)
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  disabled={!isOwnerOrAdmin}
-                  value={settings.logo_url || ''}
-                  onChange={(e) => setSettings({ ...settings, logo_url: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#1E1115] mb-1">
-                URL da Foto de Capa / Fachada / Espaço
-              </label>
-              <input
-                type="url"
-                placeholder="https://images.unsplash.com/..."
-                disabled={!isOwnerOrAdmin}
-                value={settings.cover_url || ''}
-                onChange={(e) => setSettings({ ...settings, cover_url: e.target.value })}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden"
-              />
-            </div>
-          </div>
-
-          {/* Card 3: Informações Comerciais e Redes Sociais */}
-          <div className="p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-2xs space-y-4">
-            <div className="flex items-center gap-2 border-b border-[#F5EDE8] pb-3">
-              <Globe className="w-4 h-4 text-[#B87070]" />
-              <h3 className="text-xs uppercase tracking-wider font-bold text-[#1E1115]">
-                Informações Comerciais e Redes Sociais
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-[#1E1115] mb-1">
-                  Nome do Estabelecimento
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ex: Clínica Belvia Estética"
-                  disabled={!isOwnerOrAdmin}
-                  value={settings.business_name || ''}
-                  onChange={(e) => setSettings({ ...settings, business_name: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#1E1115] mb-1">
-                  WhatsApp Oficial
-                </label>
-                <input
-                  type="tel"
-                  placeholder="Ex: 11987654321"
-                  disabled={!isOwnerOrAdmin}
-                  value={settings.whatsapp || ''}
-                  onChange={(e) => setSettings({ ...settings, whatsapp: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-[#1E1115] mb-1">
-                Apresentação Comercial / Sobre a Clínica
-              </label>
-              <textarea
-                rows={2}
-                placeholder="Ex: Cuidamos da sua autoestima com atendimento personalizado e tecnologias de ponta."
-                disabled={!isOwnerOrAdmin}
-                value={settings.business_description || ''}
-                onChange={(e) => setSettings({ ...settings, business_description: e.target.value })}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden resize-none"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-[#1E1115] mb-1">
-                  Instagram (@ ou URL)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ex: @belviaestetica"
-                  disabled={!isOwnerOrAdmin}
-                  value={settings.instagram || ''}
-                  onChange={(e) => setSettings({ ...settings, instagram: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#1E1115] mb-1">
-                  Endereço Físico Completo
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ex: Rua Oscar Freire, 1200 - São Paulo"
-                  disabled={!isOwnerOrAdmin}
-                  value={settings.address || ''}
-                  onChange={(e) => setSettings({ ...settings, address: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden"
-                />
-              </div>
-            </div>
-          </div>
 
           {/* Card 4: Gestão do Portfólio / Galeria de Fotos */}
           <div className="p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-2xs space-y-4">
