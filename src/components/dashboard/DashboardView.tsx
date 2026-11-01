@@ -251,64 +251,6 @@ export function DashboardView({
       {/* ── CARD DESTACADO: MINHA PÁGINA PÚBLICA ── */}
       <PublicPageCard tenantSlug={tenantSlug} tenantName={tenantName} />
 
-      {/* ── BARRA DE AÇÕES RÁPIDAS DA ROTINA (FASE 7.1) ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Link
-          href={`/${tenantSlug}/agenda`}
-          className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-[#EADBCE]/80 hover:border-[#B87070] hover:shadow-xs transition-all group"
-        >
-          <div className="w-9 h-9 rounded-lg bg-[#FCEFEB] text-[#B87070] group-hover:bg-[#B87070] group-hover:text-white transition-colors flex items-center justify-center shrink-0">
-            <CalendarIcon className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-[#2C1810] truncate">Novo Agendamento</p>
-            <p className="text-[11px] text-[#8C7A74] truncate">Abrir agenda / marcar</p>
-          </div>
-        </Link>
-
-        <Link
-          href={`/${tenantSlug}/clientes`}
-          className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-[#EADBCE]/80 hover:border-[#B87070] hover:shadow-xs transition-all group"
-        >
-          <div className="w-9 h-9 rounded-lg bg-[#F3EFEF] text-[#4A3B36] group-hover:bg-[#B87070] group-hover:text-white transition-colors flex items-center justify-center shrink-0">
-            <UserPlus className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-[#2C1810] truncate">Cadastrar Cliente</p>
-            <p className="text-[11px] text-[#8C7A74] truncate">Novo cadastro rápido</p>
-          </div>
-        </Link>
-
-        <Link
-          href={`/${tenantSlug}/anamnese`}
-          className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-[#EADBCE]/80 hover:border-[#B87070] hover:shadow-xs transition-all group"
-        >
-          <div className="w-9 h-9 rounded-lg bg-[#EAF7EE] text-[#1B873F] group-hover:bg-[#1B873F] group-hover:text-white transition-colors flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-[#2C1810] truncate">Atendimento</p>
-            <p className="text-[11px] text-[#8C7A74] truncate">Anamnese e prontuário</p>
-          </div>
-        </Link>
-
-        <Link
-          href={canViewFinancial ? `/${tenantSlug}/caixa` : `/${tenantSlug}/agenda`}
-          className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-[#EADBCE]/80 hover:border-[#B87070] hover:shadow-xs transition-all group"
-        >
-          <div className="w-9 h-9 rounded-lg bg-[#EBF3FC] text-[#2B72D4] group-hover:bg-[#2B72D4] group-hover:text-white transition-colors flex items-center justify-center shrink-0">
-            <DollarSign className="w-4 h-4" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-[#2C1810] truncate">
-              {canViewFinancial ? 'Lançar Pagamento' : 'Consultar Agenda'}
-            </p>
-            <p className="text-[11px] text-[#8C7A74] truncate">
-              {canViewFinancial ? 'Fluxo de caixa' : 'Horários do dia'}
-            </p>
-          </div>
-        </Link>
-      </div>
 
       {/* ── 3. QUATRO INDICADORES SUPERIORES (KPIS IDÊNTICOS AO MOCKUP) ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">

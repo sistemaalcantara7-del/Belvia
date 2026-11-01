@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Globe, Copy, Check, ExternalLink } from 'lucide-react';
+import { Globe, Copy, Check } from 'lucide-react';
 
 interface PublicPageCardProps {
   tenantSlug: string;
@@ -27,7 +27,7 @@ export function PublicPageCard({ tenantSlug, tenantName }: PublicPageCardProps) 
 
   return (
     <div className="p-4 sm:p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-xs relative overflow-hidden group hover:border-[#B87070]/60 transition-all">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* Lado Esquerdo: Ícone + Título + URL Real */}
         <div className="flex items-start sm:items-center gap-3.5 min-w-0">
           <div className="w-10 h-10 rounded-xl bg-[#FCEFEB] text-[#B87070] flex items-center justify-center shrink-0 shadow-2xs">
@@ -49,12 +49,12 @@ export function PublicPageCard({ tenantSlug, tenantName }: PublicPageCardProps) 
           </div>
         </div>
 
-        {/* Lado Direito: Ações Abrir Página e Copiar Link */}
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+        {/* Lado Direito: Apenas Ação de Copiar Link */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#EADBCE] bg-[#FAF6F3] hover:bg-[#F2E0DC] text-xs font-semibold text-[#1E1115] transition-all cursor-pointer shadow-2xs"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[#EADBCE] bg-[#FAF6F3] hover:bg-[#F2E0DC] text-xs font-semibold text-[#1E1115] transition-all cursor-pointer shadow-2xs"
             title="Copiar endereço da página pública"
           >
             {copied ? (
@@ -69,17 +69,6 @@ export function PublicPageCard({ tenantSlug, tenantName }: PublicPageCardProps) 
               </>
             )}
           </button>
-
-          <a
-            href={`/p/${tenantSlug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#B87070] hover:bg-[#A86B62] text-white text-xs font-semibold shadow-2xs transition-all hover:shadow-xs"
-            title="Abrir vitrine em nova aba"
-          >
-            <span>Abrir Página</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
         </div>
       </div>
     </div>

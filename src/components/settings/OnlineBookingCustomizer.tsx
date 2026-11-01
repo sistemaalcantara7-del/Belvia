@@ -5,10 +5,7 @@ import {
   Share2,
   CheckCircle2,
   AlertCircle,
-  Eye,
   Sliders,
-  Sparkles,
-  Smartphone,
   Save,
   Loader2,
   Plus,
@@ -36,14 +33,8 @@ interface OnlineBookingCustomizerProps {
   professionals: Professional[];
 }
 
-export function OnlineBookingCustomizer({
-  tenantSlug,
-  userRole,
-  initialSettings,
-  initialPortfolio = [],
-  services,
-  professionals,
-}: OnlineBookingCustomizerProps) {
+export function OnlineBookingCustomizer(props: OnlineBookingCustomizerProps) {
+  const { tenantSlug, userRole, initialSettings, initialPortfolio = [] } = props;
   const [currentSlug, setCurrentSlug] = useState(tenantSlug);
   const [slugInput, setSlugInput] = useState(tenantSlug);
   const [slugPending, startSlugTransition] = useTransition();
@@ -53,7 +44,6 @@ export function OnlineBookingCustomizer({
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>(initialPortfolio);
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'desktop'>('mobile');
 
   // Novo item de portfólio modal/form
   const [newPhotoTitle, setNewPhotoTitle] = useState('');
@@ -167,19 +157,6 @@ export function OnlineBookingCustomizer({
     });
   };
 
-  const toggleServiceFilter = (serviceId: string) => {
-    const current = settings.public_services_filter || [];
-    const exists = current.includes(serviceId);
-    const updated = exists ? current.filter((id) => id !== serviceId) : [...current, serviceId];
-    setSettings({ ...settings, public_services_filter: updated });
-  };
-
-  const toggleProfessionalFilter = (profId: string) => {
-    const current = settings.public_professionals_filter || [];
-    const exists = current.includes(profId);
-    const updated = exists ? current.filter((id) => id !== profId) : [...current, profId];
-    setSettings({ ...settings, public_professionals_filter: updated });
-  };
 
   return (
     <div className="space-y-6">
@@ -666,67 +643,9 @@ export function OnlineBookingCustomizer({
             )}
           </div>
 
-          {/* Card 5: Serviços e Profissionais Públicos */}
-          <div className="p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-2xs space-y-4">
-            <div className="flex items-center gap-2 border-b border-[#F5EDE8] pb-3">
-              <Sparkles className="w-4 h-4 text-[#B87070]" />
-              <h3 className="text-xs uppercase tracking-wider font-bold text-[#1E1115]">
-                Serviços e Profissionais Disponíveis na Vitrine
-              </h3>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold text-[#1E1115] mb-2">Serviços Exibidos</p>
-              <div className="max-h-36 overflow-y-auto space-y-1.5 p-2 rounded-xl bg-[#FAF6F3] border border-[#EADBCE]">
-                {services.map((srv) => {
-                  const isChecked = (settings.public_services_filter || []).includes(srv.id);
-                  return (
-                    <label
-                      key={srv.id}
-                      className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white cursor-pointer text-xs"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleServiceFilter(srv.id)}
-                        className="rounded-sm border-[#EADBCE] text-[#B87070] focus:ring-[#B87070]"
-                      />
-                      <span className="font-medium text-[#1E1115]">{srv.name}</span>
-                      <span className="text-[#7D6B65] text-[11px]">({srv.category})</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold text-[#1E1115] mb-2">Profissionais Exibidos</p>
-              <div className="max-h-36 overflow-y-auto space-y-1.5 p-2 rounded-xl bg-[#FAF6F3] border border-[#EADBCE]">
-                {professionals.map((prof) => {
-                  const isChecked = (settings.public_professionals_filter || []).includes(prof.id);
-                  return (
-                    <label
-                      key={prof.id}
-                      className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white cursor-pointer text-xs"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleProfessionalFilter(prof.id)}
-                        className="rounded-sm border-[#EADBCE] text-[#B87070] focus:ring-[#B87070]"
-                      />
-                      <span className="font-medium text-[#1E1115]">{prof.full_name}</span>
-                      <span className="text-[#7D6B65] text-[11px]">({prof.specialty})</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Botão de Salvar */}
+          {/* Botão de Salvar Alterações */}
           {isOwnerOrAdmin && (
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-2">
               <button
                 type="button"
                 disabled={isPending}
@@ -749,7 +668,7 @@ export function OnlineBookingCustomizer({
           )}
         </div>
 
-        {/* Coluna de Divulgação & Pré-visualização (5 colunas) */}
+        {/* Coluna de Divulgação (5 colunas) */}
         <div className="lg:col-span-5 space-y-6">
           {/* Card de Divulgação com QR Code */}
           <div className="p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-2xs text-center space-y-3">
@@ -780,100 +699,6 @@ export function OnlineBookingCustomizer({
                 <Share2 className="w-3.5 h-3.5" />
                 Baixar QR Code de Divulgação
               </a>
-            </div>
-          </div>
-
-          {/* Pré-visualização Responsiva */}
-          <div className="p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-2xs space-y-3">
-            <div className="flex items-center justify-between border-b border-[#F5EDE8] pb-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-[#1E1115]">
-                <Eye className="w-4 h-4 text-[#B87070]" />
-                <span>Pré-visualização da Vitrine</span>
-              </div>
-              <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[#FAF6F3] border border-[#EADBCE]">
-                <button
-                  type="button"
-                  onClick={() => setPreviewDevice('mobile')}
-                  className={`p-1 rounded-md text-xs transition-colors ${
-                    previewDevice === 'mobile'
-                      ? 'bg-white shadow-2xs text-[#B87070]'
-                      : 'text-[#7D6B65]'
-                  }`}
-                  title="Celular"
-                >
-                  <Smartphone className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Mockup da Vitrine Digital */}
-            <div
-              className="mx-auto rounded-3xl border-4 border-[#2D1F27] bg-[#FDFAF8] overflow-hidden shadow-sm"
-              style={{ maxWidth: previewDevice === 'mobile' ? '300px' : '100%' }}
-            >
-              {/* Capa */}
-              <div className="h-20 w-full bg-[#2D1F27] relative overflow-hidden">
-                {settings.cover_url && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={settings.cover_url} alt="Capa" className="w-full h-full object-cover opacity-60" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#2D1F27] to-transparent" />
-                <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
-                  <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shadow-xs"
-                    style={{ backgroundColor: settings.primary_color || '#C4837A' }}
-                  >
-                    {(settings.business_name || 'B').slice(0, 1)}
-                  </div>
-                  <span className="text-white text-xs font-bold truncate max-w-[190px]">
-                    {settings.business_name || 'Sua Clínica'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Corpo Simulado */}
-              <div className="p-3 space-y-2.5 text-[10px]">
-                <div className="flex items-center gap-2">
-                  <a
-                    href={`/agendar/${currentSlug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 py-1.5 rounded-lg text-white text-center font-bold shadow-xs text-[10px]"
-                    style={{ backgroundColor: settings.primary_color || '#C4837A' }}
-                  >
-                    Agendar Horário
-                  </a>
-                  {settings.whatsapp && (
-                    <span className="px-2 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-[10px]">
-                      WhatsApp
-                    </span>
-                  )}
-                </div>
-
-                <div className="space-y-1">
-                  <span className="font-bold text-[#2D1F27] block">Serviços em Destaque</span>
-                  <div className="p-2 rounded-lg bg-white border border-[#EAD9D3] flex items-center justify-between">
-                    <div>
-                      <span className="font-semibold text-[#2D1F27] block">Corte & Tratamento</span>
-                      <span className="text-[#9B8985] text-[9px]">45 min • R$ 90,00</span>
-                    </div>
-                  </div>
-                </div>
-
-                {portfolio.length > 0 && (
-                  <div className="space-y-1">
-                    <span className="font-bold text-[#2D1F27] block">Galeria de Resultados</span>
-                    <div className="grid grid-cols-3 gap-1">
-                      {portfolio.slice(0, 3).map((p) => (
-                        <div key={p.id} className="aspect-square rounded-md overflow-hidden bg-black/10">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={p.image_url} alt={p.title} className="w-full h-full object-cover" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </div>
