@@ -189,8 +189,8 @@ export async function savePortfolioItemAction(
       return { success: false, error: 'O título do trabalho deve ter pelo menos 2 caracteres.' };
     }
 
-    if (!cleanUrl || !cleanUrl.startsWith('http')) {
-      return { success: false, error: 'Por favor, informe uma URL de imagem válida (http/https).' };
+    if (!cleanUrl || (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://') && !cleanUrl.startsWith('data:image/'))) {
+      return { success: false, error: 'Por favor, selecione ou informe uma imagem válida.' };
     }
 
     const supabase = await createClient();

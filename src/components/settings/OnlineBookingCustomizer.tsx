@@ -51,6 +51,7 @@ export function OnlineBookingCustomizer(props: OnlineBookingCustomizerProps) {
   const [newPhotoCategory, setNewPhotoCategory] = useState('Resultados');
   const [newPhotoDescription, setNewPhotoDescription] = useState('');
   const [photoPending, startPhotoTransition] = useTransition();
+  const [isCompressing, setIsCompressing] = useState(false);
 
   const isOwnerOrAdmin = ['owner', 'admin'].includes(userRole);
   const shortUrl = typeof window !== 'undefined'
@@ -100,7 +101,55 @@ export function OnlineBookingCustomizer(props: OnlineBookingCustomizerProps) {
     });
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  /**
+   * Compacta a imagem utilizando Canvas para reduzir drasticamente o tamanho (WebP/JPEG 80%, max 1280px)
+   * Evita sobrecarga de banco de dados e conta Supabase mantendo alta nitidez visual.
+   */
+  const compressImage = (file: File, maxWidth = 1280, maxHeight = 1280, quality = 0.82): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(event.target?.result as string);
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          // Tenta webp primeiro, com fallback para jpeg
+          let compressedDataUrl = canvas.toDataURL('image/webp', quality);
+          if (!compressedDataUrl.startsWith('data:image/webp')) {
+            compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+          resolve(compressedDataUrl);
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
+    });
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -109,19 +158,45 @@ export function OnlineBookingCustomizer(props: OnlineBookingCustomizerProps) {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert('A imagem é muito grande. Escolha uma imagem de até 2MB para garantir carregamento rápido.');
+    try {
+      // Compacta o logo mantendo max 600px
+      const compressed = await compressImage(file, 600, 600, 0.85);
+      setSettings((prev) => ({ ...prev, logo_url: compressed }));
+    } catch {
+      // Fallback leitura direta
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        if (dataUrl) {
+          setSettings((prev) => ({ ...prev, logo_url: dataUrl }));
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePortfolioFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Selecione um arquivo de imagem válido (PNG, JPG ou WEBP).');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      if (dataUrl) {
-        setSettings((prev) => ({ ...prev, logo_url: dataUrl }));
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      setIsCompressing(true);
+      // Reduz a imagem para max 1280px e 80% qualidade (reduz fotos de 5MB para ~120KB)
+      const compressed = await compressImage(file, 1280, 1280, 0.80);
+      setNewPhotoUrl(compressed);
+    } catch (err) {
+      console.error('Erro ao otimizar imagem do portfólio:', err);
+      alert('Não foi possível processar a imagem. Tente outro arquivo.');
+    } finally {
+      setIsCompressing(false);
+      // Limpa o input para permitir selecionar o mesmo arquivo novamente se desejar
+      e.target.value = '';
+    }
   };
 
   const handleAddPortfolioPhoto = () => {
@@ -571,39 +646,112 @@ export function OnlineBookingCustomizer(props: OnlineBookingCustomizerProps) {
 
             {/* Adicionar Foto */}
             {isOwnerOrAdmin && (
-              <div className="p-3.5 rounded-xl bg-[#FAF6F3] border border-[#EADBCE] space-y-3">
+              <div className="p-4 rounded-xl bg-[#FAF6F3] border border-[#EADBCE] space-y-3.5">
                 <p className="text-xs font-bold text-[#1E1115]">Adicionar Foto de Resultado</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <input
-                    type="text"
-                    placeholder="Título (ex: Micropigmentação Fio a Fio)"
-                    value={newPhotoTitle}
-                    onChange={(e) => setNewPhotoTitle(e.target.value)}
-                    className="px-3 py-1.5 text-xs rounded-lg border border-[#EADBCE] bg-white focus:outline-hidden"
-                  />
-                  <input
-                    type="url"
-                    placeholder="URL da Imagem (https://...)"
-                    value={newPhotoUrl}
-                    onChange={(e) => setNewPhotoUrl(e.target.value)}
-                    className="px-3 py-1.5 text-xs rounded-lg border border-[#EADBCE] bg-white focus:outline-hidden"
-                  />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#1E1115] mb-1">
+                      Título do Trabalho
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Micropigmentação Fio a Fio"
+                      value={newPhotoTitle}
+                      onChange={(e) => setNewPhotoTitle(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-[#EADBCE] bg-white focus:outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#1E1115] mb-1">
+                      Categoria (opcional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Sobrancelhas, Cabelo, Pele"
+                      value={newPhotoCategory}
+                      onChange={(e) => setNewPhotoCategory(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-[#EADBCE] bg-white focus:outline-hidden"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center justify-between gap-2">
-                  <input
-                    type="text"
-                    placeholder="Categoria (ex: Cílios, Cabelo, Pele)"
-                    value={newPhotoCategory}
-                    onChange={(e) => setNewPhotoCategory(e.target.value)}
-                    className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-[#EADBCE] bg-white focus:outline-hidden"
-                  />
+
+                {/* Seletor de Arquivo com Otimização Automática */}
+                <div>
+                  <label className="block text-[11px] font-semibold text-[#1E1115] mb-1.5">
+                    Imagem do Resultado
+                  </label>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <label
+                      className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-[#EADBCE] bg-white hover:bg-[#F2E0DC] text-xs font-bold text-[#1E1115] transition-all cursor-pointer shadow-2xs ${
+                        isCompressing || photoPending ? 'opacity-60 pointer-events-none' : ''
+                      }`}
+                    >
+                      {isCompressing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-[#B87070]" />
+                          <span>Otimizando imagem...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 text-[#B87070]" />
+                          <span>{newPhotoUrl ? 'Trocar Imagem' : 'Fazer Upload da Foto'}</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={handlePortfolioFileUpload}
+                        className="hidden"
+                        disabled={isCompressing || photoPending}
+                      />
+                    </label>
+
+                    {newPhotoUrl && (
+                      <div className="flex items-center gap-2 p-1.5 pr-2.5 rounded-lg bg-white border border-[#EADBCE]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={newPhotoUrl}
+                          alt="Prévia selecionada"
+                          className="w-7 h-7 rounded object-cover border border-[#EADBCE]"
+                        />
+                        <span className="text-[11px] text-emerald-700 font-bold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Foto pronta e otimizada
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setNewPhotoUrl('')}
+                          className="text-[10px] text-red-600 hover:underline ml-1 font-medium"
+                        >
+                          remover
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-[#7D6B65] mt-1.5">
+                    O arquivo é comprimido e otimizado automaticamente no navegador antes de salvar, poupando espaço e acelerando o carregamento da sua vitrine.
+                  </p>
+                </div>
+
+                <div className="flex justify-end pt-1">
                   <button
                     type="button"
-                    disabled={photoPending || !newPhotoTitle || !newPhotoUrl}
+                    disabled={photoPending || isCompressing || !newPhotoTitle || !newPhotoUrl}
                     onClick={handleAddPortfolioPhoto}
-                    className="px-4 py-1.5 rounded-lg bg-[#B87070] text-white text-xs font-bold hover:bg-[#A86B62] disabled:opacity-40 transition-colors flex items-center gap-1 shrink-0"
+                    className="px-5 py-2 rounded-xl bg-[#B87070] text-white text-xs font-bold hover:bg-[#A86B62] disabled:opacity-40 transition-all flex items-center gap-1.5 shadow-2xs"
                   >
-                    <Plus className="w-3.5 h-3.5" /> Adicionar
+                    {photoPending ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Adicionando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Adicionar ao Portfólio</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

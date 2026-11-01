@@ -11,6 +11,13 @@ import {
   Headphones,
   Sparkles,
   Check,
+  Store,
+  Paintbrush,
+  Layers,
+  UserCheck,
+  ImageIcon,
+  Clock,
+  Link2,
 } from 'lucide-react';
 import { PLAN_CONFIGS } from '@/types/plans';
 
@@ -282,7 +289,122 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 5. PLANOS E NAVEGAÇÃO ──────────────────────────────────── */}
+      {/* ── 5. SEÇÃO COMERCIAL: VITRINE DIGITAL DO SEU NEGÓCIO ────────── */}
+      <section
+        className="relative w-full overflow-hidden bg-cover bg-no-repeat bg-[#FAF4EE]"
+        style={{
+          backgroundImage: "url('/img/bg_app.png')",
+          backgroundPosition: 'right center',
+          backgroundSize: 'cover',
+        }}
+      >
+        {/* Camada sutil para dispositivos menores garantir contraste de leitura */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#FAF4EE]/95 via-[#FAF4EE]/85 to-transparent lg:hidden pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-6 py-16 sm:py-20 lg:py-28 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            {/* Conteúdo HTML no espaço livre à esquerda (7 colunas no desktop) */}
+            <div className="lg:col-span-7 xl:col-span-6 space-y-6 max-w-xl">
+              {/* Etiqueta */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/90 border border-[#EADBCE] text-[11px] font-bold tracking-wider uppercase text-[#8C4F46] shadow-2xs">
+                <Store className="w-3.5 h-3.5 text-[#B87070]" />
+                <span>VITRINE DIGITAL DO SEU NEGÓCIO</span>
+              </div>
+
+              {/* Título com destaque rosé */}
+              <h2 className="text-3xl sm:text-4xl lg:text-[44px] font-serif text-[#2C1810] leading-[1.18] font-normal tracking-tight">
+                Seu negócio merece uma{' '}
+                <span className="text-[#B87070] italic font-serif">vitrine digital própria.</span>
+              </h2>
+
+              {/* Descrição */}
+              <p className="text-sm sm:text-base text-[#6B5A54] leading-relaxed">
+                Com a <strong className="text-[#2C1810] font-semibold">ZELUNIA</strong>, seu estabelecimento ganha uma página personalizada para apresentar sua marca, divulgar serviços e receber agendamentos online. Tudo em um único link para compartilhar com seus clientes.
+              </p>
+
+              {/* Seis Cards Compactos em Grade 3x2 (2 colunas no mobile/tablet, 3 colunas em telas maiores) */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 pt-2">
+                {/* Card 1: Marca personalizada */}
+                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                  <div className="w-8 h-8 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Paintbrush className="w-4 h-4 stroke-[2.2]" />
+                  </div>
+                  <span className="text-xs font-semibold text-[#2C1810] leading-tight">
+                    Marca personalizada
+                  </span>
+                </div>
+
+                {/* Card 2: Catálogo de serviços */}
+                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                  <div className="w-8 h-8 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Layers className="w-4 h-4 stroke-[2.2]" />
+                  </div>
+                  <span className="text-xs font-semibold text-[#2C1810] leading-tight">
+                    Catálogo de serviços
+                  </span>
+                </div>
+
+                {/* Card 3: Sua equipe de profissionais */}
+                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                  <div className="w-8 h-8 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <UserCheck className="w-4 h-4 stroke-[2.2]" />
+                  </div>
+                  <span className="text-xs font-semibold text-[#2C1810] leading-tight">
+                    Sua equipe de profissionais
+                  </span>
+                </div>
+
+                {/* Card 4: Portfólio de resultados */}
+                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                  <div className="w-8 h-8 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <ImageIcon className="w-4 h-4 stroke-[2.2]" />
+                  </div>
+                  <span className="text-xs font-semibold text-[#2C1810] leading-tight">
+                    Portfólio de resultados
+                  </span>
+                </div>
+
+                {/* Card 5: Agendamento online 24h */}
+                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                  <div className="w-8 h-8 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Clock className="w-4 h-4 stroke-[2.2]" />
+                  </div>
+                  <span className="text-xs font-semibold text-[#2C1810] leading-tight">
+                    Agendamento online 24h
+                  </span>
+                </div>
+
+                {/* Card 6: Link único para compartilhar */}
+                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                  <div className="w-8 h-8 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Link2 className="w-4 h-4 stroke-[2.2]" />
+                  </div>
+                  <span className="text-xs font-semibold text-[#2C1810] leading-tight">
+                    Link único para compartilhar
+                  </span>
+                </div>
+              </div>
+
+              {/* Botão de Chamada para Ação (CTA) */}
+              <div className="pt-3">
+                <Link
+                  href="/register"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl text-sm font-semibold text-white transition-all shadow-sm hover:opacity-95 hover:shadow-md cursor-pointer"
+                  style={{ backgroundColor: '#B87070' }}
+                >
+                  <span>Criar minha página</span>
+                  <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Coluna Direita (5 ou 6 colunas): Espaço preservado para a visualização do celular e do card lateral integrados no background */}
+            <div className="lg:col-span-5 xl:col-span-6 hidden lg:block min-h-[480px] pointer-events-none" />
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6. PLANOS E NAVEGAÇÃO ──────────────────────────────────── */}
       <section id="planos" className="py-20 px-6 max-w-6xl mx-auto w-full">
         <div className="text-center mb-14 space-y-2">
           <span className="text-[11px] font-semibold tracking-[0.25em] uppercase text-[#9B8985]">
