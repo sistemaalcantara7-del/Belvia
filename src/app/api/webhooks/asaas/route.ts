@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendEmail } from '@/lib/email/resend';
+import {
+  emailPaymentConfirmedTemplate,
+  emailSubscriptionOverdueTemplate,
+} from '@/lib/email/templates';
+import { PLAN_CONFIGS } from '@/types/plans';
+import { PlanType } from '@/types/tenant';
 
 // Cliente Supabase Service Role para processamento seguro de webhooks
 function getAdminSupabaseClient() {
@@ -92,20 +99,72 @@ export async function POST(req: NextRequest) {
     // 4. Atualização de status da assinatura e do tenant
     if (['PAYMENT_CONFIRMED', 'PAYMENT_RECEIVED'].includes(event)) {
       // Pagamento confirmado via webhook autenticado: ativa assinatura e tenant
-      await supabase
+      const nextDueDateStr = new Date(Date.now() + 30 * 86400000).toISOString();
+
+      const { data: updatedSub } = await supabase
         .from('saas_subscriptions')
         .update({
           status: 'active',
           last_payment_at: new Date().toISOString(),
-          current_period_end: new Date(Date.now() + 30 * 86400000).toISOString(),
+          current_period_end: nextDueDateStr,
           last_webhook_event: event,
         })
-        .eq('tenant_id', tenantId);
+        .eq('tenant_id', tenantId)
+        .select('plan')
+        .maybeSingle();
 
       await supabase
         .from('tenants')
         .update({ status: 'active' })
         .eq('id', tenantId);
+
+      // Dispara e-mail transacional de pagamento confirmado para o proprietário do estabelecimento
+      try {
+        const { data: ownerUser } = await supabase
+          .from('tenant_users')
+          .select('user_id, tenants(name, slug)')
+          .eq('tenant_id', tenantId)
+          .eq('role', 'owner')
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (ownerUser) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', ownerUser.user_id)
+            .maybeSingle();
+
+          interface TenantRelation {
+            name: string;
+            slug: string;
+          }
+          const tenantInfo = ownerUser.tenants as unknown as TenantRelation;
+
+          if (profile?.email && tenantInfo) {
+            const planKey = (updatedSub?.plan || 'essential') as PlanType;
+            const planConfig = PLAN_CONFIGS[planKey] || PLAN_CONFIGS.essential;
+            const paidMail = emailPaymentConfirmedTemplate({
+              name: profile.full_name || tenantInfo.name,
+              clinicName: tenantInfo.name,
+              slug: tenantInfo.slug,
+              planName: planConfig.name,
+              amount: Number(payment.value || planConfig.priceMonthly),
+              nextDueDate: nextDueDateStr,
+              invoiceNumber: payment.invoiceNumber || null,
+            });
+
+            sendEmail({
+              to: profile.email,
+              subject: paidMail.subject,
+              html: paidMail.html,
+              tags: [{ name: 'category', value: 'payment_confirmed' }],
+            }).catch((err) => console.error('[Resend Payment Confirm Error]', err));
+          }
+        }
+      } catch (mailErr) {
+        console.error('[Resend Owner Lookup Error]', mailErr);
+      }
     } else if (event === 'PAYMENT_OVERDUE') {
       // Pagamento atrasado: entra em tolerância ('overdue') ou suspensão ('suspended')
       const { data: sub } = await supabase
@@ -134,6 +193,52 @@ export async function POST(req: NextRequest) {
           .from('tenants')
           .update({ status: 'suspended' })
           .eq('id', tenantId);
+      }
+
+      // Dispara e-mail de aviso de cobrança vencida
+      try {
+        const { data: ownerUser } = await supabase
+          .from('tenant_users')
+          .select('user_id, tenants(name, slug)')
+          .eq('tenant_id', tenantId)
+          .eq('role', 'owner')
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (ownerUser) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', ownerUser.user_id)
+            .maybeSingle();
+
+          interface TenantRelation {
+            name: string;
+            slug: string;
+          }
+          const tenantInfo = ownerUser.tenants as unknown as TenantRelation;
+
+          if (profile?.email && tenantInfo) {
+            const overdueMail = emailSubscriptionOverdueTemplate({
+              name: profile.full_name || tenantInfo.name,
+              clinicName: tenantInfo.name,
+              slug: tenantInfo.slug,
+              amount: Number(payment.value || 0),
+              dueDate: payment.dueDate || new Date().toISOString(),
+              invoiceUrl: payment.invoiceUrl || null,
+              graceDays,
+            });
+
+            sendEmail({
+              to: profile.email,
+              subject: overdueMail.subject,
+              html: overdueMail.html,
+              tags: [{ name: 'category', value: 'subscription_overdue' }],
+            }).catch((err) => console.error('[Resend Overdue Error]', err));
+          }
+        }
+      } catch (mailErr) {
+        console.error('[Resend Overdue Lookup Error]', mailErr);
       }
     } else if (['PAYMENT_REFUNDED', 'PAYMENT_CHARGEBACK_REQUESTED', 'PAYMENT_CHARGEBACK_DISPUTE'].includes(event)) {
       // Estorno ou contestação: suspende acesso imediatamente para análise

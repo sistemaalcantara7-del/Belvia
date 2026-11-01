@@ -6,6 +6,7 @@ import { PlanType } from '@/types/tenant';
 
 export interface AuthActionResponse {
   error?: string;
+  errorCode?: string;
   success?: boolean;
   emailConfirmationRequired?: boolean;
   message?: string;
@@ -26,6 +27,21 @@ export async function loginAction(formData: FormData): Promise<AuthActionRespons
   });
 
   if (error) {
+    const errorMsg = error.message.toLowerCase();
+    if (errorMsg.includes('email not confirmed') || errorMsg.includes('not confirmed')) {
+      return {
+        error: 'Confirme seu e-mail para continuar. Sua conta foi criada, mas é necessário confirmar o endereço para liberar o acesso.',
+        errorCode: 'email_not_confirmed',
+      };
+    }
+
+    if (errorMsg.includes('invalid login credentials') || errorMsg.includes('invalid credentials')) {
+      return {
+        error: 'E-mail ou senha incorretos. Verifique suas credenciais.',
+        errorCode: 'invalid_credentials',
+      };
+    }
+
     return { error: error.message };
   }
 
@@ -148,6 +164,84 @@ export async function registerTenantAction(formData: FormData): Promise<AuthActi
   }
 
   redirect(`/${slug}`);
+}
+
+/**
+ * Solicita redefinição de senha utilizando o Supabase Auth com segurança criptográfica.
+ * Utiliza a URL canônica para redirecionamento.
+ */
+export async function requestPasswordResetAction(email: string): Promise<AuthActionResponse> {
+  if (!email || !email.includes('@')) {
+    return { error: 'Informe um endereço de e-mail válido.' };
+  }
+
+  const supabase = await createClient();
+
+  const isProd = process.env.NODE_ENV === 'production';
+  const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const baseUrl = isProd
+    ? (configuredAppUrl && !configuredAppUrl.includes('localhost') ? configuredAppUrl : 'https://zelunia.com.br')
+    : (configuredAppUrl || 'http://localhost:3000');
+
+  const redirectTo = `${baseUrl.replace(/\/$/, '')}/auth/callback?next=/redefinir-senha`;
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return {
+    success: true,
+    message: 'Se o e-mail estiver cadastrado, você receberá um link seguro para redefinir sua senha.',
+  };
+}
+
+/**
+ * Reenvia o e-mail de confirmação de cadastro através do Supabase Auth.
+ * Utiliza o fluxo oficial do Supabase com proteção e redirecionamento canônico.
+ */
+export async function resendConfirmationEmailAction(email: string): Promise<AuthActionResponse> {
+  if (!email || !email.includes('@')) {
+    return { error: 'Informe um endereço de e-mail válido.' };
+  }
+
+  const supabase = await createClient();
+
+  const isProd = process.env.NODE_ENV === 'production';
+  const configuredAppUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const baseUrl = isProd
+    ? (configuredAppUrl && !configuredAppUrl.includes('localhost') ? configuredAppUrl : 'https://zelunia.com.br')
+    : (configuredAppUrl || 'http://localhost:3000');
+
+  const emailRedirectTo = `${baseUrl.replace(/\/$/, '')}/auth/callback`;
+
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email: email.trim(),
+    options: {
+      emailRedirectTo,
+    },
+  });
+
+  if (error) {
+    const errorMsg = error.message.toLowerCase();
+    // Protege contra rate limit informando tempo amigável
+    if (errorMsg.includes('rate limit') || errorMsg.includes('too many requests')) {
+      return {
+        error: 'Muitas tentativas em pouco tempo. Aguarde alguns instantes antes de reenviar novamente.',
+        errorCode: 'rate_limited',
+      };
+    }
+    return { error: error.message };
+  }
+
+  return {
+    success: true,
+    message: 'Novo e-mail de confirmação enviado com sucesso! Verifique sua caixa de entrada e pasta de spam.',
+  };
 }
 
 export async function signOutAction() {

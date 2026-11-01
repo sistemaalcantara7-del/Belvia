@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Eye, EyeOff, Check, Mail, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
-import { loginAction } from '@/lib/actions/auth';
+import { Eye, EyeOff, Check, Mail, Lock, ArrowRight, ArrowLeft, MailCheck, AlertCircle, RefreshCw } from 'lucide-react';
+import { loginAction, resendConfirmationEmailAction } from '@/lib/actions/auth';
 
 const benefits = [
   'Agendamentos inteligentes',
@@ -16,21 +16,66 @@ const benefits = [
 
 export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [currentEmail, setCurrentEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Estados do Reenvio de Confirmação
+  const [resending, setResending] = useState(false);
+  const [resendFeedback, setResendFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [cooldown, setCooldown] = useState(0);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);
+    setErrorCode(null);
+    setResendFeedback(null);
     setLoading(true);
 
     const formData = new FormData(event.currentTarget);
+    const emailInput = formData.get('email') as string;
+    setCurrentEmail(emailInput || '');
+
     const result = await loginAction(formData);
 
     if (result?.error) {
       setErrorMessage(result.error);
+      setErrorCode(result.errorCode || null);
       setLoading(false);
     }
+  }
+
+  async function handleResendEmail() {
+    if (!currentEmail || cooldown > 0 || resending) return;
+    setResending(true);
+    setResendFeedback(null);
+
+    const res = await resendConfirmationEmailAction(currentEmail);
+
+    if (res.success) {
+      setResendFeedback({
+        type: 'success',
+        message: 'Novo link enviado com sucesso! Verifique sua caixa de entrada e spam.',
+      });
+      // Inicia cooldown de 60 segundos para evitar abusos
+      setCooldown(60);
+      const interval = setInterval(() => {
+        setCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      setResendFeedback({
+        type: 'error',
+        message: res.error || 'Não foi possível reenviar o e-mail no momento.',
+      });
+    }
+    setResending(false);
   }
 
   return (
@@ -127,11 +172,66 @@ export default function LoginPage() {
               </p>
             </div>
 
-            {/* Mensagem de Erro */}
+            {/* Mensagem de Erro / Alerta de E-mail Não Confirmado */}
             {errorMessage && (
-              <div className="p-3 text-xs rounded-xl bg-red-50 border border-red-200 text-red-700">
-                {errorMessage}
-              </div>
+              errorCode === 'email_not_confirmed' ? (
+                <div className="p-4 rounded-2xl bg-[#FAF0ED] border border-[#EAD9D3] space-y-3 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[#C4837A]/15 text-[#C4837A] flex items-center justify-center shrink-0 mt-0.5">
+                      <MailCheck className="w-4 h-4" />
+                    </div>
+                    <div className="space-y-1 text-xs">
+                      <p className="font-semibold text-[#2C1810]">
+                        Confirme seu e-mail para continuar
+                      </p>
+                      <p className="text-[#6B5A54] leading-relaxed">
+                        Sua conta foi criada, mas é necessário clicar no link de confirmação enviado para o seu e-mail para liberar o acesso ao estabelecimento.
+                      </p>
+                      <p className="text-[11px] text-[#9B8985] pt-0.5">
+                        💡 Não encontrou? Verifique também a pasta de <strong>Spam</strong> ou <strong>Lixo Eletrônico</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Feedback do Reenvio */}
+                  {resendFeedback && (
+                    <div
+                      className={`p-2.5 rounded-xl text-xs flex items-center gap-2 ${
+                        resendFeedback.type === 'success'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          : 'bg-red-50 text-red-800 border border-red-200'
+                      }`}
+                    >
+                      {resendFeedback.type === 'success' ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                      )}
+                      <span>{resendFeedback.message}</span>
+                    </div>
+                  )}
+
+                  {/* Ação de Reenviar E-mail */}
+                  <div className="pt-1 flex items-center justify-between border-t border-[#EAD9D3]/70">
+                    <span className="text-[11px] text-[#9B8985]">
+                      {cooldown > 0 ? `Aguarde ${cooldown}s para reenviar` : 'Não recebeu o link?'}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={resending || cooldown > 0}
+                      onClick={handleResendEmail}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#C4837A] hover:text-[#A86B62] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
+                      <span>{resending ? 'Reenviando...' : 'Reenviar confirmação'}</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 text-xs rounded-xl bg-red-50 border border-red-200 text-red-700">
+                  {errorMessage}
+                </div>
+              )
             )}
 
             {/* Formulário de Acesso */}
@@ -151,6 +251,8 @@ export default function LoginPage() {
                     type="email"
                     placeholder="seu@email.com"
                     required
+                    defaultValue={currentEmail}
+                    onChange={(e) => setCurrentEmail(e.target.value)}
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-[#2C1810] bg-white border border-[#EAD9D3] focus:border-[#C4837A] focus:outline-none transition-colors placeholder:text-[#B5A5A0]"
                   />
                 </div>

@@ -1,5 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { sendEmail } from '@/lib/email/resend';
+import { emailWelcomeTemplate } from '@/lib/email/templates';
+import { PLAN_CONFIGS } from '@/types/plans';
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -58,6 +61,28 @@ export async function GET(request: NextRequest) {
           });
 
           if (!rpcError) {
+            // Dispara e-mail transacional de boas-vindas assincronamente via Resend (não bloqueia redirecionamento)
+            const recipientEmail = user.email;
+            if (recipientEmail) {
+              const fullName = user.user_metadata?.full_name || clinicName;
+              const planConfig = PLAN_CONFIGS[plan] || PLAN_CONFIGS.essential;
+              const welcomeMail = emailWelcomeTemplate({
+                name: fullName,
+                clinicName,
+                slug: clinicSlug,
+                planName: planConfig.name,
+                trialDays: 7,
+              });
+
+              // Executa o envio sem quebrar caso o Resend retorne aviso
+              sendEmail({
+                to: recipientEmail,
+                subject: welcomeMail.subject,
+                html: welcomeMail.html,
+                tags: [{ name: 'category', value: 'welcome_onboarding' }],
+              }).catch((e) => console.error('[Resend Welcome Error]', e));
+            }
+
             return NextResponse.redirect(`${effectiveOrigin}/${clinicSlug}`);
           }
         }
