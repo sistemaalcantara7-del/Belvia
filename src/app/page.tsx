@@ -293,17 +293,26 @@ export default function HomePage() {
       <section
         className="zelunia-vitrine-section relative w-full overflow-hidden bg-[#FAF4EE]"
       >
-        {/* Estilo responsivo inline para background perfeito cobrindo toda a largura */}
+        {/* Estilo responsivo inline para exibir o celular inteiro sem cortes */}
         <style dangerouslySetInnerHTML={{ __html: `
           .zelunia-vitrine-section {
             background-image: url('/img/bg_app.png');
             background-repeat: no-repeat;
-            background-size: cover !important;
+            background-size: auto 100% !important;
             background-position: right center !important;
+            min-height: 700px;
+          }
+          @media (min-width: 1440px) {
+            .zelunia-vitrine-section {
+              background-size: cover !important;
+              min-height: 750px;
+            }
           }
           @media (max-width: 1023px) {
             .zelunia-vitrine-section {
-              background-position: right bottom !important;
+              background-position: center bottom !important;
+              background-size: cover !important;
+              min-height: auto;
             }
           }
         `}} />
@@ -311,7 +320,7 @@ export default function HomePage() {
         {/* Camada sutil para dispositivos menores garantir contraste de leitura */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#FAF4EE]/95 via-[#FAF4EE]/85 to-transparent lg:hidden pointer-events-none" />
 
-        <div className="max-w-7xl mx-auto px-6 py-12 sm:py-16 lg:py-20 relative z-10">
+        <div className="max-w-7xl mx-auto px-6 py-16 sm:py-20 lg:py-24 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             {/* Conteúdo HTML no espaço livre à esquerda (7 colunas no desktop) */}
             <div className="lg:col-span-7 xl:col-span-6 space-y-4 sm:space-y-5 max-w-xl">
