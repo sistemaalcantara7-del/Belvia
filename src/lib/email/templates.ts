@@ -9,8 +9,10 @@
  * - Borda: (#EAD9D3)
  */
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://zelunia.com.br';
-const LOGO_URL = `${APP_URL}/img/logoz.png`;
+// URL canônica com www e imagem otimizada para e-mails (sem metadados Adobe pesados e com 81KB para aceitação instantânea no GoogleImageProxy)
+const CANONICAL_DOMAIN = 'https://www.zelunia.com.br';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || CANONICAL_DOMAIN;
+const LOGO_URL = `${CANONICAL_DOMAIN}/img/logo-email.png`;
 
 interface BaseEmailWrapperProps {
   previewText: string;
