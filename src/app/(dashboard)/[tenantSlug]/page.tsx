@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { DashboardView } from '@/components/dashboard/DashboardView';
 import { TrialExpiredView } from '@/components/settings/TrialExpiredView';
+import { getOnboardingStatusAction } from '@/lib/actions/onboarding';
 
 export const dynamic = 'force-dynamic';
 
@@ -362,6 +363,10 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
     ? context.tenantName.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
     : 'Z';
 
+  const isOwner = role === 'owner' || role === 'admin';
+  const onboardingRes = isOwner ? await getOnboardingStatusAction(tenantSlug) : null;
+  const onboardingProgress = onboardingRes?.success ? onboardingRes.data : null;
+
   return (
     <DashboardView
       tenantSlug={tenantSlug}
@@ -378,6 +383,8 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
       topServices={topServices}
       revenueWeek={revenueWeek}
       canViewFinancial={canViewFinancial}
+      isOwner={isOwner}
+      onboardingProgress={onboardingProgress}
     />
   );
 }

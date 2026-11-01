@@ -91,16 +91,19 @@ export function DashboardSidebar({
 
       {/* ── Sidebar Desktop / Drawer Mobile ────────────────────────── */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-[#35272D] border-r border-[#433139] transition-all duration-300 ease-in-out ${
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-[#35272D] bg-cover bg-center bg-no-repeat border-r border-[#433139] transition-all duration-300 ease-in-out relative overflow-hidden ${
           collapsed ? 'w-20' : 'w-64'
         } ${
           mobileOpen
             ? 'translate-x-0 shadow-2xl'
             : '-translate-x-full md:translate-x-0'
         }`}
+        style={{
+          backgroundImage: "linear-gradient(to bottom, rgba(45, 31, 39, 0.88), rgba(45, 31, 39, 0.94)), url('/img/bg_menu.png')",
+        }}
       >
         {/* Topo: Logo ZELUNIA com flor e tipografia da referência */}
-        <div className="pt-6 pb-4 px-5 flex flex-col items-center justify-center border-b border-[#433139]/80 shrink-0 relative">
+        <div className="pt-6 pb-4 px-5 flex flex-col items-center justify-center border-b border-[#433139]/80 shrink-0 relative bg-black/15 backdrop-blur-[2px]">
           {!collapsed ? (
             <Link href={`/${tenantSlug}`} className="flex flex-col items-center text-center group">
               <Image
@@ -175,7 +178,7 @@ export function DashboardSidebar({
         </nav>
 
         {/* Rodapé: Apenas Sair da Conta com espaçamento harmonioso */}
-        <div className="p-3.5 border-t border-[#433139]/80 shrink-0 bg-[#2E2126]">
+        <div className="p-3.5 border-t border-[#433139]/80 shrink-0 bg-black/20 backdrop-blur-[2px]">
           <form action={signOutAction}>
             <button
               type="submit"

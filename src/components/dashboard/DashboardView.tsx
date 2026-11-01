@@ -23,6 +23,9 @@ import {
   UserPlus,
   MoreVertical,
 } from 'lucide-react';
+import { OnboardingProgress } from '@/lib/actions/onboarding';
+import { OnboardingModal } from '@/components/dashboard/OnboardingModal';
+import { PublicPageButton } from '@/components/dashboard/PublicPageButton';
 
 interface AppointmentItem {
   id: string;
@@ -67,6 +70,8 @@ interface DashboardViewProps {
   topServices: TopServiceItem[];
   revenueWeek: RevenueDayItem[];
   canViewFinancial: boolean;
+  isOwner?: boolean;
+  onboardingProgress?: OnboardingProgress | null;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; color: string; border: string }> = {
@@ -112,6 +117,8 @@ export function DashboardView({
   topServices,
   revenueWeek,
   canViewFinancial,
+  isOwner = false,
+  onboardingProgress,
 }: DashboardViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showTip, setShowTip] = useState(true);
@@ -215,6 +222,19 @@ export function DashboardView({
             <CalendarDays className="w-4 h-4 text-[#B87070]" />
             <span className="capitalize">{todayFormatted}</span>
           </div>
+
+          {/* Botão permanente e visível Minha Página Pública */}
+          <PublicPageButton tenantSlug={tenantSlug} />
+
+          {/* Modal / Botão discreto de Onboarding (Primeiros Passos) */}
+          {onboardingProgress && (
+            <OnboardingModal
+              tenantSlug={tenantSlug}
+              tenantName={tenantName}
+              isOwner={isOwner}
+              progress={onboardingProgress}
+            />
+          )}
 
           <Link
             href={`/${tenantSlug}/agenda`}
