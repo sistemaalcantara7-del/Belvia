@@ -27,6 +27,11 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
+  // Intercepta qualquer rota dentro do layout do dashboard se o trial expirou sem assinatura ativa
+  if (context.isSubscriptionValid === false) {
+    redirect(`/${tenantSlug}/assinar`);
+  }
+
   // FASE 7.1 — SIMPLIFICAÇÃO E USABILIDADE:
   // Reorganizar a experiência priorizando a rotina diária e separando Gestão & Configuração
   const primaryLinks = [

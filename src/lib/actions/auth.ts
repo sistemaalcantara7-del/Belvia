@@ -63,7 +63,34 @@ export async function loginAction(formData: FormData): Promise<AuthActionRespons
     const typedMemberships = memberships as unknown as MembershipRow[];
 
     if (typedMemberships && typedMemberships.length > 0 && typedMemberships[0].tenants) {
-      redirect(`/${typedMemberships[0].tenants.slug}`);
+      const targetSlug = typedMemberships[0].tenants.slug;
+      const targetTenantId = typedMemberships[0].tenant_id;
+
+      // Consulta se o tenant está com trial expirado para redirecionar diretamente à contratação
+      const { data: tenantData } = await supabase
+        .from('tenants')
+        .select('status, created_at')
+        .eq('id', targetTenantId)
+        .single();
+
+      const { data: subscription } = await supabase
+        .from('saas_subscriptions')
+        .select('status, trial_ends_at, current_period_end, grace_period_days')
+        .eq('tenant_id', targetTenantId)
+        .maybeSingle();
+
+      const { checkTenantSubscriptionValidity } = await import('@/lib/plans/entitlements');
+      const validity = checkTenantSubscriptionValidity({
+        tenantStatus: tenantData?.status || 'active',
+        tenantCreatedAt: tenantData?.created_at,
+        subscription,
+      });
+
+      if (!validity.isValid) {
+        redirect(`/${targetSlug}/assinar`);
+      }
+
+      redirect(`/${targetSlug}`);
     }
 
     // Se o usuário logou mas ainda não tem tenant (ex: confirmou email recentemente),
