@@ -289,126 +289,107 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 5. SEÇÃO COMERCIAL: VITRINE DIGITAL DO SEU NEGÓCIO ────────── */}
-      <section
-        className="zelunia-vitrine-section relative w-full overflow-hidden bg-[#FAF4EE]"
-      >
-        {/* Estilo responsivo inline para exibir o celular inteiro sem cortes */}
-        <style dangerouslySetInnerHTML={{ __html: `
-          .zelunia-vitrine-section {
-            background-image: url('/img/bg_app.png');
-            background-repeat: no-repeat;
-            background-size: auto 100% !important;
-            background-position: right center !important;
-            min-height: 700px;
-          }
-          @media (min-width: 1440px) {
-            .zelunia-vitrine-section {
-              background-size: cover !important;
-              min-height: 750px;
-            }
-          }
-          @media (max-width: 1023px) {
-            .zelunia-vitrine-section {
-              background-position: center bottom !important;
-              background-size: cover !important;
-              min-height: auto;
-            }
-          }
-        `}} />
+      {/* ── 5. SEÇÃO COMERCIAL: VITRINE DIGITAL DO SEU NEGÓCIO (PROMPT 164) ────────── */}
+      <section id="vitrine-digital" className="relative w-full overflow-hidden bg-[#FAF4EE]">
+        {/* DESKTOP (lg+): Container proporcional que preserva a arte 100% visível sem recortes */}
+        <div className="hidden lg:block relative w-full max-w-[2079px] mx-auto">
+          {/* Imagem em fluxo natural com largura total e proporção preservada */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/img/bg_app.png"
+            alt="Vitrine Digital ZELUNIA"
+            className="w-full h-auto block select-none pointer-events-none"
+            style={{ width: '100%', height: 'auto', objectFit: 'contain' }}
+          />
 
-        {/* Camada sutil para dispositivos menores garantir contraste de leitura */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[#FAF4EE]/95 via-[#FAF4EE]/85 to-transparent lg:hidden pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-6 py-16 sm:py-20 lg:py-24 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-            {/* Conteúdo HTML no espaço livre à esquerda (7 colunas no desktop) */}
-            <div className="lg:col-span-7 xl:col-span-6 space-y-4 sm:space-y-5 max-w-xl">
+          {/* Camada de conteúdo HTML posicionada exclusivamente sobre o lado esquerdo livre */}
+          <div className="absolute inset-y-0 left-0 w-[55%] flex items-center pl-8 xl:pl-16 pr-4 pointer-events-auto z-10">
+            <div className="max-w-xl space-y-3 xl:space-y-4">
               {/* Etiqueta */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 border border-[#EADBCE] text-[10px] sm:text-[11px] font-bold tracking-wider uppercase text-[#8C4F46] shadow-2xs">
-                <Store className="w-3.5 h-3.5 text-[#B87070]" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/95 border border-[#EADBCE] text-[10px] xl:text-[11px] font-bold tracking-wider uppercase text-[#8C4F46] shadow-2xs">
+                <Store className="w-3 h-3 text-[#B87070]" />
                 <span>VITRINE DIGITAL DO SEU NEGÓCIO</span>
               </div>
 
               {/* Título com destaque rosé */}
-              <h2 className="text-2xl sm:text-3xl lg:text-[38px] font-serif text-[#2C1810] leading-[1.2] font-normal tracking-tight">
+              <h2 className="text-2xl xl:text-3xl 2xl:text-[34px] font-serif text-[#2C1810] leading-[1.18] font-normal tracking-tight">
                 Seu negócio merece uma{' '}
                 <span className="text-[#B87070] italic font-serif">vitrine digital própria.</span>
               </h2>
 
               {/* Descrição */}
-              <p className="text-xs sm:text-sm text-[#6B5A54] leading-relaxed">
+              <p className="text-xs xl:text-sm text-[#6B5A54] leading-relaxed">
                 Com a <strong className="text-[#2C1810] font-semibold">ZELUNIA</strong>, seu estabelecimento ganha uma página personalizada para apresentar sua marca, divulgar serviços e receber agendamentos online. Tudo em um único link para compartilhar com seus clientes.
               </p>
 
-              {/* Seis Cards Compactos em Grade 3x2 (2 colunas no mobile/tablet, 3 colunas em telas maiores) */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5 pt-1">
+              {/* Seis Cards Compactos em Grade 3x2 */}
+              <div className="grid grid-cols-3 gap-2 xl:gap-2.5 pt-1">
                 {/* Card 1: Marca personalizada */}
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
-                  <div className="w-7 h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Paintbrush className="w-3.5 h-3.5 stroke-[2.2]" />
+                <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                  <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Paintbrush className="w-3 h-3 stroke-[2.2]" />
                   </div>
-                  <span className="text-[11px] font-semibold text-[#2C1810] leading-tight">
+                  <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
                     Marca personalizada
                   </span>
                 </div>
 
                 {/* Card 2: Catálogo de serviços */}
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
-                  <div className="w-7 h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Layers className="w-3.5 h-3.5 stroke-[2.2]" />
+                <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                  <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Layers className="w-3 h-3 stroke-[2.2]" />
                   </div>
-                  <span className="text-[11px] font-semibold text-[#2C1810] leading-tight">
+                  <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
                     Catálogo de serviços
                   </span>
                 </div>
 
                 {/* Card 3: Sua equipe de profissionais */}
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
-                  <div className="w-7 h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <UserCheck className="w-3.5 h-3.5 stroke-[2.2]" />
+                <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                  <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <UserCheck className="w-3 h-3 stroke-[2.2]" />
                   </div>
-                  <span className="text-[11px] font-semibold text-[#2C1810] leading-tight">
+                  <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
                     Sua equipe de profissionais
                   </span>
                 </div>
 
                 {/* Card 4: Portfólio de resultados */}
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
-                  <div className="w-7 h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <ImageIcon className="w-3.5 h-3.5 stroke-[2.2]" />
+                <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                  <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <ImageIcon className="w-3 h-3 stroke-[2.2]" />
                   </div>
-                  <span className="text-[11px] font-semibold text-[#2C1810] leading-tight">
+                  <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
                     Portfólio de resultados
                   </span>
                 </div>
 
                 {/* Card 5: Agendamento online 24h */}
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
-                  <div className="w-7 h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Clock className="w-3.5 h-3.5 stroke-[2.2]" />
+                <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                  <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Clock className="w-3 h-3 stroke-[2.2]" />
                   </div>
-                  <span className="text-[11px] font-semibold text-[#2C1810] leading-tight">
+                  <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
                     Agendamento online 24h
                   </span>
                 </div>
 
                 {/* Card 6: Link único para compartilhar */}
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
-                  <div className="w-7 h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Link2 className="w-3.5 h-3.5 stroke-[2.2]" />
+                <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                  <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Link2 className="w-3 h-3 stroke-[2.2]" />
                   </div>
-                  <span className="text-[11px] font-semibold text-[#2C1810] leading-tight">
+                  <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
                     Link único para compartilhar
                   </span>
                 </div>
               </div>
 
-              {/* Botão de Chamada para Ação (CTA) */}
-              <div className="pt-2">
+              {/* Botão CTA */}
+              <div className="pt-1">
                 <Link
                   href="/register"
-                  className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-xl text-xs sm:text-sm font-semibold text-white transition-all shadow-sm hover:opacity-95 hover:shadow-md cursor-pointer"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs xl:text-sm font-semibold text-white transition-all shadow-sm hover:opacity-95 hover:shadow-md cursor-pointer"
                   style={{ backgroundColor: '#B87070' }}
                 >
                   <span>Criar minha página</span>
@@ -416,9 +397,108 @@ export default function HomePage() {
                 </Link>
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* Coluna Direita: Espaço preservado para o celular */}
-            <div className="lg:col-span-5 xl:col-span-6 hidden lg:block pointer-events-none" />
+        {/* MOBILE & TABLET (< 1024px): Fluxo natural sequencial sem sobreposições ou cortes */}
+        <div className="lg:hidden px-6 pt-12 pb-6 space-y-8">
+          <div className="space-y-4 max-w-xl mx-auto">
+            {/* Etiqueta */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#EADBCE] text-[10px] sm:text-[11px] font-bold tracking-wider uppercase text-[#8C4F46] shadow-2xs">
+              <Store className="w-3.5 h-3.5 text-[#B87070]" />
+              <span>VITRINE DIGITAL DO SEU NEGÓCIO</span>
+            </div>
+
+            {/* Título com destaque rosé */}
+            <h2 className="text-2xl sm:text-3xl font-serif text-[#2C1810] leading-[1.2] font-normal tracking-tight">
+              Seu negócio merece uma{' '}
+              <span className="text-[#B87070] italic font-serif">vitrine digital própria.</span>
+            </h2>
+
+            {/* Descrição */}
+            <p className="text-xs sm:text-sm text-[#6B5A54] leading-relaxed">
+              Com a <strong className="text-[#2C1810] font-semibold">ZELUNIA</strong>, seu estabelecimento ganha uma página personalizada para apresentar sua marca, divulgar serviços e receber agendamentos online. Tudo em um único link para compartilhar com seus clientes.
+            </p>
+
+            {/* Cards em Grade 2 ou 3 colunas */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5 pt-1">
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-[#EADBCE] shadow-2xs">
+                <div className="w-7 h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0">
+                  <Paintbrush className="w-3.5 h-3.5 stroke-[2.2]" />
+                </div>
+                <span className="text-[11px] font-semibold text-[#2C1810] leading-tight">
+                  Marca personalizada
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-[#EADBCE] shadow-2xs">
+                <div className="w-7 h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0">
+                  <Layers className="w-3.5 h-3.5 stroke-[2.2]" />
+                </div>
+                <span className="text-[11px] font-semibold text-[#2C1810] leading-tight">
+                  Catálogo de serviços
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-[#EADBCE] shadow-2xs">
+                <div className="w-7 h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0">
+                  <UserCheck className="w-3.5 h-3.5 stroke-[2.2]" />
+                </div>
+                <span className="text-[11px] font-semibold text-[#2C1810] leading-tight">
+                  Sua equipe de profissionais
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-[#EADBCE] shadow-2xs">
+                <div className="w-7 h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0">
+                  <ImageIcon className="w-3.5 h-3.5 stroke-[2.2]" />
+                </div>
+                <span className="text-[11px] font-semibold text-[#2C1810] leading-tight">
+                  Portfólio de resultados
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-[#EADBCE] shadow-2xs">
+                <div className="w-7 h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0">
+                  <Clock className="w-3.5 h-3.5 stroke-[2.2]" />
+                </div>
+                <span className="text-[11px] font-semibold text-[#2C1810] leading-tight">
+                  Agendamento online 24h
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-[#EADBCE] shadow-2xs">
+                <div className="w-7 h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0">
+                  <Link2 className="w-3.5 h-3.5 stroke-[2.2]" />
+                </div>
+                <span className="text-[11px] font-semibold text-[#2C1810] leading-tight">
+                  Link único para compartilhar
+                </span>
+              </div>
+            </div>
+
+            {/* Botão CTA Mobile */}
+            <div className="pt-2">
+              <Link
+                href="/register"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3 rounded-xl text-xs sm:text-sm font-semibold text-white transition-all shadow-sm hover:opacity-95"
+                style={{ backgroundColor: '#B87070' }}
+              >
+                <span>Criar minha página</span>
+                <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Imagem responsiva inteira abaixo do texto no mobile/tablet */}
+          <div className="max-w-2xl mx-auto pt-2 overflow-hidden rounded-2xl">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/img/bg_app.png"
+              alt="Demonstração da Vitrine Digital"
+              className="w-full h-auto block select-none pointer-events-none"
+              style={{ width: '100%', height: 'auto', objectFit: 'contain' }}
+            />
           </div>
         </div>
       </section>
