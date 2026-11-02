@@ -493,20 +493,18 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Área visual mobile/tablet: Enquadramento e destaque do smartphone e card flutuante sem cortes verticais */}
-          <div className="w-full max-w-xl mx-auto pt-4 pb-2 overflow-hidden">
-            <div className="relative w-full h-[460px] sm:h-[540px] md:h-[620px] rounded-2xl overflow-hidden bg-gradient-to-b from-[#FAF4EE] via-[#FAF0EB]/60 to-[#FAF4EE] border border-[#EADBCE]/50 shadow-2xs">
+          {/* Área visual mobile/tablet: Composição vertical dedicada sem cortes (Prompt 167) */}
+          <div className="w-full max-w-lg mx-auto pt-4 pb-2">
+            <div className="w-full rounded-2xl overflow-hidden bg-gradient-to-b from-[#FAF4EE] via-[#FAF0EB]/60 to-[#FAF4EE] border border-[#EADBCE]/50 shadow-2xs p-2 sm:p-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/img/bg_app.png"
+                src="/img/bg_app_mobile.png"
                 alt="Demonstração da Vitrine Digital no Celular"
-                className="absolute top-0 right-0 h-full w-auto max-w-none select-none pointer-events-none object-cover sm:object-contain object-right"
+                className="w-full h-auto block select-none pointer-events-none rounded-xl"
                 style={{
-                  height: '100%',
-                  width: 'auto',
-                  maxWidth: 'none',
-                  objectFit: 'cover',
-                  objectPosition: 'right center',
+                  width: '100%',
+                  height: 'auto',
+                  objectFit: 'contain',
                 }}
               />
             </div>
