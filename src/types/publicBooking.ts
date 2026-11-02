@@ -64,6 +64,7 @@ export interface PublicTenantInfo {
   name: string;
   slug: string;
   plan?: string;
+  has_ai_access?: boolean;
   settings?: {
     booking_settings?: OnlineBookingSettings;
     business_name?: string;

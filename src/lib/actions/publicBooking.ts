@@ -61,10 +61,31 @@ export async function getPublicTenantCatalogAction(
 
     if (!rpcErr && rpcData) {
       if (rpcData.success) {
+        // Validação da disponibilidade de IA generativa para o tenant (Plano Smart + cota e vigência válidas)
+        let hasAiAccess = false;
+        let tenantPlan = rpcData.tenant?.plan || 'essential';
+        if (rpcData.tenant?.id) {
+          try {
+            const { data: quota } = await supabase.rpc('check_ai_monthly_quota', {
+              p_tenant_id: rpcData.tenant.id,
+            });
+            if (quota) {
+              if (quota.plan) tenantPlan = quota.plan;
+              hasAiAccess = quota.allowed === true && quota.plan === 'smart';
+            }
+          } catch {
+            // Em caso de falha transitória na checagem de cota, mantém false seguro (fail-safe)
+          }
+        }
+
         return {
           success: true,
           data: {
-            tenant: rpcData.tenant,
+            tenant: {
+              ...rpcData.tenant,
+              plan: tenantPlan,
+              has_ai_access: hasAiAccess,
+            },
             services: rpcData.services || [],
             professionals: rpcData.professionals || [],
             portfolio: rpcData.portfolio || [],

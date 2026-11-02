@@ -80,6 +80,22 @@ export async function initAIChatSessionAction(
     }
 
     const { tenant } = catalogRes.data;
+
+    // Validação estrita de direito de IA no backend: Plano Smart com assinatura/trial ativo
+    if (!tenant.has_ai_access) {
+      return {
+        success: false,
+        sessionToken: '',
+        initialMessage: {
+          id: 'unauthorized',
+          role: 'assistant',
+          content: 'O assistente virtual com IA não está habilitado para este estabelecimento. Por favor, utilize o agendamento convencional.',
+          createdAt: new Date().toISOString(),
+        },
+        error: 'IA_NOT_AVAILABLE',
+      };
+    }
+
     const businessName = tenant.settings?.booking_settings?.business_name || tenant.name;
     const sessionToken = existingToken || crypto.randomUUID();
 
@@ -140,6 +156,15 @@ export async function sendAIChatMessageAction(
     }
 
     const { tenant, services, professionals } = catalogRes.data;
+
+    // Validação estrita de direito de IA no backend: Plano Smart com assinatura/trial ativo
+    if (!tenant.has_ai_access) {
+      return {
+        success: false,
+        error: 'O assistente virtual com IA não está disponível para este estabelecimento.',
+      };
+    }
+
     const businessName = tenant.settings?.booking_settings?.business_name || tenant.name;
     const businessPhone = tenant.settings?.booking_settings?.whatsapp || tenant.settings?.whatsapp;
 

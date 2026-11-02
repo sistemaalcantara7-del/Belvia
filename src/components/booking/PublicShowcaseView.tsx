@@ -151,15 +151,14 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
             </Link>
           </nav>
 
-          {/* Botão Superior Direito: Agende seu horário (max 170px mobile, h: 42px / ~205x48px desktop) */}
+          {/* Botão Superior Direito: Ver serviços com rolagem até a seção de serviços */}
           <div className="flex items-center shrink-0">
             <Link
-              href={`/agendar/${tenant.slug}`}
+              href="#servicos"
               className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 h-[42px] md:h-12 max-w-[170px] sm:max-w-none rounded-[12px] text-xs sm:text-sm font-medium text-white transition-all shadow-xs hover:opacity-95 active:scale-98"
               style={{ backgroundColor: '#BD7165' }}
             >
-              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2] shrink-0" />
-              <span className="truncate">Agende seu horário</span>
+              <span className="truncate">Ver serviços</span>
             </Link>
           </div>
         </div>
@@ -205,7 +204,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
             >
               <div className="flex items-center gap-2.5">
                 <Calendar className="w-4 h-4 stroke-[2]" />
-                <span>Agende seu horário agora</span>
+                <span>Agendar meu horário</span>
               </div>
               <ArrowRight className="w-4 h-4 stroke-[2]" />
             </Link>
@@ -290,7 +289,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
               >
                 <div className="flex items-center gap-3">
                   <Calendar className="w-5 h-5 stroke-[2]" />
-                  <span>Agende seu horário agora</span>
+                  <span>Agendar meu horário</span>
                 </div>
                 <ArrowRight className="w-5 h-5 stroke-[2]" />
               </Link>
@@ -735,8 +734,8 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
         </div>
       </footer>
 
-      {/* ── 9. RECEPCIONISTA VIRTUAL COM IA (FLUTUANTE) ──────────────────────── */}
-      <AIChatWidget catalog={catalog} />
+      {/* ── 9. RECEPCIONISTA VIRTUAL COM IA (FLUTUANTE EXCLUSIVO PARA TENANTS COM ACESSO À IA) ── */}
+      {tenant.has_ai_access && <AIChatWidget catalog={catalog} />}
     </div>
   );
 }
