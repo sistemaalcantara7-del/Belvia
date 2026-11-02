@@ -54,8 +54,31 @@ export async function getPublicTenantCatalogAction(
 ): Promise<{ success: boolean; data?: PublicCatalogData; error?: string }> {
   try {
     const supabase = getPublicSupabase();
+    // 1. Tenta prioritariamente via RPC SECURITY DEFINER (com suporte completo a trial e bypass seguro de RLS para catálogo público)
+    const { data: rpcData, error: rpcErr } = await supabase.rpc('get_public_tenant_catalog', {
+      p_slug: tenantSlug,
+    });
 
-    // 1. Consulta dados do tenant e da assinatura para garantir vigência de trial e status
+    if (!rpcErr && rpcData) {
+      if (rpcData.success) {
+        return {
+          success: true,
+          data: {
+            tenant: rpcData.tenant,
+            services: rpcData.services || [],
+            professionals: rpcData.professionals || [],
+            portfolio: rpcData.portfolio || [],
+          },
+        };
+      } else if (rpcData.error) {
+        return {
+          success: false,
+          error: rpcData.error,
+        };
+      }
+    }
+
+    // 2. Fallback caso a RPC não esteja disponível: consulta server-side
     const { data: tenant, error: tErr } = await supabase
       .from('tenants')
       .select('id, name, slug, plan, status, settings, created_at')
@@ -84,24 +107,6 @@ export async function getPublicTenantCatalogAction(
         error: 'Este estabelecimento está temporariamente indisponível para agendamento online.',
       };
     }
-
-    // 2. Tenta via RPC dedicada de catálogo público
-    const { data: rpcData, error: rpcErr } = await supabase.rpc('get_public_tenant_catalog', {
-      p_slug: tenantSlug,
-    });
-
-    if (!rpcErr && rpcData && rpcData.success) {
-      return {
-        success: true,
-        data: {
-          tenant: rpcData.tenant,
-          services: rpcData.services || [],
-          professionals: rpcData.professionals || [],
-          portfolio: rpcData.portfolio || [],
-        },
-      };
-    }
-
     const tenantSettings = (tenant.settings as Record<string, unknown>) || {};
     const bookingSettings = tenantSettings.booking_settings as
       | {
