@@ -493,15 +493,23 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Imagem responsiva inteira abaixo do texto no mobile/tablet */}
-          <div className="max-w-2xl mx-auto pt-2 overflow-hidden rounded-2xl">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/img/bg_app.png"
-              alt="Demonstração da Vitrine Digital"
-              className="w-full h-auto block select-none pointer-events-none"
-              style={{ width: '100%', height: 'auto', objectFit: 'contain' }}
-            />
+          {/* Área visual mobile/tablet: Enquadramento e destaque do smartphone e card flutuante sem cortes verticais */}
+          <div className="w-full max-w-xl mx-auto pt-4 pb-2 overflow-hidden">
+            <div className="relative w-full h-[460px] sm:h-[540px] md:h-[620px] rounded-2xl overflow-hidden bg-gradient-to-b from-[#FAF4EE] via-[#FAF0EB]/60 to-[#FAF4EE] border border-[#EADBCE]/50 shadow-2xs">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/img/bg_app.png"
+                alt="Demonstração da Vitrine Digital no Celular"
+                className="absolute top-0 right-0 h-full w-auto max-w-none select-none pointer-events-none object-cover sm:object-contain object-right"
+                style={{
+                  height: '100%',
+                  width: 'auto',
+                  maxWidth: 'none',
+                  objectFit: 'cover',
+                  objectPosition: 'right center',
+                }}
+              />
+            </div>
           </div>
         </div>
       </section>
