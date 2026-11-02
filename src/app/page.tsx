@@ -291,9 +291,9 @@ export default function HomePage() {
 
       {/* ── 5. SEÇÃO COMERCIAL: VITRINE DIGITAL DO SEU NEGÓCIO (PROMPT 164) ────────── */}
       <section id="vitrine-digital" className="relative w-full overflow-hidden bg-[#FAF4EE]">
-        {/* DESKTOP (lg+): Container proporcional que preserva a arte 100% visível sem recortes */}
-        <div className="hidden lg:block relative w-full max-w-[2079px] mx-auto">
-          {/* Imagem em fluxo natural com largura total e proporção preservada */}
+        {/* DESKTOP (lg+): Imagem em largura total com container centralizado max-w-7xl alinhado à esquerda */}
+        <div className="hidden lg:block relative w-full overflow-hidden">
+          {/* Imagem em largura total preservando proporção natural */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/img/bg_app.png"
@@ -302,99 +302,102 @@ export default function HomePage() {
             style={{ width: '100%', height: 'auto', objectFit: 'contain' }}
           />
 
-          {/* Camada de conteúdo HTML posicionada exclusivamente sobre o lado esquerdo livre */}
-          <div className="absolute inset-y-0 left-0 w-[55%] flex items-center pl-8 xl:pl-16 pr-4 pointer-events-auto z-10">
-            <div className="max-w-xl space-y-3 xl:space-y-4">
-              {/* Etiqueta */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/95 border border-[#EADBCE] text-[10px] xl:text-[11px] font-bold tracking-wider uppercase text-[#8C4F46] shadow-2xs">
-                <Store className="w-3 h-3 text-[#B87070]" />
-                <span>VITRINE DIGITAL DO SEU NEGÓCIO</span>
-              </div>
-
-              {/* Título com destaque rosé */}
-              <h2 className="text-2xl xl:text-3xl 2xl:text-[34px] font-serif text-[#2C1810] leading-[1.18] font-normal tracking-tight">
-                Seu negócio merece uma{' '}
-                <span className="text-[#B87070] italic font-serif">vitrine digital própria.</span>
-              </h2>
-
-              {/* Descrição */}
-              <p className="text-xs xl:text-sm text-[#6B5A54] leading-relaxed">
-                Com a <strong className="text-[#2C1810] font-semibold">ZELUNIA</strong>, seu estabelecimento ganha uma página personalizada para apresentar sua marca, divulgar serviços e receber agendamentos online. Tudo em um único link para compartilhar com seus clientes.
-              </p>
-
-              {/* Seis Cards Compactos em Grade 3x2 */}
-              <div className="grid grid-cols-3 gap-2 xl:gap-2.5 pt-1">
-                {/* Card 1: Marca personalizada */}
-                <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
-                  <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Paintbrush className="w-3 h-3 stroke-[2.2]" />
-                  </div>
-                  <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
-                    Marca personalizada
-                  </span>
+          {/* Container idêntico ao cabeçalho e demais seções: max-w-7xl mx-auto px-6 */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="max-w-7xl mx-auto px-6 h-full flex items-center">
+              {/* Conteúdo HTML alinhado com a mesma margem esquerda do logotipo e das outras seções */}
+              <div className="w-full max-w-lg xl:max-w-xl space-y-3 xl:space-y-4 pointer-events-auto z-10">
+                {/* Etiqueta */}
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/95 border border-[#EADBCE] text-[10px] xl:text-[11px] font-bold tracking-wider uppercase text-[#8C4F46] shadow-2xs">
+                  <Store className="w-3 h-3 text-[#B87070]" />
+                  <span>VITRINE DIGITAL DO SEU NEGÓCIO</span>
                 </div>
 
-                {/* Card 2: Catálogo de serviços */}
-                <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
-                  <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Layers className="w-3 h-3 stroke-[2.2]" />
+                {/* Título com destaque rosé */}
+                <h2 className="text-2xl xl:text-3xl 2xl:text-[34px] font-serif text-[#2C1810] leading-[1.18] font-normal tracking-tight">
+                  Seu negócio merece uma{' '}
+                  <span className="text-[#B87070] italic font-serif">vitrine digital própria.</span>
+                </h2>
+
+                {/* Descrição */}
+                <p className="text-xs xl:text-sm text-[#6B5A54] leading-relaxed">
+                  Com a <strong className="text-[#2C1810] font-semibold">ZELUNIA</strong>, seu estabelecimento ganha uma página personalizada para apresentar sua marca, divulgar serviços e receber agendamentos online. Tudo em um único link para compartilhar com seus clientes.
+                </p>
+
+                {/* Seis Cards Compactos em Grade 3x2 */}
+                <div className="grid grid-cols-3 gap-2 xl:gap-2.5 pt-1">
+                  {/* Card 1: Marca personalizada */}
+                  <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                    <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <Paintbrush className="w-3 h-3 stroke-[2.2]" />
+                    </div>
+                    <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
+                      Marca personalizada
+                    </span>
                   </div>
-                  <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
-                    Catálogo de serviços
-                  </span>
+
+                  {/* Card 2: Catálogo de serviços */}
+                  <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                    <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <Layers className="w-3 h-3 stroke-[2.2]" />
+                    </div>
+                    <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
+                      Catálogo de serviços
+                    </span>
+                  </div>
+
+                  {/* Card 3: Sua equipe de profissionais */}
+                  <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                    <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <UserCheck className="w-3 h-3 stroke-[2.2]" />
+                    </div>
+                    <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
+                      Sua equipe de profissionais
+                    </span>
+                  </div>
+
+                  {/* Card 4: Portfólio de resultados */}
+                  <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                    <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <ImageIcon className="w-3 h-3 stroke-[2.2]" />
+                    </div>
+                    <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
+                      Portfólio de resultados
+                    </span>
+                  </div>
+
+                  {/* Card 5: Agendamento online 24h */}
+                  <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                    <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <Clock className="w-3 h-3 stroke-[2.2]" />
+                    </div>
+                    <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
+                      Agendamento online 24h
+                    </span>
+                  </div>
+
+                  {/* Card 6: Link único para compartilhar */}
+                  <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
+                    <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <Link2 className="w-3 h-3 stroke-[2.2]" />
+                    </div>
+                    <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
+                      Link único para compartilhar
+                    </span>
+                  </div>
                 </div>
 
-                {/* Card 3: Sua equipe de profissionais */}
-                <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
-                  <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <UserCheck className="w-3 h-3 stroke-[2.2]" />
-                  </div>
-                  <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
-                    Sua equipe de profissionais
-                  </span>
+                {/* Botão CTA */}
+                <div className="pt-1">
+                  <Link
+                    href="/register"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs xl:text-sm font-semibold text-white transition-all shadow-sm hover:opacity-95 hover:shadow-md cursor-pointer"
+                    style={{ backgroundColor: '#B87070' }}
+                  >
+                    <span>Criar minha página</span>
+                    <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                  </Link>
                 </div>
-
-                {/* Card 4: Portfólio de resultados */}
-                <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
-                  <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <ImageIcon className="w-3 h-3 stroke-[2.2]" />
-                  </div>
-                  <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
-                    Portfólio de resultados
-                  </span>
-                </div>
-
-                {/* Card 5: Agendamento online 24h */}
-                <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
-                  <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Clock className="w-3 h-3 stroke-[2.2]" />
-                  </div>
-                  <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
-                    Agendamento online 24h
-                  </span>
-                </div>
-
-                {/* Card 6: Link único para compartilhar */}
-                <div className="flex items-center gap-2 p-2 xl:p-2.5 rounded-xl bg-white/95 border border-[#EADBCE]/90 shadow-2xs hover:border-[#B87070]/60 transition-all group backdrop-blur-[2px]">
-                  <div className="w-6 h-6 xl:w-7 xl:h-7 rounded-lg bg-[#FAF0ED] text-[#B87070] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Link2 className="w-3 h-3 stroke-[2.2]" />
-                  </div>
-                  <span className="text-[10px] xl:text-[11px] font-semibold text-[#2C1810] leading-tight">
-                    Link único para compartilhar
-                  </span>
-                </div>
-              </div>
-
-              {/* Botão CTA */}
-              <div className="pt-1">
-                <Link
-                  href="/register"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-xs xl:text-sm font-semibold text-white transition-all shadow-sm hover:opacity-95 hover:shadow-md cursor-pointer"
-                  style={{ backgroundColor: '#B87070' }}
-                >
-                  <span>Criar minha página</span>
-                  <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-                </Link>
               </div>
             </div>
           </div>
