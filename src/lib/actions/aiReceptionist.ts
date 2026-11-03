@@ -99,21 +99,18 @@ export async function initAIChatSessionAction(
     const businessName = tenant.settings?.booking_settings?.business_name || tenant.name;
     const sessionToken = existingToken || crypto.randomUUID();
     const services = catalogRes.data.services || [];
-    const professionals = catalogRes.data.professionals || [];
     const hasServices = services.length > 0;
 
-    let welcomeText = `Olá! Seja bem-vindo(a) à **${businessName}**! ✨\n\nSou a assistente virtual e estou aqui para facilitar seu agendamento, consultar horários livres ou tirar qualquer dúvida sobre nossos serviços. Como posso ajudar você hoje?`;
-    let initialQuickReplies: AIChatMessage['quickReplies'] = [
+    const initialQuickReplies: AIChatMessage['quickReplies'] = [
       { label: 'Ver Serviços e Valores', actionText: 'Quais são os serviços e valores?' },
       { label: 'Agendar um Horário', actionText: 'Gostaria de agendar um horário' },
       { label: 'Conhecer a Equipe', actionText: 'Quem são os profissionais?' },
     ];
 
+    let welcomeText = `Olá! Seja bem-vindo(a) à **${businessName}**! ✨\n\nSou a assistente virtual e estou aqui para facilitar seu agendamento, consultar horários livres ou tirar qualquer dúvida sobre nossos serviços. Como posso ajudar você hoje?`;
+
     if (!hasServices) {
       welcomeText = `Olá! Seja bem-vindo(a) à **${businessName}**! ✨\n\nNeste momento, o estabelecimento ainda não cadastrou seus serviços para consulta online. Posso ajudar com outras informações disponíveis.`;
-      initialQuickReplies = professionals.length > 0
-        ? [{ label: 'Conhecer a Equipe', actionText: 'Quem são os profissionais?' }]
-        : undefined;
     }
 
     const initialMessage: AIChatMessage = {
@@ -179,26 +176,51 @@ export async function sendAIChatMessageAction(
     const businessName = tenant.settings?.booking_settings?.business_name || tenant.name;
     const businessPhone = tenant.settings?.booking_settings?.whatsapp || tenant.settings?.whatsapp;
 
-    // REGRA OBRIGATÓRIA (PROMPT 178) - CATÁLOGO VAZIO NO BACKEND:
-    // Quando não houver serviços cadastrados, a IA NÃO pode afirmar que existem procedimentos disponíveis,
-    // mostrar listas vazias ou perguntar qual serviço o cliente deseja agendar.
-    if (!services || services.length === 0) {
-      const emptyCatalogReply = 'Neste momento, o estabelecimento ainda não cadastrou seus serviços para consulta online. Posso ajudar com outras informações disponíveis.';
-      const emptyQuickReplies: AIChatMessage['quickReplies'] = professionals && professionals.length > 0
-        ? [{ label: 'Conhecer a Equipe', actionText: 'Quem são os profissionais?' }]
-        : undefined;
+    // DIRETRIZES FUNDAMENTAIS (PROMPT 179) - RESPOSTAS PRECISAS & SEM ALUCINAÇÃO:
+    const normMsgEarly = normalizeNlpText(cleanUserMessage);
+    const isTeamInquiryEarly = isProfessionalQuestion(cleanUserMessage);
+    const defaultQuickReplies: AIChatMessage['quickReplies'] = [
+      { label: 'Ver Serviços e Valores', actionText: 'Quais são os serviços e valores?' },
+      { label: 'Agendar um Horário', actionText: 'Gostaria de agendar um horário' },
+      { label: 'Conhecer a Equipe', actionText: 'Quem são os profissionais?' },
+    ];
 
-      const assistantMsg: AIChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: emptyCatalogReply,
-        createdAt: new Date().toISOString(),
-        quickReplies: emptyQuickReplies,
-      };
+    // Caso 1: Pergunta sobre Equipe / Profissionais
+    if (isTeamInquiryEarly) {
+      if (!professionals || professionals.length === 0) {
+        return {
+          success: true,
+          message: {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: `Neste momento, a equipe de profissionais de **${businessName}** ainda não foi publicada para consulta online. Para mais informações, entre em contato diretamente pelo nosso WhatsApp.`,
+            createdAt: new Date().toISOString(),
+            quickReplies: defaultQuickReplies,
+          },
+        };
+      }
+    }
+
+    // Caso 2: Catálogo de Serviços Vazio
+    if (!services || services.length === 0) {
+      let emptyCatalogText = 'Neste momento, o estabelecimento ainda não cadastrou seus serviços para consulta online. Posso ajudar com outras informações disponíveis.';
+
+      // Se o usuário clicou em agendar ou perguntou de horários
+      if (normMsgEarly.includes('agendar') || normMsgEarly.includes('marcar') || normMsgEarly.includes('horario')) {
+        emptyCatalogText = 'No momento, o agendamento online está indisponível porque o estabelecimento ainda não cadastrou serviços ativos na plataforma.';
+      } else if (normMsgEarly.includes('preco') || normMsgEarly.includes('valor') || normMsgEarly.includes('servico')) {
+        emptyCatalogText = 'Ainda não existem procedimentos cadastrados na tabela de serviços para consulta online.';
+      }
 
       return {
         success: true,
-        message: assistantMsg,
+        message: {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: emptyCatalogText,
+          createdAt: new Date().toISOString(),
+          quickReplies: defaultQuickReplies,
+        },
       };
     }
 
