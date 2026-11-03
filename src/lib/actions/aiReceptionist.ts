@@ -98,19 +98,30 @@ export async function initAIChatSessionAction(
 
     const businessName = tenant.settings?.booking_settings?.business_name || tenant.name;
     const sessionToken = existingToken || crypto.randomUUID();
+    const services = catalogRes.data.services || [];
+    const professionals = catalogRes.data.professionals || [];
+    const hasServices = services.length > 0;
 
-    const welcomeText = `Olá! Seja bem-vindo(a) à **${businessName}**! ✨\n\nSou a assistente virtual e estou aqui para facilitar seu agendamento, consultar horários livres ou tirar qualquer dúvida sobre nossos serviços. Como posso ajudar você hoje?`;
+    let welcomeText = `Olá! Seja bem-vindo(a) à **${businessName}**! ✨\n\nSou a assistente virtual e estou aqui para facilitar seu agendamento, consultar horários livres ou tirar qualquer dúvida sobre nossos serviços. Como posso ajudar você hoje?`;
+    let initialQuickReplies: AIChatMessage['quickReplies'] = [
+      { label: 'Ver Serviços e Valores', actionText: 'Quais são os serviços e valores?' },
+      { label: 'Agendar um Horário', actionText: 'Gostaria de agendar um horário' },
+      { label: 'Conhecer a Equipe', actionText: 'Quem são os profissionais?' },
+    ];
+
+    if (!hasServices) {
+      welcomeText = `Olá! Seja bem-vindo(a) à **${businessName}**! ✨\n\nNeste momento, o estabelecimento ainda não cadastrou seus serviços para consulta online. Posso ajudar com outras informações disponíveis.`;
+      initialQuickReplies = professionals.length > 0
+        ? [{ label: 'Conhecer a Equipe', actionText: 'Quem são os profissionais?' }]
+        : undefined;
+    }
 
     const initialMessage: AIChatMessage = {
       id: crypto.randomUUID(),
       role: 'assistant',
       content: welcomeText,
       createdAt: new Date().toISOString(),
-      quickReplies: [
-        { label: 'Ver Serviços e Valores', actionText: 'Quais são os serviços e valores?' },
-        { label: 'Agendar um Horário', actionText: 'Gostaria de agendar um horário' },
-        { label: 'Conhecer a Equipe', actionText: 'Quem são os profissionais?' },
-      ],
+      quickReplies: initialQuickReplies,
     };
 
     return {
@@ -167,6 +178,29 @@ export async function sendAIChatMessageAction(
 
     const businessName = tenant.settings?.booking_settings?.business_name || tenant.name;
     const businessPhone = tenant.settings?.booking_settings?.whatsapp || tenant.settings?.whatsapp;
+
+    // REGRA OBRIGATÓRIA (PROMPT 178) - CATÁLOGO VAZIO NO BACKEND:
+    // Quando não houver serviços cadastrados, a IA NÃO pode afirmar que existem procedimentos disponíveis,
+    // mostrar listas vazias ou perguntar qual serviço o cliente deseja agendar.
+    if (!services || services.length === 0) {
+      const emptyCatalogReply = 'Neste momento, o estabelecimento ainda não cadastrou seus serviços para consulta online. Posso ajudar com outras informações disponíveis.';
+      const emptyQuickReplies: AIChatMessage['quickReplies'] = professionals && professionals.length > 0
+        ? [{ label: 'Conhecer a Equipe', actionText: 'Quem são os profissionais?' }]
+        : undefined;
+
+      const assistantMsg: AIChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: emptyCatalogReply,
+        createdAt: new Date().toISOString(),
+        quickReplies: emptyQuickReplies,
+      };
+
+      return {
+        success: true,
+        message: assistantMsg,
+      };
+    }
 
     // 2. Configurações dos Provedores de IA (OpenAI como primário, Gemini como secundário desativado por padrão)
     const openAiApiKey = process.env.OPENAI_API_KEY;

@@ -777,7 +777,7 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
                 >
                   {/* Avatar feminino pequeno (36px) ao lado das respostas da IA */}
                   {isAssistant && (
-                    <div className="w-9 h-9 rounded-full overflow-hidden border border-[#EADBCE] shadow-2xs shrink-0 mt-0.5 bg-rose-50">
+                    <div className="w-9 h-9 rounded-full overflow-hidden border border-[#EADBCE] shadow-2xs shrink-0 self-start bg-rose-50">
                       <Image
                         src="/img/assistente-avatar.png"
                         alt="Assistente"
