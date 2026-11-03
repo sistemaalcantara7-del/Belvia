@@ -15,6 +15,9 @@ import {
   OperatingExpense,
   OperatingExpenseStatus,
   ExpensePaymentSource,
+  FinancialCategory,
+  FinancialCategoryType,
+  DEFAULT_FINANCIAL_CATEGORIES,
 } from '@/types/financial';
 import { assertActiveSubscription } from '@/lib/plans/entitlements';
 import { revalidatePath } from 'next/cache';
@@ -1414,4 +1417,167 @@ export async function cancelOperatingExpenseAction(
     success: true,
     data: updatedExp as OperatingExpense,
   };
+}
+
+/**
+ * Lista as categorias financeiras para o tenant especificado e tipo selecionado.
+ * Retorna tanto as categorias do sistema (padrões) quanto as customizadas ativas do tenant.
+ * Possui fallback gracioso caso a migration ainda não tenha sido aplicada no Supabase remoto.
+ */
+export async function getFinancialCategoriesAction(
+  tenantSlug: string,
+  type: FinancialCategoryType
+): Promise<FinancialActionResponse<FinancialCategory[]>> {
+  const context = await getAuthenticatedTenantContext(tenantSlug);
+  if (!context) {
+    return { error: 'Acesso negado.' };
+  }
+
+  const supabase = await createClient();
+
+  try {
+    const { data: dbCategories, error } = await supabase
+      .from('financial_categories')
+      .select('*')
+      .eq('type', type)
+      .eq('status', 'active')
+      .or(`tenant_id.eq.${context.tenantId},is_system.eq.true`)
+      .order('name', { ascending: true });
+
+    if (error) {
+      // Se a tabela ainda não existe remotamente, retorna lista padrão do sistema
+      const fallbackList: FinancialCategory[] = (DEFAULT_FINANCIAL_CATEGORIES[type] || []).map((name, idx) => ({
+        id: `fallback-${type}-${idx}`,
+        tenant_id: null,
+        name,
+        type,
+        is_system: true,
+        status: 'active',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }));
+      return { success: true, data: fallbackList };
+    }
+
+    // Garante que todas as categorias padrão estejam presentes
+    const existingNames = new Set((dbCategories || []).map((c) => c.name.toLowerCase().trim()));
+    const finalCategories: FinancialCategory[] = [...(dbCategories || [])];
+
+    (DEFAULT_FINANCIAL_CATEGORIES[type] || []).forEach((defName, idx) => {
+      if (!existingNames.has(defName.toLowerCase().trim())) {
+        finalCategories.push({
+          id: `default-${type}-${idx}`,
+          tenant_id: null,
+          name: defName,
+          type,
+          is_system: true,
+          status: 'active',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
+    });
+
+    return {
+      success: true,
+      data: finalCategories.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
+    };
+  } catch {
+    const fallbackList: FinancialCategory[] = (DEFAULT_FINANCIAL_CATEGORIES[type] || []).map((name, idx) => ({
+      id: `fallback-${type}-${idx}`,
+      tenant_id: null,
+      name,
+      type,
+      is_system: true,
+      status: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }));
+    return { success: true, data: fallbackList };
+  }
+}
+
+/**
+ * Cria uma nova categoria financeira personalizada para o tenant.
+ * - Valida role do usuário (owner, admin, receptionist).
+ * - Impede nomes vazios ou duplicados no mesmo tipo e tenant.
+ * - Garante que is_system seja false e tenant_id seja estritamente o do contexto autenticado.
+ */
+export async function createFinancialCategoryAction(
+  tenantSlug: string,
+  data: {
+    name: string;
+    type: FinancialCategoryType;
+  }
+): Promise<FinancialActionResponse<FinancialCategory>> {
+  const context = await getAuthenticatedTenantContext(tenantSlug);
+  if (!context) {
+    return { error: 'Acesso negado.' };
+  }
+
+  // Validação de permissões de escrita financeira
+  if (!['owner', 'admin', 'receptionist'].includes(context.role)) {
+    return { error: 'Seu perfil de acesso não possui permissão para cadastrar categorias financeiras.' };
+  }
+
+  const categoryName = data.name?.trim();
+  if (!categoryName || categoryName.length < 2) {
+    return { error: 'O nome da categoria deve ter pelo menos 2 caracteres.' };
+  }
+
+  const supabase = await createClient();
+
+  // Validação estrita de unicidade com fallback para lista padrão em memória
+  const normalizedNew = categoryName.toLowerCase().replace(/\s+/g, ' ');
+  const systemDefaults = (DEFAULT_FINANCIAL_CATEGORIES[data.type] || []).map((s) => s.toLowerCase().trim());
+  if (systemDefaults.includes(normalizedNew)) {
+    return { error: 'Esta categoria já existe como padrão oficial do sistema.' };
+  }
+
+  // Verifica duplicidade no banco
+  try {
+    const { data: existing } = await supabase
+      .from('financial_categories')
+      .select('id, name')
+      .eq('type', data.type)
+      .ilike('name', categoryName)
+      .or(`tenant_id.eq.${context.tenantId},is_system.eq.true`)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      return { error: 'Já existe uma categoria cadastrada com este nome para esta operação.' };
+    }
+
+    const { data: newCat, error: insertErr } = await supabase
+      .from('financial_categories')
+      .insert({
+        tenant_id: context.tenantId,
+        name: categoryName,
+        type: data.type,
+        is_system: false,
+        status: 'active',
+      })
+      .select()
+      .single();
+
+    if (insertErr || !newCat) {
+      // Falha real ou tabela ainda não criada no banco: informa indisponibilidade real, sem simular salvamento
+      return {
+        error:
+          'O cadastro de novas categorias personalizadas está temporariamente indisponível. Aguarde a migração do banco de dados.',
+      };
+    }
+
+    revalidatePath(`/${tenantSlug}/caixa`);
+
+    return {
+      success: true,
+      data: newCat as FinancialCategory,
+    };
+  } catch {
+    return {
+      error:
+        'Não foi possível salvar a nova categoria no momento. Verifique a conexão com o banco de dados.',
+    };
+  }
 }

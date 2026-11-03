@@ -13,7 +13,10 @@ import {
   createOperatingExpenseAction,
   settleOperatingExpenseAction,
   cancelOperatingExpenseAction,
+  getFinancialCategoriesAction,
 } from '@/lib/actions/financial';
+import { QuickNewCategoryModal } from './QuickNewCategoryModal';
+import { FinancialCategory } from '@/types/financial';
 import {
   Plus,
   Clock,
@@ -60,6 +63,37 @@ export function OperatingExpensesManager({
   const [description, setDescription] = useState('');
   const [amountStr, setAmountStr] = useState('');
   const [category, setCategory] = useState<string>(EXPENSE_CATEGORIES[0]);
+  const [categoriesList, setCategoriesList] = useState<string[]>(Array.from(EXPENSE_CATEGORIES));
+  const [isNewCatModalOpen, setIsNewCatModalOpen] = useState(false);
+
+  React.useEffect(() => {
+    let isCancelled = false;
+    const loadCategories = async () => {
+      try {
+        const res = await getFinancialCategoriesAction(tenantSlug, 'operating_expense');
+        if (isCancelled) return;
+        if (res.data && res.data.length > 0) {
+          const names = res.data.map((c) => c.name);
+          setCategoriesList(names);
+          setCategory((prev) => (names.includes(prev) ? prev : names[0] || 'Insumos & Descartáveis'));
+        }
+      } catch (err) {
+        console.warn('Erro ao carregar categorias operacionais:', err);
+      }
+    };
+    loadCategories();
+    return () => {
+      isCancelled = true;
+    };
+  }, [tenantSlug]);
+
+  const handleCategoryCreated = (newCat: FinancialCategory) => {
+    setCategoriesList((prev) => {
+      if (prev.some((n) => n.toLowerCase() === newCat.name.toLowerCase())) return prev;
+      return [...prev, newCat.name].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    });
+    setCategory(newCat.name);
+  };
   const [dueDate, setDueDate] = useState(new Date().toISOString().slice(0, 10));
   const [competenceDate, setCompetenceDate] = useState(new Date().toISOString().slice(0, 10));
   const [paymentSource, setPaymentSource] = useState<ExpensePaymentSource>('bank_account');
@@ -456,22 +490,43 @@ export function OperatingExpensesManager({
               )}
 
               <div className="grid grid-cols-2 gap-3">
-                {/* Categoria */}
+                {/* Categoria com botão + */}
                 <div>
-                  <label className="block text-[11px] font-semibold text-[#66534E] mb-1">
-                    Categoria Contábil *
-                  </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-3 py-2 text-xs bg-[#FAF5F3] border border-[#EADBCE] rounded-xl text-[#2C1810] focus:ring-2 focus:ring-[#B87070] outline-none"
-                  >
-                    {EXPENSE_CATEGORIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-semibold text-[#66534E]">
+                      Categoria Contábil *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsNewCatModalOpen(true)}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-[#B87070] hover:text-[#9E5A5A] transition-colors"
+                      title="Adicionar nova categoria de despesa"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Nova</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="flex-1 px-3 py-2 text-xs bg-[#FAF5F3] border border-[#EADBCE] rounded-xl text-[#2C1810] focus:ring-2 focus:ring-[#B87070] outline-none"
+                    >
+                      {categoriesList.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setIsNewCatModalOpen(true)}
+                      className="p-2 rounded-xl bg-[#FAF0EC] hover:bg-[#F2DDD9] text-[#B87070] border border-[#EADBCE] transition-colors shrink-0"
+                      title="Cadastrar nova categoria"
+                    >
+                      <Plus className="w-3.5 h-3.5 stroke-[2.2]" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Valor */}
@@ -709,6 +764,14 @@ export function OperatingExpensesManager({
           </div>
         </div>
       )}
+          {/* Modal de Nova Categoria Rápida */}
+      <QuickNewCategoryModal
+        tenantSlug={tenantSlug}
+        type="operating_expense"
+        isOpen={isNewCatModalOpen}
+        onClose={() => setIsNewCatModalOpen(false)}
+        onCategoryCreated={handleCategoryCreated}
+      />
     </div>
   );
 }

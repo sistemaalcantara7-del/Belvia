@@ -276,3 +276,48 @@ export const EXPENSE_PAYMENT_SOURCES: Record<ExpensePaymentSource, string> = {
   credit_card: 'Cartão de Crédito',
   other: 'Outro Meio',
 };
+
+export type FinancialCategoryType = 'supply' | 'bleed' | 'expense' | 'operating_expense';
+
+export interface FinancialCategory {
+  id: string;
+  tenant_id: string | null;
+  name: string;
+  type: FinancialCategoryType;
+  is_system: boolean;
+  status: 'active' | 'archived';
+  created_at: string;
+  updated_at: string;
+}
+
+export const DEFAULT_FINANCIAL_CATEGORIES: Record<FinancialCategoryType, string[]> = {
+  supply: [
+    'Reforço de Troco',
+    'Aporte Inicial / Fundo de Caixa',
+    'Outro Suprimento',
+  ],
+  bleed: [
+    'Recolhimento para Cofre',
+    'Depósito Bancário',
+    'Retirada de Pró-labore',
+    'Outra Retirada',
+  ],
+  expense: [
+    'Insumos de Consumo / Café / Limpeza',
+    'Frete / Transporte / Correios',
+    'Manutenção Rápida',
+    'Alimentação / Lanche Equipe',
+    'Outras Despesas em Espécie',
+  ],
+  operating_expense: [
+    'Insumos & Descartáveis',
+    'Aluguel & Condomínio',
+    'Energia & Água',
+    'Software & TI',
+    'Marketing & Publicidade',
+    'Folha & Pró-labore',
+    'Manutenção & Limpeza',
+    'Tributos & Taxas',
+    'Outras Despesas Operacionais',
+  ],
+};
