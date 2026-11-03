@@ -14,11 +14,13 @@ import {
   LayoutDashboard,
   LucideIcon,
   BarChart3,
+  Store,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   dashboard: LayoutDashboard,
   agenda: Calendar,
+  pdv: Store,
   clientes: Users,
   servicos: Scissors,
   profissionais: UserCheck,
