@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect, useTransition } from 'react';
 import {
-  Bot,
   Send,
   X,
   Loader2,
@@ -10,6 +9,10 @@ import {
   CheckCircle2,
   FileText,
   Edit2,
+  Flower2,
+  CalendarDays,
+  Users,
+  Sparkles,
 } from 'lucide-react';
 import { AIChatMessage, AIChatAnamnesisPrompt, SuggestedSlotItem } from '@/types/aiReceptionist';
 import {
@@ -50,7 +53,7 @@ interface ChatBookingDraft {
 export function AIChatWidget({ catalog }: AIChatWidgetProps) {
   const { tenant } = catalog;
   const bookingSettings = tenant.settings?.booking_settings;
-  const primaryColor = bookingSettings?.primary_color || '#C4837A';
+  // Custom primary color
   const businessName = bookingSettings?.business_name || tenant.name;
 
   const [isOpen, setIsOpen] = useState(false);
@@ -697,140 +700,201 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
         </button>
       )}
 
-      {/* Janela de Chat Aberta */}
+      {/* Janela de Chat Aberta (Redesign Prompt 177 - Mockup Humanizado) */}
       {isOpen && (
-        <div className="fixed bottom-4 right-4 z-50 w-full sm:w-96 max-w-[calc(100vw-2rem)] h-[560px] max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-[#EADBCE] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
-          {/* Cabeçalho do Chat */}
-          <div
-            className="p-4 text-white flex items-center justify-between shadow-xs shrink-0"
-            style={{ backgroundColor: primaryColor }}
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-                <Bot className="w-5 h-5" />
+        <div
+          className="fixed bottom-2 right-2 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-16px)] sm:w-[390px] h-[calc(100dvh-16px)] sm:h-[680px] max-h-[calc(100dvh-16px)] sm:max-h-[85vh] bg-[#FFF9F6] rounded-[24px] shadow-[0_20px_60px_-15px_rgba(190,123,117,0.3),0_10px_30px_-10px_rgba(0,0,0,0.12)] border border-[#EADBCE]/80 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+          style={{
+            marginBottom: 'env(safe-area-inset-bottom, 0px)',
+          }}
+        >
+          {/* Cabeçalho Humanizado: 86px altura, fundo #BE7B75, Avatar Feminino 54px */}
+          <div className="h-[86px] bg-[#BE7B75] px-4 py-3 text-white flex items-center justify-between shadow-xs shrink-0 select-none relative overflow-hidden">
+            {/* Efeito sutil de brilho no topo do cabeçalho */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+
+            <div className="flex items-center gap-3 min-w-0 z-10">
+              {/* Avatar Feminino Circular 54px com anel branco duplo */}
+              <div className="relative w-[54px] h-[54px] rounded-full p-[2px] bg-white/40 shadow-md shrink-0">
+                <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-rose-100 relative">
+                  <Image
+                    src="/img/assistente-avatar.png"
+                    alt="Recepcionista Virtual"
+                    width={54}
+                    height={54}
+                    className="w-full h-full object-cover object-top"
+                    priority
+                  />
+                </div>
               </div>
-              <div>
-                <h3 className="text-sm font-bold leading-tight">{businessName}</h3>
-                <p className="text-[11px] text-rose-100 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-                  Recepcionista Virtual
-                </p>
+
+              {/* Informações: Nome Dinâmico do Estabelecimento e Status */}
+              <div className="min-w-0">
+                <h3 className="text-base sm:text-[17px] font-bold text-white tracking-tight truncate leading-snug drop-shadow-xs">
+                  {businessName}
+                </h3>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse shrink-0" />
+                  <span className="text-xs text-rose-100 font-medium tracking-wide">
+                    Recepcionista Virtual
+                  </span>
+                </div>
               </div>
             </div>
 
+            {/* Botão Fechar Redondo com efeito translúcido */}
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="w-7 h-7 rounded-full bg-black/10 hover:bg-black/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-all duration-200 active:scale-90 cursor-pointer shrink-0 z-10 border border-white/25 shadow-xs"
+              aria-label="Fechar atendimento"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4 stroke-[2.5]" />
             </button>
           </div>
 
-          {/* Área de Mensagens */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#FDFAF8] text-xs">
+          {/* Área de Mensagens e Corpo do Chat com fundo #FFF9F6 */}
+          <div className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3.5 bg-[#FFF9F6] text-xs relative">
+            {/* Ilustração Decorativa da Assistente no Canto Inferior Direito (sem cobrir mensagens) */}
+            <div className="absolute right-0 bottom-0 w-[140px] sm:w-[170px] pointer-events-none select-none opacity-90 sm:opacity-95 hidden xs:block z-0">
+              <Image
+                src="/img/assistente-decor.png"
+                alt="Assistente Decorativa"
+                width={175}
+                height={180}
+                className="w-full h-auto object-contain object-bottom drop-shadow-sm"
+              />
+            </div>
+
             {messages.map((msg) => {
               const isAssistant = msg.role === 'assistant';
               return (
                 <div
                   key={msg.id}
-                  className={`flex flex-col ${isAssistant ? 'items-start' : 'items-end'}`}
+                  className={`flex items-start gap-2.5 z-10 relative ${
+                    isAssistant ? 'justify-start' : 'justify-end'
+                  }`}
                 >
-                  <div
-                    className={`max-w-[85%] p-3 rounded-2xl leading-relaxed ${
-                      isAssistant
-                        ? 'bg-white text-[#2C1810] border border-[#EADBCE] rounded-tl-xs shadow-2xs'
-                        : 'text-white rounded-tr-xs shadow-2xs'
-                    }`}
-                    style={!isAssistant ? { backgroundColor: primaryColor } : undefined}
-                  >
-                    <MarkdownMessage content={msg.content} />
-                  </div>
-
-                  {/* Sugestões de opções guiadas para escolhas ambíguas */}
-                  {msg.quickReplies && msg.quickReplies.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1.5 max-w-[85%]">
-                      {msg.quickReplies.map((qr, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => handleQuickReply(qr.actionText)}
-                          className="px-2.5 py-1 text-xs rounded-full bg-white border border-[#EADBCE] text-[#C4837A] font-medium hover:border-[#C4837A] hover:bg-[#FAF6F3] transition-colors cursor-pointer text-left shadow-2xs"
-                        >
-                          {qr.label}
-                        </button>
-                      ))}
+                  {/* Avatar feminino pequeno (36px) ao lado das respostas da IA */}
+                  {isAssistant && (
+                    <div className="w-9 h-9 rounded-full overflow-hidden border border-[#EADBCE] shadow-2xs shrink-0 mt-0.5 bg-rose-50">
+                      <Image
+                        src="/img/assistente-avatar.png"
+                        alt="Assistente"
+                        width={36}
+                        height={36}
+                        className="w-full h-full object-cover object-top"
+                      />
                     </div>
                   )}
 
-                  {/* Sugestões de slots clicáveis: mantém cards idênticos mas continua no chat */}
-                  {msg.suggestedSlots && msg.suggestedSlots.length > 0 && (
-                    <div className="mt-2 space-y-1.5 w-full max-w-[85%]">
-                      <p className="text-[10px] uppercase font-bold text-[#A86B62] tracking-wider">
-                        Horários Livres Encontrados:
-                      </p>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        {msg.suggestedSlots.map((slot, idx) => (
+                  <div className="flex flex-col max-w-[85%] sm:max-w-[80%]">
+                    {/* Balão de Mensagem */}
+                    <div
+                      className={`p-3.5 rounded-[18px] leading-relaxed ${
+                        isAssistant
+                          ? 'bg-white text-[#2C1810] border border-[#EADBCE]/90 rounded-tl-xs shadow-[0_2px_8px_rgba(190,123,117,0.08)]'
+                          : 'bg-[#BE7B75] text-white rounded-tr-xs shadow-sm font-medium'
+                      }`}
+                    >
+                      <MarkdownMessage content={msg.content} />
+                    </div>
+
+                    {/* Botões Rápidos Humanizados e Estilizados */}
+                    {msg.quickReplies && msg.quickReplies.length > 0 && (
+                      <div className="mt-2.5 flex flex-col gap-1.5 w-full">
+                        {msg.quickReplies.map((qr, idx) => {
+                          const isServices = qr.label.toLowerCase().includes('serviço') || qr.label.toLowerCase().includes('valor');
+                          const isSchedule = qr.label.toLowerCase().includes('agendar') || qr.label.toLowerCase().includes('horário');
+                          const isTeam = qr.label.toLowerCase().includes('equipe') || qr.label.toLowerCase().includes('profissional');
+
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleQuickReply(qr.actionText)}
+                              className="px-3.5 py-2 text-xs rounded-full bg-white border border-[#EADBCE] text-[#8E4A43] font-semibold hover:border-[#BE7B75] hover:bg-[#FDF3F0] hover:shadow-xs transition-all duration-200 cursor-pointer text-left shadow-2xs flex items-center gap-2 group active:scale-[0.98] w-fit"
+                            >
+                              {isServices && <Flower2 className="w-3.5 h-3.5 text-[#BE7B75] group-hover:scale-110 transition-transform" />}
+                              {isSchedule && <CalendarDays className="w-3.5 h-3.5 text-[#BE7B75] group-hover:scale-110 transition-transform" />}
+                              {isTeam && <Users className="w-3.5 h-3.5 text-[#BE7B75] group-hover:scale-110 transition-transform" />}
+                              {!isServices && !isSchedule && !isTeam && <Sparkles className="w-3.5 h-3.5 text-[#BE7B75]" />}
+                              <span>{qr.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Sugestões de slots clicáveis */}
+                    {msg.suggestedSlots && msg.suggestedSlots.length > 0 && (
+                      <div className="mt-2.5 space-y-1.5 w-full">
+                        <p className="text-[10px] uppercase font-bold text-[#A86B62] tracking-wider flex items-center gap-1">
+                          <CalendarDays className="w-3 h-3 text-[#BE7B75]" />
+                          Horários Livres Encontrados:
+                        </p>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {msg.suggestedSlots.map((slot, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleSelectSlot(slot)}
+                              className="p-2.5 rounded-xl bg-white border border-[#EADBCE] text-center hover:border-[#BE7B75] hover:bg-[#FDF3F0] transition-all cursor-pointer group shadow-2xs"
+                            >
+                              <span className="font-bold text-[#2C1810] block text-xs group-hover:text-[#BE7B75]">
+                                {slot.time}
+                              </span>
+                              <span className="text-[10px] text-[#A86B62] block truncate">
+                                {slot.professionalName.split(' ')[0]}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Card de Anamnese Proposta após confirmação */}
+                    {msg.anamnesisPrompt && (
+                      <div className="mt-3 w-full p-3 rounded-2xl bg-white border border-rose-200 shadow-xs space-y-2">
+                        <div className="flex items-center gap-1.5 text-rose-700 font-bold text-xs">
+                          <FileText className="w-4 h-4" />
+                          <span>{msg.anamnesisPrompt.templateTitle}</span>
+                        </div>
+                        <p className="text-[11px] text-[#6B5A55] leading-relaxed">
+                          Deseja responder <strong>{msg.anamnesisPrompt.totalQuestions} perguntas rápidas</strong> sobre sua saúde e cuidados para agilizar seu atendimento?
+                        </p>
+                        <div className="flex items-center gap-2 pt-1">
                           <button
-                            key={idx}
                             type="button"
-                            onClick={() => handleSelectSlot(slot)}
-                            className="p-2 rounded-xl bg-white border border-[#EADBCE] text-center hover:border-[#C4837A] hover:bg-[#FAF6F3] transition-colors cursor-pointer group shadow-2xs"
+                            onClick={() => {
+                              setActiveAnamnesis(msg.anamnesisPrompt!);
+                              handleConsentResponse(true);
+                            }}
+                            className="flex-1 py-1.5 px-3 rounded-lg text-white font-semibold text-[11px] shadow-2xs hover:opacity-90 cursor-pointer bg-[#BE7B75]"
                           >
-                            <span className="font-bold text-[#2C1810] block text-xs group-hover:text-[#C4837A]">
-                              {slot.time}
-                            </span>
-                            <span className="text-[10px] text-[#A86B62] block truncate">
-                              {slot.professionalName.split(' ')[0]}
-                            </span>
+                            Sim, responder agora
                           </button>
-                        ))}
+                          <button
+                            type="button"
+                            onClick={() => handleConsentResponse(false)}
+                            className="py-1.5 px-3 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-600 font-semibold text-[11px] cursor-pointer"
+                          >
+                            Depois
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Card de Anamnese Proposta após confirmação */}
-                  {msg.anamnesisPrompt && (
-                    <div className="mt-3 w-full max-w-[90%] p-3 rounded-2xl bg-white border border-rose-200 shadow-xs space-y-2">
-                      <div className="flex items-center gap-1.5 text-rose-700 font-bold text-xs">
-                        <FileText className="w-4 h-4" />
-                        <span>{msg.anamnesisPrompt.templateTitle}</span>
-                      </div>
-                      <p className="text-[11px] text-[#6B5A55] leading-relaxed">
-                        Deseja responder <strong>{msg.anamnesisPrompt.totalQuestions} perguntas rápidas</strong> sobre sua saúde e cuidados para agilizar seu atendimento?
-                      </p>
-                      <div className="flex items-center gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveAnamnesis(msg.anamnesisPrompt!);
-                            handleConsentResponse(true);
-                          }}
-                          className="flex-1 py-1.5 px-3 rounded-lg text-white font-semibold text-[11px] shadow-2xs hover:opacity-90 cursor-pointer"
-                          style={{ backgroundColor: primaryColor }}
-                        >
-                          Sim, responder agora
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleConsentResponse(false)}
-                          className="py-1.5 px-3 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-600 font-semibold text-[11px] cursor-pointer"
-                        >
-                          Depois
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               );
             })}
 
-            {/* Card de Confirmação Final do Agendamento Em Andamento Dentro do Chat */}
+            {/* Card de Confirmação Final do Agendamento */}
             {bookingDraft && bookingDraft.step === 'awaiting_confirmation' && (
-              <div className="p-3.5 bg-white rounded-2xl border-2 border-rose-200 shadow-sm space-y-3 animate-in fade-in zoom-in-95 duration-150">
+              <div className="p-3.5 bg-white rounded-2xl border-2 border-rose-200 shadow-sm space-y-3 animate-in fade-in zoom-in-95 duration-150 z-10 relative">
                 <div className="flex items-center justify-between border-b border-rose-100 pb-2">
                   <span className="flex items-center gap-1.5 font-bold text-xs text-[#2C1810]">
-                    <CheckCircle2 className="w-4 h-4 text-[#C4837A]" />
+                    <CheckCircle2 className="w-4 h-4 text-[#BE7B75]" />
                     Resumo do Agendamento
                   </span>
                   <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
@@ -848,55 +912,49 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
                     <strong className="text-[#2C1810]">{bookingDraft.professionalName}</strong>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-500">Data e Horário:</span>
+                    <span className="text-zinc-500">Data e Hora:</span>
                     <strong className="text-[#2C1810]">
-                      {formatAppointmentDate(bookingDraft.date)} às {bookingDraft.time}
+                      {bookingDraft.date} às {bookingDraft.time}
                     </strong>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-500">Cliente:</span>
-                    <span className="text-[#2C1810]">{bookingDraft.clientName}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-zinc-500">WhatsApp:</span>
-                    <span className="text-[#2C1810]">{maskPhone(bookingDraft.clientWhatsapp)}</span>
-                  </div>
                   {bookingDraft.price !== undefined && (
-                    <div className="flex items-center justify-between border-t border-dashed border-rose-100 pt-1.5 mt-1.5">
-                      <span className="font-semibold text-zinc-700">Total:</span>
-                      <strong className="text-sm text-[#2C1810]">
-                        R$ {bookingDraft.price.toFixed(2)}
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-500">Valor Estimado:</span>
+                      <strong className="text-emerald-700">
+                        {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(bookingDraft.price)}
                       </strong>
+                    </div>
+                  )}
+                  {bookingDraft.clientName && (
+                    <div className="flex items-center justify-between pt-1 border-t border-rose-50">
+                      <span className="text-zinc-500">Cliente:</span>
+                      <span className="text-[#2C1810] font-medium">{bookingDraft.clientName}</span>
                     </div>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 pt-1">
+                <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
                     type="button"
                     disabled={isBookingSubmitting}
-                    onClick={executeInChatBooking}
-                    className="flex-1 py-2 px-3 rounded-xl text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs hover:opacity-95 disabled:opacity-50 cursor-pointer"
-                    style={{ backgroundColor: primaryColor }}
+                    onClick={() => handleQuickReply('confirm_booking')}
+                    className="py-2 px-3 rounded-xl text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs hover:opacity-95 disabled:opacity-50 cursor-pointer bg-emerald-600 hover:bg-emerald-700"
                   >
                     {isBookingSubmitting ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Confirmando vaga...
-                      </>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                      <>
-                        <CheckCircle2 className="w-4 h-4" />
-                        Confirmar Agendamento
-                      </>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
                     )}
+                    Confirmar
                   </button>
-
                   <button
                     type="button"
                     disabled={isBookingSubmitting}
-                    onClick={() => cancelOrResetDraft('alterar')}
-                    className="py-2 px-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold text-xs flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
+                    onClick={() => handleQuickReply('edit_booking')}
+                    className="py-2 px-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                     Alterar
@@ -907,7 +965,7 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
 
             {/* Painel de Resposta Ativa da Anamnese Conversacional */}
             {activeAnamnesis && activeAnamnesis.status === 'in_progress' && activeAnamnesis.question && (
-              <div className="p-3 bg-white rounded-2xl border border-rose-200 shadow-xs space-y-2 mt-2">
+              <div className="p-3 bg-white rounded-2xl border border-rose-200 shadow-xs space-y-2 mt-2 z-10 relative">
                 <div className="flex items-center justify-between text-[10px] text-[#A86B62] font-semibold border-b border-rose-100 pb-1.5">
                   <span className="flex items-center gap-1">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
@@ -926,7 +984,6 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
                   {activeAnamnesis.question.text}
                 </p>
 
-                {/* Opções Booleanas */}
                 {activeAnamnesis.question.type === 'boolean' && (
                   <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
@@ -949,7 +1006,6 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
                   </div>
                 )}
 
-                {/* Opções de Múltipla Escolha / Escolha Única */}
                 {(activeAnamnesis.question.type === 'single_choice' || activeAnamnesis.question.type === 'multiple_choice') &&
                   activeAnamnesis.question.options &&
                   activeAnamnesis.question.options.length > 0 && (
@@ -968,7 +1024,6 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
                     </div>
                   )}
 
-                {/* Instrução para perguntas de texto livre */}
                 {activeAnamnesis.question.type === 'text' && (
                   <p className="text-[11px] text-[#9B8985] italic">
                     Digite sua resposta no campo abaixo e pressione enviar.
@@ -978,8 +1033,8 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
             )}
 
             {(isSending || isBookingSubmitting) && (
-              <div className="flex items-center gap-2 text-[#9B8985] text-xs py-1">
-                <Loader2 className="w-4 h-4 animate-spin text-[#C4837A]" />
+              <div className="flex items-center gap-2 text-[#9B8985] text-xs py-1 z-10 relative">
+                <Loader2 className="w-4 h-4 animate-spin text-[#BE7B75]" />
                 <span>
                   {isBookingSubmitting ? 'Gravando reserva com segurança...' : 'Digitando resposta...'}
                 </span>
@@ -989,8 +1044,8 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Rodapé / Input do Chat */}
-          <div className="p-3 bg-white border-t border-[#EADBCE] shrink-0">
+          {/* Rodapé Humanizado: campo arredondado, botão enviar circular #BE7B75, LGPD e link convencional */}
+          <div className="p-3 sm:p-3.5 bg-white border-t border-[#EADBCE]/80 shrink-0">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -1017,23 +1072,28 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
                     setInputValue(e.target.value);
                   }
                 }}
-                className="flex-1 px-3 py-2 text-xs rounded-xl border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden focus:border-[#C4837A]"
+                className="flex-1 px-4 py-2.5 text-xs rounded-full border border-[#EADBCE] bg-[#FAF6F3] focus:bg-white focus:outline-hidden focus:border-[#BE7B75] text-[#2C1810] placeholder:text-[#9B8985]"
               />
               <button
                 type="submit"
                 disabled={isSending || isSubmittingAnamnesis || isBookingSubmitting || !inputValue.trim()}
-                className="w-8 h-8 rounded-xl text-white flex items-center justify-center disabled:opacity-40 transition-colors shadow-2xs shrink-0 cursor-pointer"
-                style={{ backgroundColor: primaryColor }}
+                className="w-9 h-9 rounded-full bg-[#BE7B75] text-white flex items-center justify-center disabled:opacity-40 hover:opacity-90 active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer"
+                aria-label="Enviar mensagem"
               >
                 <Send className="w-4 h-4" />
               </button>
             </form>
-            <div className="flex items-center justify-between text-[10px] text-[#9B8985] mt-2 px-1">
+            <div className="flex items-center justify-between text-[11px] text-[#8E7E7A] mt-2.5 px-1 font-medium">
               <span className="flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                 Protegido sob LGPD
               </span>
-              <Link href={`/agendar/${tenant.slug}`} className="hover:underline font-medium">
+              <div className="h-3 w-px bg-[#EADBCE]" />
+              <Link
+                href={`/agendar/${tenant.slug}`}
+                className="hover:underline hover:text-[#BE7B75] transition-colors flex items-center gap-1"
+              >
+                <CalendarDays className="w-3.5 h-3.5 text-[#BE7B75]" />
                 Agendamento Convencional
               </Link>
             </div>
