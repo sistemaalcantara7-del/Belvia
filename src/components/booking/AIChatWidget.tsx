@@ -61,7 +61,6 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
   const [messages, setMessages] = useState<AIChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isSending, startSendTransition] = useTransition();
-  const [hasInitialized, setHasInitialized] = useState(false);
 
   // Fluxo de Agendamento Nativo Dentro do Chat
   const [bookingDraft, setBookingDraft] = useState<ChatBookingDraft | null>(null);
@@ -72,6 +71,8 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
   const [isSubmittingAnamnesis, setIsSubmittingAnamnesis] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const currentRequestIdRef = useRef<number>(0);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -83,17 +84,43 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
     }
   }, [messages, isOpen, activeAnamnesis, bookingDraft]);
 
-  // Inicializa sessão ao abrir pela primeira vez
+  // Abre o chat e inicia ou carrega a sessão limpa do zero
   const handleOpenChat = () => {
     setIsOpen(true);
-    if (!hasInitialized) {
-      setHasInitialized(true);
-      initAIChatSessionAction(tenant.slug).then((res) => {
-        if (res.success && res.initialMessage) {
-          setSessionToken(res.sessionToken);
-          setMessages([res.initialMessage]);
-        }
-      });
+    const requestId = ++currentRequestIdRef.current;
+
+    // Reseta a rolagem para o topo imediatamente
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+
+    initAIChatSessionAction(tenant.slug).then((res) => {
+      // Ignora se uma nova requisição foi feita ou se o chat foi fechado
+      if (currentRequestIdRef.current !== requestId) return;
+
+      if (res.success && res.initialMessage) {
+        setSessionToken(res.sessionToken);
+        setMessages([res.initialMessage]);
+      }
+    });
+  };
+
+  // Encerra a sessão atual e limpa completamente todo o estado ao fechar (Prompt 180)
+  const handleCloseChat = () => {
+    // Invalida qualquer requisição assíncrona pendente
+    currentRequestIdRef.current++;
+
+    setIsOpen(false);
+    setSessionToken('');
+    setMessages([]);
+    setInputValue('');
+    setBookingDraft(null);
+    setIsBookingSubmitting(false);
+    setActiveAnamnesis(null);
+    setIsSubmittingAnamnesis(false);
+
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
     }
   };
 
@@ -122,6 +149,7 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
     const newHistory = [...messages, userMsg];
     setMessages(newHistory);
 
+    const reqId = ++currentRequestIdRef.current;
     startSendTransition(async () => {
       const res = await sendAIChatMessageAction(
         {
@@ -131,6 +159,8 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
         },
         newHistory
       );
+
+      if (currentRequestIdRef.current !== reqId) return;
 
       if (res.success && res.message) {
         setMessages((prev) => [...prev, res.message!]);
@@ -521,6 +551,7 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
     setMessages(newHistory);
     setInputValue('');
 
+    const reqId = ++currentRequestIdRef.current;
     startSendTransition(async () => {
       const res = await sendAIChatMessageAction(
         {
@@ -530,6 +561,8 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
         },
         newHistory
       );
+
+      if (currentRequestIdRef.current !== reqId) return;
 
       if (res.success && res.message) {
         setMessages((prev) => [...prev, res.message!]);
@@ -745,16 +778,16 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
             {/* Botão Fechar Redondo com efeito translúcido */}
             <button
               type="button"
-              onClick={() => setIsOpen(false)}
+              onClick={handleCloseChat}
               className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-all duration-200 active:scale-90 cursor-pointer shrink-0 z-10 border border-white/25 shadow-xs"
-              aria-label="Fechar atendimento"
+              aria-label="Fechar atendimento e encerrar sessão"
             >
               <X className="w-4 h-4 stroke-[2.5]" />
             </button>
           </div>
 
           {/* Área de Mensagens e Corpo do Chat com fundo #FFF9F6 */}
-          <div className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3.5 bg-[#FFF9F6] text-xs relative">
+          <div ref={scrollContainerRef} className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3.5 bg-[#FFF9F6] text-xs relative">
             {/* Ilustração Decorativa da Assistente no Canto Inferior Direito (sem cobrir mensagens) */}
             <div className="absolute right-0 bottom-0 w-[140px] sm:w-[170px] pointer-events-none select-none opacity-90 sm:opacity-95 hidden xs:block z-0">
               <Image
