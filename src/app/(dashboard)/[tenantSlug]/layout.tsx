@@ -22,9 +22,14 @@ export default async function DashboardLayout({
 }: DashboardLayoutProps) {
   const { tenantSlug } = await params;
 
+  // Tenta autenticação do usuário para este tenant
   const context = await getAuthenticatedTenantContext(tenantSlug);
+
+  // MODO PÚBLICO (DUAL-NATURE):
+  // Se não houver sessão autenticada ou o visitante for um cliente anônimo da página pública,
+  // permite a renderização limpa dos filhos (onde a página raiz exibirá a Vitrine Pública)
   if (!context) {
-    redirect('/login');
+    return <>{children}</>;
   }
 
   // Intercepta qualquer rota dentro do layout do dashboard se o trial expirou sem assinatura ativa
@@ -32,8 +37,7 @@ export default async function DashboardLayout({
     redirect(`/${tenantSlug}/assinar`);
   }
 
-  // FASE 7.1 — SIMPLIFICAÇÃO E USABILIDADE:
-  // Reorganizar a experiência priorizando a rotina diária e separando Gestão & Configuração
+  // Links do painel administrativo
   const primaryLinks = [
     { href: `/${tenantSlug}`, label: 'Dashboard', iconName: 'dashboard' },
     { href: `/${tenantSlug}/agenda`, label: 'Agenda', iconName: 'agenda' },

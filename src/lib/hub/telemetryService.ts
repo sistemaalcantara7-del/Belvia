@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { PlanType } from '@/types/tenant';
+import { checkTenantSubscriptionValidity } from '@/lib/plans/entitlements';
 
 export interface ZeluniaTenantUsage {
   active_professionals_count: number;
@@ -19,11 +21,43 @@ export interface ZeluniaTenantFinancial {
   overdue_balance: number;
 }
 
+export interface ZeluniaTenantSubscriptionDetails {
+  plan: PlanType;
+  lifecycle_status: 'trial' | 'active' | 'overdue' | 'suspended' | 'canceled';
+  is_trial: boolean;
+  is_active_paying: boolean;
+  is_trial_expired: boolean;
+  is_delinquent: boolean;
+  trial_ends_at: string | null;
+  current_period_end: string | null;
+  has_asaas_integration: boolean;
+  payment_method_last_invoice?: 'PIX' | 'CREDIT_CARD' | 'BOLETO' | 'UNDEFINED' | null;
+}
+
 export interface ZeluniaTenantPayload {
   external_tenant_id: string;
   financial: ZeluniaTenantFinancial;
   usage_aggregated: ZeluniaTenantUsage;
   ai_telemetry: ZeluniaAiTelemetry | null;
+  subscription_details?: ZeluniaTenantSubscriptionDetails;
+}
+
+export interface ZeluniaGlobalMetrics {
+  total_tenants: number;
+  trial_active_count: number;
+  trial_expired_count: number;
+  active_paying_count: number;
+  delinquent_count: number; // Inadimplentes (overdue ou grace period)
+  canceled_count: number;
+  conversions_total_count: number; // Tenants que saíram do trial e ativaram assinatura
+  mrr_total: number;
+  billed_period_total: number;
+  received_period_total: number;
+  overdue_balance_total: number;
+  mrr_by_plan: {
+    essential: number;
+    smart: number;
+  };
 }
 
 export interface ZeluniaTelemetryResponse {
@@ -35,6 +69,7 @@ export interface ZeluniaTelemetryResponse {
     version: string;
     uptime_pct_last_30d: number;
   };
+  global_metrics?: ZeluniaGlobalMetrics;
   tenants_data: ZeluniaTenantPayload[];
 }
 
@@ -72,7 +107,7 @@ export async function getAggregatedTelemetry(referenceDate: string): Promise<Zel
   // 1. Consulta Tenants
   const { data: tenants, error: tenantsError } = await supabase
     .from('tenants')
-    .select('id, plan, status');
+    .select('id, plan, status, created_at');
 
   if (tenantsError) {
     throw new Error(`Falha ao consultar tenants: ${tenantsError.message}`);
@@ -88,38 +123,76 @@ export async function getAggregatedTelemetry(referenceDate: string): Promise<Zel
       generated_at: new Date().toISOString(),
       system_status: {
         health: 'operational',
-        version: '1.0.0',
+        version: '1.1.0',
         uptime_pct_last_30d: 99.9,
+      },
+      global_metrics: {
+        total_tenants: 0,
+        trial_active_count: 0,
+        trial_expired_count: 0,
+        active_paying_count: 0,
+        delinquent_count: 0,
+        canceled_count: 0,
+        conversions_total_count: 0,
+        mrr_total: 0,
+        billed_period_total: 0,
+        received_period_total: 0,
+        overdue_balance_total: 0,
+        mrr_by_plan: {
+          essential: 0,
+          smart: 0,
+        },
       },
       tenants_data: [],
     };
   }
 
-  // 2. Consulta Assinaturas SaaS (MRR Contratado por Tenant)
+  // 2. Consulta Assinaturas SaaS (MRR Contratado por Tenant, Asaas IDs e Ciclo de Vida)
   const { data: subscriptions } = await supabase
     .from('saas_subscriptions')
-    .select('tenant_id, amount, status, plan')
+    .select('tenant_id, amount, status, plan, trial_ends_at, current_period_end, grace_period_days, asaas_customer_id, asaas_subscription_id, last_payment_at')
     .in('tenant_id', tenantIds);
 
-  const subByTenant = new Map<string, { amount: number; status: string }>();
+  interface SubRow {
+    tenant_id: string;
+    amount: number;
+    status: string;
+    plan: PlanType;
+    trial_ends_at: string | null;
+    current_period_end: string | null;
+    grace_period_days: number | null;
+    asaas_customer_id: string | null;
+    asaas_subscription_id: string | null;
+    last_payment_at: string | null;
+  }
+
+  const subByTenant = new Map<string, SubRow>();
   subscriptions?.forEach((s) => {
     subByTenant.set(s.tenant_id, {
+      tenant_id: s.tenant_id,
       amount: Number(s.amount) || 0,
       status: s.status,
+      plan: s.plan as PlanType,
+      trial_ends_at: s.trial_ends_at,
+      current_period_end: s.current_period_end,
+      grace_period_days: s.grace_period_days,
+      asaas_customer_id: s.asaas_customer_id,
+      asaas_subscription_id: s.asaas_subscription_id,
+      last_payment_at: s.last_payment_at,
     });
   });
 
   // 3. Consulta Faturas SaaS do Mês de Referência (Faturado, Recebido, Vencido)
   const { data: invoices } = await supabase
     .from('saas_invoices')
-    .select('tenant_id, amount, status, due_date, paid_at')
+    .select('tenant_id, amount, status, due_date, paid_at, billing_type')
     .in('tenant_id', tenantIds)
     .gte('due_date', startOfMonth.slice(0, 10))
     .lte('due_date', endOfMonth.slice(0, 10));
 
   const financialByTenant = new Map<
     string,
-    { billed: number; received: number; overdue: number }
+    { billed: number; received: number; overdue: number; lastBillingType?: 'PIX' | 'CREDIT_CARD' | 'BOLETO' | 'UNDEFINED' }
   >();
 
   invoices?.forEach((inv) => {
@@ -131,6 +204,9 @@ export async function getAggregatedTelemetry(referenceDate: string): Promise<Zel
       current.received += amt;
     } else if (inv.status === 'overdue') {
       current.overdue += amt;
+    }
+    if (inv.billing_type) {
+      current.lastBillingType = inv.billing_type as 'PIX' | 'CREDIT_CARD' | 'BOLETO' | 'UNDEFINED';
     }
 
     financialByTenant.set(inv.tenant_id, current);
@@ -200,14 +276,71 @@ export async function getAggregatedTelemetry(referenceDate: string): Promise<Zel
     aiByTenant.set(log.tenant_id, current);
   });
 
-  // 8. Montagem do payload padronizado por Tenant
+  // 8. Agregações Globais de Telemetria Financeira e de Ciclo de Vida
+  let trialActiveCount = 0;
+  let trialExpiredCount = 0;
+  let activePayingCount = 0;
+  let delinquentCount = 0;
+  let canceledCount = 0;
+  let conversionsCount = 0;
+  let mrrTotal = 0;
+  let billedTotal = 0;
+  let receivedTotal = 0;
+  let overdueTotal = 0;
+  let mrrEssential = 0;
+  let mrrSmart = 0;
+
+  // 9. Montagem do payload padronizado por Tenant preservando compatibilidade
   const tenantsPayload: ZeluniaTenantPayload[] = activeTenants.map((t) => {
     const sub = subByTenant.get(t.id);
     const fin = financialByTenant.get(t.id) || { billed: 0, received: 0, overdue: 0 };
     const ai = aiByTenant.get(t.id);
 
+    // Valida vigência oficial conforme regras canônicas de entitlements
+    const validity = checkTenantSubscriptionValidity({
+      tenantStatus: t.status,
+      tenantCreatedAt: t.created_at,
+      subscription: sub ? {
+        status: sub.status,
+        trial_ends_at: sub.trial_ends_at,
+        current_period_end: sub.current_period_end,
+        grace_period_days: sub.grace_period_days,
+      } : null,
+    });
+
+    const isTrial = validity.status === 'trial';
+    const isTrialExpired = validity.isTrialExpired;
+    const isActivePaying = validity.status === 'active';
+    const isDelinquent = validity.status === 'overdue' || (!validity.isValid && sub?.status === 'overdue');
+    const isCanceled = t.status === 'suspended' && sub?.status === 'canceled';
+
+    // Contabiliza agregados
+    if (isTrial) trialActiveCount++;
+    if (isTrialExpired) trialExpiredCount++;
+    if (isActivePaying) activePayingCount++;
+    if (isDelinquent) delinquentCount++;
+    if (isCanceled) canceledCount++;
+
+    // Conversão: tenant possui assinatura ativa paga ou teve histórico de pagamento
+    if (isActivePaying || sub?.last_payment_at) {
+      conversionsCount++;
+    }
+
     // MRR: se tiver assinatura ativa, utiliza amount, senão 0
-    const mrr = sub?.status === 'active' ? sub.amount : 0;
+    const mrr = isActivePaying && sub ? sub.amount : 0;
+    mrrTotal += mrr;
+    billedTotal += fin.billed;
+    receivedTotal += fin.received;
+    overdueTotal += fin.overdue;
+
+    const currentPlan: PlanType = (sub?.plan || t.plan || 'smart') as PlanType;
+    if (isActivePaying) {
+      if (currentPlan === 'essential') {
+        mrrEssential += mrr;
+      } else {
+        mrrSmart += mrr;
+      }
+    }
 
     const aiTelemetry: ZeluniaAiTelemetry | null = ai
       ? {
@@ -216,6 +349,19 @@ export async function getAggregatedTelemetry(referenceDate: string): Promise<Zel
           models_used: Array.from(ai.models),
         }
       : null;
+
+    const subDetails: ZeluniaTenantSubscriptionDetails = {
+      plan: currentPlan,
+      lifecycle_status: (sub?.status as ZeluniaTenantSubscriptionDetails['lifecycle_status']) || (isTrial ? 'trial' : 'suspended'),
+      is_trial: isTrial,
+      is_active_paying: isActivePaying,
+      is_trial_expired: isTrialExpired,
+      is_delinquent: isDelinquent,
+      trial_ends_at: sub?.trial_ends_at || null,
+      current_period_end: sub?.current_period_end || null,
+      has_asaas_integration: !!(sub?.asaas_customer_id || sub?.asaas_subscription_id),
+      payment_method_last_invoice: fin.lastBillingType || null,
+    };
 
     return {
       external_tenant_id: t.id,
@@ -231,6 +377,7 @@ export async function getAggregatedTelemetry(referenceDate: string): Promise<Zel
         clients_total_count: clientCountByTenant.get(t.id) || 0,
       },
       ai_telemetry: aiTelemetry,
+      subscription_details: subDetails,
     };
   });
 
@@ -240,8 +387,25 @@ export async function getAggregatedTelemetry(referenceDate: string): Promise<Zel
     generated_at: new Date().toISOString(),
     system_status: {
       health: 'operational',
-      version: '1.0.0',
+      version: '1.1.0',
       uptime_pct_last_30d: 99.9,
+    },
+    global_metrics: {
+      total_tenants: activeTenants.length,
+      trial_active_count: trialActiveCount,
+      trial_expired_count: trialExpiredCount,
+      active_paying_count: activePayingCount,
+      delinquent_count: delinquentCount,
+      canceled_count: canceledCount,
+      conversions_total_count: conversionsCount,
+      mrr_total: Number(mrrTotal.toFixed(2)),
+      billed_period_total: Number(billedTotal.toFixed(2)),
+      received_period_total: Number(receivedTotal.toFixed(2)),
+      overdue_balance_total: Number(overdueTotal.toFixed(2)),
+      mrr_by_plan: {
+        essential: Number(mrrEssential.toFixed(2)),
+        smart: Number(mrrSmart.toFixed(2)),
+      },
     },
     tenants_data: tenantsPayload,
   };

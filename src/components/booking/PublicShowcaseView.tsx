@@ -91,7 +91,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
         <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-10 h-full flex items-center justify-between">
           {/* Logo / Nome do Estabelecimento (à esquerda, max 155px mobile / 280px desktop) */}
           <div className="flex items-center min-w-0 max-w-[155px] sm:max-w-[220px] md:max-w-[280px]">
-            <Link href={`/p/${tenant.slug}`} className="flex items-center gap-2.5 sm:gap-3 group">
+            <Link href={`/${tenant.slug}`} className="flex items-center gap-2.5 sm:gap-3 group">
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -574,7 +574,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
         </section>
       )}
 
-      {/* ── 7. FAIXA DE CONTATO / AGENDAMENTO (ALTURA 260px) ────────────────── */}
+      {/* ── 7. FAIXA DE CONTATO / AGENDAMENTO ────────────────── */}
       <section
         id="contato"
         className="relative w-full overflow-hidden text-white mt-auto"
@@ -583,10 +583,10 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
           minHeight: '220px',
         }}
       >
-        {/* Background botânico suave de apoio */}
+        {/* Background floral */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-30 pointer-events-none"
-          style={{ backgroundImage: "url('/img/showcase_contact_bg.png')" }}
+          className="absolute inset-0 bg-cover bg-center pointer-events-none"
+          style={{ backgroundImage: "url('/img/bg_floral.png')" }}
         />
 
         <div className="relative max-w-[1360px] mx-auto px-6 lg:px-16 py-12 lg:py-14 flex flex-col lg:flex-row items-center justify-between gap-8">

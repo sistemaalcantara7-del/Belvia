@@ -12,8 +12,8 @@ export function PublicPageCard({ tenantSlug, tenantName }: PublicPageCardProps) 
   const [copied, setCopied] = useState(false);
 
   const publicUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/p/${tenantSlug}`
-    : `https://zelunia.com.br/p/${tenantSlug}`;
+    ? `${window.location.origin}/${tenantSlug}`
+    : `https://zelunia.com.br/${tenantSlug}`;
 
   const handleCopy = async () => {
     try {
@@ -44,7 +44,7 @@ export function PublicPageCard({ tenantSlug, tenantName }: PublicPageCardProps) 
               </span>
             </div>
             <p className="text-xs text-[#7D6B65] mt-0.5 truncate">
-              {tenantName ? `${tenantName} — ` : ''}Link oficial para seus clientes agendarem: <strong className="text-[#2C1810] font-mono select-all">zelunia.com.br/p/{tenantSlug}</strong>
+              {tenantName ? `${tenantName} — ` : ''}Link oficial para seus clientes agendarem: <strong className="text-[#2C1810] font-mono select-all">zelunia.com.br/{tenantSlug}</strong>
             </p>
           </div>
         </div>
@@ -59,12 +59,12 @@ export function PublicPageCard({ tenantSlug, tenantName }: PublicPageCardProps) 
           >
             {copied ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
-                <span className="text-emerald-700 font-bold">Copiado!</span>
+                <Check className="w-4 h-4 text-emerald-600 animate-in zoom-in-50" />
+                <span className="text-emerald-700 font-bold">Link Copiado!</span>
               </>
             ) : (
               <>
-                <Copy className="w-3.5 h-3.5 text-[#B87070]" />
+                <Copy className="w-4 h-4 text-[#7D6B65]" />
                 <span>Copiar Link</span>
               </>
             )}

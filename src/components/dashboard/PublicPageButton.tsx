@@ -11,8 +11,8 @@ export function PublicPageButton({ tenantSlug }: PublicPageButtonProps) {
   const [copied, setCopied] = useState(false);
 
   const publicUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/p/${tenantSlug}`
-    : `https://zelunia.com.br/p/${tenantSlug}`;
+    ? `${window.location.origin}/${tenantSlug}`
+    : `https://zelunia.com.br/${tenantSlug}`;
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -30,7 +30,7 @@ export function PublicPageButton({ tenantSlug }: PublicPageButtonProps) {
     <div className="inline-flex items-stretch rounded-xl border border-[#EADBCE] bg-white shadow-2xs overflow-hidden group">
       {/* Botão de Abrir Link Real */}
       <a
-        href={`/p/${tenantSlug}`}
+        href={`/${tenantSlug}`}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-[#2C1810] hover:text-[#B87070] hover:bg-[#FAF6F3] transition-colors"
@@ -49,9 +49,9 @@ export function PublicPageButton({ tenantSlug }: PublicPageButtonProps) {
         title="Copiar link da página pública"
       >
         {copied ? (
-          <Check className="w-3.5 h-3.5 text-emerald-600" />
+          <Check className="w-4 h-4 text-emerald-600 animate-in zoom-in-50" />
         ) : (
-          <Copy className="w-3.5 h-3.5 text-[#B87070]" />
+          <Copy className="w-4 h-4 text-[#7D6B65] group-hover:text-[#2C1810]" />
         )}
       </button>
     </div>

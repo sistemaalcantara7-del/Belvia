@@ -55,8 +55,8 @@ export function OnlineBookingCustomizer(props: OnlineBookingCustomizerProps) {
 
   const isOwnerOrAdmin = ['owner', 'admin'].includes(userRole);
   const shortUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/p/${currentSlug}`
-    : `/p/${currentSlug}`;
+    ? `${window.location.origin}/${currentSlug}`
+    : `/${currentSlug}`;
 
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
     shortUrl
@@ -71,7 +71,7 @@ export function OnlineBookingCustomizer(props: OnlineBookingCustomizerProps) {
         setCurrentSlug(res.newSlug);
         setSlugFeedback({
           type: 'success',
-          message: `Endereço atualizado com sucesso para zelunia.com.br/p/${res.newSlug}`,
+          message: `Endereço atualizado com sucesso para zelunia.com.br/${res.newSlug}`,
         });
       } else {
         setSlugFeedback({
@@ -468,7 +468,7 @@ export function OnlineBookingCustomizer(props: OnlineBookingCustomizerProps) {
         {/* Gerenciamento do Endereço Curto (Slug) Sem botões de cópia redundantes */}
         <div className="pt-2 border-t border-[#F5EDE8] flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <div className="flex-1 flex items-center rounded-xl border border-[#EADBCE] bg-[#FAF6F3] px-3 py-2 text-xs">
-            <span className="text-[#9B8985] select-none font-medium">Endereço público do estabelecimento: zelunia.com.br/p/</span>
+            <span className="text-[#9B8985] select-none font-medium">Endereço público do estabelecimento: zelunia.com.br/</span>
             <input
               type="text"
               disabled={!isOwnerOrAdmin || slugPending}

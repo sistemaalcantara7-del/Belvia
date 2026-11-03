@@ -55,8 +55,8 @@ export function OnboardingModal({
 
   // Link público real da vitrine do tenant
   const publicUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/p/${tenantSlug}`
-    : `https://zelunia.com.br/p/${tenantSlug}`;
+    ? `${window.location.origin}/${tenantSlug}`
+    : `https://zelunia.com.br/${tenantSlug}`;
 
   // Se não for owner, não exibe o modal nem o gatilho de reabertura
   if (!isOwner) return null;
@@ -101,7 +101,7 @@ export function OnboardingModal({
         }));
       });
     }
-    window.open(`/p/${tenantSlug}`, '_blank', 'noopener,noreferrer');
+    window.open(`/${tenantSlug}`, '_blank', 'noopener,noreferrer');
   };
 
   const percentComplete = Math.round((progress.completedCount / progress.totalSteps) * 100);

@@ -1,9 +1,12 @@
 import { getAuthenticatedTenantContext } from '@/lib/tenant/context';
 import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
+import { redirect, notFound } from 'next/navigation';
+import { Metadata } from 'next';
 import { DashboardView } from '@/components/dashboard/DashboardView';
 import { TrialExpiredView } from '@/components/settings/TrialExpiredView';
 import { getOnboardingStatusAction } from '@/lib/actions/onboarding';
+import { getPublicTenantCatalogAction } from '@/lib/actions/publicBooking';
+import { PublicShowcaseView } from '@/components/booking/PublicShowcaseView';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,12 +21,83 @@ const ROLE_LABELS: Record<string, string> = {
   professional: 'Profissional',
 };
 
+export async function generateMetadata({ params }: DashboardPageProps): Promise<Metadata> {
+  const { tenantSlug } = await params;
+  const context = await getAuthenticatedTenantContext(tenantSlug);
+
+  // Se o visitante for o usuário logado com contexto do tenant
+  if (context) {
+    return {
+      title: `${context.tenantName} | Dashboard`,
+      description: 'Painel de gestão e controle administrativo.',
+    };
+  }
+
+  // Se for visitante anônimo, carrega metadados da vitrine pública
+  const res = await getPublicTenantCatalogAction(tenantSlug);
+  if (!res.success || !res.data) {
+    return {
+      title: 'Página Pública | Zelunia',
+      description: 'Vitrine digital e agendamento online.',
+    };
+  }
+
+  const { tenant } = res.data;
+  const businessName = tenant.settings?.booking_settings?.business_name || tenant.name;
+  const description =
+    tenant.settings?.booking_settings?.business_description ||
+    `Conheça os serviços, portfólio e reserve seu horário online em ${businessName}.`;
+
+  return {
+    title: `${businessName} | Vitrine Digital & Agendamento Online`,
+    description,
+    openGraph: {
+      title: businessName,
+      description,
+      images: tenant.settings?.booking_settings?.cover_url
+        ? [tenant.settings.booking_settings.cover_url]
+        : undefined,
+    },
+  };
+}
+
 export default async function DashboardPage({ params }: DashboardPageProps) {
   const { tenantSlug } = await params;
 
   const context = await getAuthenticatedTenantContext(tenantSlug);
+
+  // MODO PÚBLICO (DUAL-NATURE / PROMPT 175 & 181):
+  // Se o visitante for anônimo (cliente do estabelecimento), exibe a Vitrine Pública no endereço curto /{slug}
   if (!context) {
-    redirect('/login');
+    const publicRes = await getPublicTenantCatalogAction(tenantSlug);
+
+    // Se o slug acessado for um alias antigo (histórico), executa redirecionamento permanente HTTP 308
+    if (publicRes.success && publicRes.canonicalSlug && publicRes.canonicalSlug !== tenantSlug.toLowerCase()) {
+      redirect(`/${publicRes.canonicalSlug}`);
+    }
+
+    if (!publicRes.success || !publicRes.data) {
+      if (publicRes.error?.includes('indisponível')) {
+        return (
+          <div className="min-h-screen bg-[#FAF5F3] flex items-center justify-center p-6 text-[#2C1810]">
+            <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-[#EAD9D3] shadow-md text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-[#FAF0ED] text-[#C4837A] mx-auto flex items-center justify-center text-2xl font-serif">
+                ✨
+              </div>
+              <h1 className="text-xl font-serif font-bold text-[#2C1810]">
+                Página Temporariamente Indisponível
+              </h1>
+              <p className="text-xs sm:text-sm text-[#7D6B65] leading-relaxed">
+                O agendamento online deste estabelecimento está em manutenção temporária. Por favor, retorne em breve ou entre em contato diretamente pelos canais habituais.
+              </p>
+            </div>
+          </div>
+        );
+      }
+      notFound();
+    }
+
+    return <PublicShowcaseView catalog={publicRes.data} />;
   }
 
   // Se o período de testes ou assinatura expirou, exibe a tela profissional de bloqueio e regularização

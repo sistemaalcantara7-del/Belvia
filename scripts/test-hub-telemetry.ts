@@ -208,7 +208,103 @@ async function runTests() {
     console.log('✔ Teste 7: Auditoria de Privacidade LGPD / Zero PII aprovada (nenhum dado pessoal/clínico no payload).');
   }
 
-  console.log('\n--- TODOS OS TESTES PASSARAM COM SUCESSO (7/7) ---');
+  // TESTE 8: Validação do Contrato Enriquecido do Hub com Indicadores de Trial, Asaas e Conversões
+  {
+    const mockEnrichedPayload: ZeluniaTelemetryResponse = {
+      product_slug: 'zelunia',
+      reference_date: '2026-11-01',
+      generated_at: new Date().toISOString(),
+      system_status: {
+        health: 'operational',
+        version: '1.1.0',
+        uptime_pct_last_30d: 99.9,
+      },
+      global_metrics: {
+        total_tenants: 10,
+        trial_active_count: 4,
+        trial_expired_count: 2,
+        active_paying_count: 3,
+        delinquent_count: 1,
+        canceled_count: 0,
+        conversions_total_count: 3,
+        mrr_total: 259.7,
+        billed_period_total: 359.6,
+        received_period_total: 259.7,
+        overdue_balance_total: 99.9,
+        mrr_by_plan: {
+          essential: 59.9,
+          smart: 199.8,
+        },
+      },
+      tenants_data: [
+        {
+          external_tenant_id: 'tenant-active-001',
+          financial: {
+            mrr_current: 99.9,
+            billed_period: 99.9,
+            received_period: 99.9,
+            overdue_balance: 0.0,
+          },
+          usage_aggregated: {
+            active_professionals_count: 2,
+            completed_appointments_count: 15,
+            clients_total_count: 50,
+          },
+          ai_telemetry: null,
+          subscription_details: {
+            plan: 'smart',
+            lifecycle_status: 'active',
+            is_trial: false,
+            is_active_paying: true,
+            is_trial_expired: false,
+            is_delinquent: false,
+            trial_ends_at: '2026-10-25T00:00:00Z',
+            current_period_end: '2026-11-25T00:00:00Z',
+            has_asaas_integration: true,
+            payment_method_last_invoice: 'PIX',
+          },
+        },
+        {
+          external_tenant_id: 'tenant-trial-002',
+          financial: {
+            mrr_current: 0.0,
+            billed_period: 0.0,
+            received_period: 0.0,
+            overdue_balance: 0.0,
+          },
+          usage_aggregated: {
+            active_professionals_count: 1,
+            completed_appointments_count: 2,
+            clients_total_count: 5,
+          },
+          ai_telemetry: null,
+          subscription_details: {
+            plan: 'essential',
+            lifecycle_status: 'trial',
+            is_trial: true,
+            is_active_paying: false,
+            is_trial_expired: false,
+            is_delinquent: false,
+            trial_ends_at: '2026-11-08T00:00:00Z',
+            current_period_end: null,
+            has_asaas_integration: false,
+            payment_method_last_invoice: null,
+          },
+        },
+      ],
+    };
+
+    assert.strictEqual(mockEnrichedPayload.global_metrics?.total_tenants, 10);
+    assert.strictEqual(mockEnrichedPayload.global_metrics?.trial_active_count, 4);
+    assert.strictEqual(mockEnrichedPayload.global_metrics?.active_paying_count, 3);
+    assert.strictEqual(mockEnrichedPayload.global_metrics?.conversions_total_count, 3);
+    assert.strictEqual(mockEnrichedPayload.tenants_data[0].subscription_details?.is_active_paying, true);
+    assert.strictEqual(mockEnrichedPayload.tenants_data[0].subscription_details?.has_asaas_integration, true);
+    assert.strictEqual(mockEnrichedPayload.tenants_data[1].subscription_details?.is_trial, true);
+    console.log('✔ Teste 8: Validação dos novos indicadores de Trial, Pagantes, MRR e Asaas para o Hub aprovada.');
+  }
+
+  console.log('\n--- TODOS OS TESTES PASSARAM COM SUCESSO (8/8) ---');
 }
 
 runTests().catch((err) => {

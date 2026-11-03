@@ -51,12 +51,14 @@ function getServiceRoleSupabase() {
  */
 export async function getPublicTenantCatalogAction(
   tenantSlug: string
-): Promise<{ success: boolean; data?: PublicCatalogData; error?: string }> {
+): Promise<{ success: boolean; data?: PublicCatalogData; canonicalSlug?: string; error?: string }> {
   try {
     const supabase = getPublicSupabase();
+    const cleanSlug = tenantSlug.trim().toLowerCase();
+
     // 1. Tenta prioritariamente via RPC SECURITY DEFINER (com suporte completo a trial e bypass seguro de RLS para catálogo público)
     const { data: rpcData, error: rpcErr } = await supabase.rpc('get_public_tenant_catalog', {
-      p_slug: tenantSlug,
+      p_slug: cleanSlug,
     });
 
     if (!rpcErr && rpcData) {
@@ -80,6 +82,7 @@ export async function getPublicTenantCatalogAction(
 
         return {
           success: true,
+          canonicalSlug: rpcData.tenant?.slug || cleanSlug,
           data: {
             tenant: {
               ...rpcData.tenant,
@@ -99,11 +102,37 @@ export async function getPublicTenantCatalogAction(
       }
     }
 
-    // 2. Fallback caso a RPC não esteja disponível: consulta server-side
+    // 2. Fallback de histórico de aliases (Prompt 175/181)
+    let matchedCanonicalSlug: string | null = null;
+    try {
+      const { data: aliasTenants } = await supabase
+        .from('tenants')
+        .select('slug')
+        .contains('settings', { slug_history: [cleanSlug] })
+        .limit(1);
+
+      if (aliasTenants && aliasTenants.length > 0 && aliasTenants[0].slug) {
+        matchedCanonicalSlug = aliasTenants[0].slug;
+      }
+    } catch {
+      // Ignora erro
+    }
+
+    if (matchedCanonicalSlug && matchedCanonicalSlug !== cleanSlug) {
+      const canonicalRes = await getPublicTenantCatalogAction(matchedCanonicalSlug);
+      if (canonicalRes.success) {
+        return {
+          ...canonicalRes,
+          canonicalSlug: matchedCanonicalSlug,
+        };
+      }
+    }
+
+    // 3. Fallback caso a RPC não esteja disponível: consulta server-side
     const { data: tenant, error: tErr } = await supabase
       .from('tenants')
       .select('id, name, slug, plan, status, settings, created_at')
-      .eq('slug', tenantSlug)
+      .eq('slug', cleanSlug)
       .maybeSingle();
 
     if (tErr || !tenant) {
@@ -211,6 +240,7 @@ export async function getPublicTenantCatalogAction(
 
     return {
       success: true,
+      canonicalSlug: tenant.slug,
       data: {
         tenant: {
           id: tenant.id,
