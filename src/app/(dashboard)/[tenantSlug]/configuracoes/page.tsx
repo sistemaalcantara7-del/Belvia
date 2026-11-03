@@ -121,7 +121,7 @@ export default async function ConfiguracoesPage({ params, searchParams }: Config
             Configurações do Estabelecimento
           </h1>
           <p className="text-xs sm:text-sm text-[#7D6B65]">
-            {context.tenantName} • Vitrine digital, agendamento online, lembretes automáticos, consumo de IA e assinatura
+            {context.tenantName} • Dados cadastrais, vitrine digital e assinatura
           </p>
         </div>
       </div>

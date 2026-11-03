@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Bell, MessageCircle, Globe, CreditCard, Bot } from 'lucide-react';
+import { CreditCard, Building2, Wallet } from 'lucide-react';
 import { RemindersConfigManager } from './RemindersConfigManager';
 import { WhatsAppOfficialManager } from './WhatsAppOfficialManager';
 import { OnlineBookingCustomizer } from './OnlineBookingCustomizer';
@@ -35,7 +35,7 @@ interface SettingsTabsContainerProps {
   } | null;
   services: Service[];
   professionals: Professional[];
-  initialTab?: 'booking' | 'reminders' | 'whatsapp' | 'subscription' | 'ai';
+  initialTab?: 'booking' | 'subscription' | 'financial_integration' | 'reminders' | 'whatsapp' | 'ai';
 }
 
 export function SettingsTabsContainer({
@@ -53,7 +53,7 @@ export function SettingsTabsContainer({
   professionals,
   initialTab = 'booking',
 }: SettingsTabsContainerProps) {
-  const [currentTab, setCurrentTab] = useState<'booking' | 'reminders' | 'whatsapp' | 'subscription' | 'ai'>(
+  const [currentTab, setCurrentTab] = useState<'booking' | 'subscription' | 'financial_integration' | 'reminders' | 'whatsapp' | 'ai'>(
     initialTab || 'booking'
   );
 
@@ -61,6 +61,7 @@ export function SettingsTabsContainer({
     <div className="space-y-6">
       {/* Navegação de Abas do Módulo de Configurações */}
       <div className="flex flex-wrap items-center gap-2 p-1 rounded-2xl bg-white border border-[#EADBCE] shadow-2xs w-fit">
+        {/* Aba 1: Dados Cadastrais */}
         <button
           type="button"
           onClick={() => setCurrentTab('booking')}
@@ -70,57 +71,14 @@ export function SettingsTabsContainer({
               : 'text-[#7D6B65] hover:text-[#2C1810]'
           }`}
         >
-          <Globe className="w-3.5 h-3.5" />
-          <span>Agendamento Online</span>
+          <Building2 className="w-3.5 h-3.5" />
+          <span>Dados Cadastrais</span>
           {bookingSettings.enabled && (
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500" title="Vitrine Ativa" />
           )}
         </button>
 
-        <button
-          type="button"
-          onClick={() => setCurrentTab('reminders')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-            currentTab === 'reminders'
-              ? 'bg-[#B87070] text-white shadow-2xs font-bold'
-              : 'text-[#7D6B65] hover:text-[#2C1810]'
-          }`}
-        >
-          <Bell className="w-3.5 h-3.5" />
-          <span>Lembretes Automáticos</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setCurrentTab('whatsapp')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-            currentTab === 'whatsapp'
-              ? 'bg-[#B87070] text-white shadow-2xs font-bold'
-              : 'text-[#7D6B65] hover:text-[#2C1810]'
-          }`}
-        >
-          <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-          <span>WhatsApp Business Oficial</span>
-          {whatsappConfig.connection_status === 'connected' && (
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          )}
-        </button>
-
-        {aiUsageData && (
-          <button
-            type="button"
-            onClick={() => setCurrentTab('ai')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-              currentTab === 'ai'
-                ? 'bg-[#B87070] text-white shadow-2xs font-bold'
-                : 'text-[#7D6B65] hover:text-[#2C1810]'
-            }`}
-          >
-            <Bot className="w-3.5 h-3.5 text-[#2B72D4]" />
-            <span>Consumo IA</span>
-          </button>
-        )}
-
+        {/* Aba 2: Minha Assinatura */}
         {subscriptionData && (
           <button
             type="button"
@@ -135,6 +93,18 @@ export function SettingsTabsContainer({
             <span>Minha Assinatura</span>
           </button>
         )}
+
+        {/* Aba 3 (Futura): Integração Financeira (Estrutura visual preparada para lançamento) */}
+        <div
+          title="Em breve: Gateway de pagamentos, conciliação e split bancário"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[#A8948D] bg-stone-50/70 border border-dashed border-[#EADBCE] cursor-not-allowed select-none opacity-80"
+        >
+          <Wallet className="w-3.5 h-3.5 text-[#A8948D]" />
+          <span>Integração Financeira</span>
+          <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-sm bg-[#FAF0EC] text-[#B87070] border border-[#F2DDD9]">
+            Em breve
+          </span>
+        </div>
       </div>
 
       {/* Conteúdo da Aba Ativa */}
