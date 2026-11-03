@@ -68,6 +68,28 @@ body {
 /* ─── Sidebar scrollbar (always dark) ─────────── */
 .belvia-sidebar ::-webkit-scrollbar-thumb { background: var(--belvia-sidebar-border); }
 
+
+/* ─── Animação Flutuante Assistente Virtual (Prompt 176) ─── */
+@keyframes assistantFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.assistant-float-animation {
+  animation: assistantFloat 4s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-float-animation {
+    animation: none !important;
+  }
+}
+
 /* ─── Print ───────────────────────────────────── */
 @media print {
   .no-print { display: none !important; }

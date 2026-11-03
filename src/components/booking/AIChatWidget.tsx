@@ -27,6 +27,7 @@ import { PublicCatalogData } from '@/types/publicBooking';
 import { maskPhone, sanitizeDigits } from '@/lib/utils/masks';
 import { formatAppointmentDate, formatAppointmentTime } from '@/lib/utils/timezone';
 import Link from 'next/link';
+import Image from 'next/image';
 import { MarkdownMessage } from './MarkdownMessage';
 
 interface AIChatWidgetProps {
@@ -672,28 +673,27 @@ export function AIChatWidget({ catalog }: AIChatWidgetProps) {
 
   return (
     <>
-      {/* Botão Flutuante Discreto no Canto Inferior Direito (com safe area e tamanho adaptado ao mobile) */}
+      {/* Botão Flutuante com Ilustração Transparente da Assistente Virtual (Prompt 176) */}
       {!isOpen && (
         <button
           type="button"
           onClick={handleOpenChat}
-          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 p-3 sm:px-4 sm:py-3 rounded-full text-white shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group cursor-pointer border border-white/20"
+          className="fixed bottom-3 right-3 sm:bottom-6 sm:right-6 z-40 cursor-pointer focus:outline-hidden transition-transform duration-300 hover:scale-105 active:scale-95 group select-none"
           style={{
-            backgroundColor: primaryColor,
             marginBottom: 'env(safe-area-inset-bottom, 0px)',
           }}
-          aria-label="Abrir atendimento virtual com IA"
+          aria-label="Abrir atendimento com Assistente Virtual"
         >
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-            <Bot className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          <div className="assistant-float-animation relative w-[180px] sm:w-[220px] md:w-[260px] drop-shadow-xl hover:drop-shadow-2xl transition-all duration-300">
+            <Image
+              src="/img/assistente.png"
+              alt="Assistente Virtual"
+              width={1815}
+              height={867}
+              priority
+              className="w-full h-auto object-contain pointer-events-none"
+            />
           </div>
-          <div className="text-left hidden sm:block">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-rose-100 leading-none">
-              Atendimento Online
-            </p>
-            <p className="text-xs font-semibold leading-tight mt-0.5">Falar com Assistente</p>
-          </div>
-          <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
         </button>
       )}
 
