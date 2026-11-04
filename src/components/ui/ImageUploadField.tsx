@@ -25,6 +25,12 @@ export function ImageUploadField({
 }: ImageUploadFieldProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
+  const [prevPropUrl, setPrevPropUrl] = useState<string | null | undefined>(currentImageUrl);
+
+  if (currentImageUrl !== prevPropUrl) {
+    setPrevPropUrl(currentImageUrl);
+    setPreviewUrl(currentImageUrl || null);
+  }
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -143,6 +149,7 @@ export function ImageUploadField({
               src={previewUrl}
               alt="Prévia da foto"
               fill
+              unoptimized
               className="object-cover transition-transform group-hover:scale-[1.02]"
               sizes="(max-width: 768px) 100vw, 400px"
             />

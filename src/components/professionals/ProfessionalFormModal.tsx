@@ -42,6 +42,12 @@ export function ProfessionalFormModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(professionalToEdit?.avatar_url || null);
+  const [prevEditId, setPrevEditId] = useState<string | undefined>(professionalToEdit?.id);
+
+  if (professionalToEdit?.id !== prevEditId) {
+    setPrevEditId(professionalToEdit?.id);
+    setAvatarUrl(professionalToEdit?.avatar_url || null);
+  }
   const [whatsapp, setWhatsapp] = useState(maskPhone(professionalToEdit?.whatsapp || ''));
   const [selectedServices, setSelectedServices] = useState<string[]>(
     professionalToEdit?.service_ids || []

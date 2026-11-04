@@ -27,6 +27,12 @@ export function ServiceFormModal({
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(serviceToEdit?.image_url || null);
+  const [prevEditId, setPrevEditId] = useState<string | undefined>(serviceToEdit?.id);
+
+  if (serviceToEdit?.id !== prevEditId) {
+    setPrevEditId(serviceToEdit?.id);
+    setImageUrl(serviceToEdit?.image_url || null);
+  }
 
   if (!isOpen) return null;
 
