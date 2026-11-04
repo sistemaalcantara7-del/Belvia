@@ -212,19 +212,19 @@ export function PortfolioCarouselSection({
                     minHeight: '320px',
                   }}
                 >
-                  {/* Foto do Trabalho */}
-                  <div className="relative w-full h-[195px] sm:h-[205px] bg-[#FAF2EF] overflow-hidden shrink-0">
+                  {/* Foto do Trabalho: Moldura Neutra #FAF4F1 com Object-fit Contain (Prompt 215) */}
+                  <div className="relative w-full h-[220px] sm:h-[235px] lg:h-[250px] bg-[#FAF4F1] rounded-t-[18px] overflow-hidden shrink-0 flex items-center justify-center p-2 sm:p-2.5">
                     <Image
                       src={item.image_url}
                       alt={item.title}
                       fill
                       unoptimized
                       priority={idx === 0}
-                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.035]"
+                      className="object-contain transition-transform duration-500 ease-out group-hover:scale-[1.025] p-1"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 380px"
                     />
 
-                    {/* Badge "Resultado Real" no topo esquerdo (conforme mockup) */}
+                    {/* Badge "Resultado Real" no topo esquerdo */}
                     <div className="absolute top-3 left-3 z-10">
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-[#BD7165]/90 text-white shadow-xs backdrop-blur-xs">
                         <Sparkles className="w-3 h-3 text-[#FDEEEA]" />
@@ -331,14 +331,14 @@ export function PortfolioCarouselSection({
               <X className="w-4 h-4" />
             </button>
 
-            {/* Imagem em Destaque */}
-            <div className="relative w-full h-[280px] bg-[#FAF2EF]">
+            {/* Imagem em Destaque (Moldura Contain) */}
+            <div className="relative w-full h-[320px] sm:h-[360px] bg-[#FAF4F1] p-3 flex items-center justify-center">
               <Image
                 src={selectedItemForModal.image_url}
                 alt={selectedItemForModal.title}
                 fill
                 unoptimized
-                className="object-cover"
+                className="object-contain p-2"
               />
             </div>
 

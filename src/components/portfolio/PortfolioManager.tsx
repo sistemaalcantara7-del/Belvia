@@ -317,19 +317,19 @@ export function PortfolioManager({
                 className="overflow-hidden border-[#EADBCE] dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col justify-between shadow-2xs hover:shadow-md transition-all group"
               >
                 <div>
-                  {/* Foto do Trabalho */}
-                  <div className="relative w-full h-48 bg-[#F5EDE8] overflow-hidden">
+                  {/* Foto do Trabalho: Moldura Neutra #FAF4F1, Altura 240px, Object-fit Contain (Prompt 216) */}
+                  <div className="relative w-full h-[240px] bg-[#FAF4F1] dark:bg-zinc-800/60 overflow-hidden flex items-center justify-center p-2.5">
                     <Image
                       src={item.image_url}
                       alt={item.title}
                       fill
                       unoptimized
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      sizes="(max-width: 768px) 100vw, 300px"
+                      className="object-contain transition-transform duration-300 group-hover:scale-[1.02] p-1"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 300px"
                     />
 
                     {/* Badge de Status / Consentimento */}
-                    <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                    <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 z-10">
                       {isPubliclyVisible ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white shadow-xs">
                           <Eye className="w-3 h-3" />
@@ -351,7 +351,7 @@ export function PortfolioManager({
                     </div>
 
                     {/* Ordem */}
-                    <div className="absolute top-2 right-2 z-10">
+                    <div className="absolute top-2.5 right-2.5 z-10">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/60 text-white backdrop-blur-xs">
                         <ArrowUpDown className="w-2.5 h-2.5" />
                         <span>#{item.sort_order}</span>

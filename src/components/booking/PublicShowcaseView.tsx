@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -14,6 +14,8 @@ import {
   Heart,
   Phone,
   MessageCircle,
+  Menu,
+  X,
 } from 'lucide-react';
 import { PublicCatalogData, PublicProfessional } from '@/types/publicBooking';
 import { AIChatWidget } from './AIChatWidget';
@@ -43,6 +45,28 @@ interface PublicShowcaseViewProps {
 
 export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
   const { tenant, services = [], professionals = [], portfolio = [] } = catalog;
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+    e.preventDefault();
+    setMobileMenuOpen(false);
+
+    // Identifica elemento alvo (com suporte especial para #inicio no desktop vs mobile)
+    let target = document.getElementById(targetId);
+    if (!target && targetId === 'inicio') {
+      target = document.getElementById('inicio-desktop');
+    }
+
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Atualiza URL hash de forma limpa sem reload
+      if (window.history.pushState) {
+        window.history.pushState(null, '', `#${targetId}`);
+      }
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   const bookingSettings = tenant.settings?.booking_settings;
   const businessName = bookingSettings?.business_name || tenant.name;
@@ -110,66 +134,135 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
             </Link>
           </div>
 
-          {/* Navegação Central: Início, Serviços, Profissionais, Sobre, Contato */}
+          {/* Navegação Central: Início, Serviços, Portfólio, Profissionais, Sobre, Contato */}
           <nav className="hidden md:flex items-center gap-8 text-[15px] font-medium text-[#625D5A]">
-            <Link
+            <a
               href="#inicio"
-              className="text-[#9F4039] font-semibold transition-colors hover:text-[#BD7165]"
+              onClick={(e) => handleNavClick(e, 'inicio')}
+              className="text-[#9F4039] font-semibold transition-colors hover:text-[#BD7165] cursor-pointer"
             >
               Início
-            </Link>
-            <Link
+            </a>
+            <a
               href="#servicos"
-              className="hover:text-[#211C1B] transition-colors"
+              onClick={(e) => handleNavClick(e, 'servicos')}
+              className="hover:text-[#211C1B] transition-colors cursor-pointer"
             >
               Serviços
-            </Link>
+            </a>
             {portfolio && portfolio.length > 0 && (
-              <Link
+              <a
                 href="#portfolio"
-                className="hover:text-[#211C1B] transition-colors"
+                onClick={(e) => handleNavClick(e, 'portfolio')}
+                className="hover:text-[#211C1B] transition-colors cursor-pointer"
               >
                 Portfólio
-              </Link>
+              </a>
             )}
-            <Link
+            <a
               href="#profissionais"
-              className="hover:text-[#211C1B] transition-colors"
+              onClick={(e) => handleNavClick(e, 'profissionais')}
+              className="hover:text-[#211C1B] transition-colors cursor-pointer"
             >
               Profissionais
-            </Link>
-            <Link
+            </a>
+            <a
               href="#sobre"
-              className="hover:text-[#211C1B] transition-colors"
+              onClick={(e) => handleNavClick(e, 'sobre')}
+              className="hover:text-[#211C1B] transition-colors cursor-pointer"
             >
               Sobre
-            </Link>
-            <Link
+            </a>
+            <a
               href="#contato"
-              className="hover:text-[#211C1B] transition-colors"
+              onClick={(e) => handleNavClick(e, 'contato')}
+              className="hover:text-[#211C1B] transition-colors cursor-pointer"
             >
               Contato
-            </Link>
+            </a>
           </nav>
 
-          {/* Botão Superior Direito: Ver serviços com rolagem até a seção de serviços */}
-          <div className="flex items-center shrink-0">
-            <Link
+          {/* Botão Superior Direito: Ver serviços + Botão Hambúrguer Mobile */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <a
               href="#servicos"
-              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 h-[42px] md:h-12 max-w-[170px] sm:max-w-none rounded-[12px] text-xs sm:text-sm font-medium text-white transition-all shadow-xs hover:opacity-95 active:scale-98"
+              onClick={(e) => handleNavClick(e, 'servicos')}
+              className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 h-[42px] md:h-12 max-w-[170px] sm:max-w-none rounded-[12px] text-xs sm:text-sm font-medium text-white transition-all shadow-xs hover:opacity-95 active:scale-98 cursor-pointer"
               style={{ backgroundColor: '#BD7165' }}
             >
               <span className="truncate">Ver serviços</span>
-            </Link>
+            </a>
+
+            {/* Botão Hambúrguer Mobile */}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu de navegação'}
+              className="md:hidden w-[42px] h-[42px] rounded-xl flex items-center justify-center bg-white border border-[#EAD9D3] text-[#211C1B] hover:text-[#BD7165] transition-colors shadow-2xs cursor-pointer"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Dropdown Menu Mobile */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-[#EAD9D3]/70 bg-[#FCF8F5] shadow-lg animate-in slide-in-from-top-2 duration-200">
+            <nav className="flex flex-col py-3 px-6 space-y-1">
+              <a
+                href="#inicio"
+                onClick={(e) => handleNavClick(e, 'inicio')}
+                className="py-2.5 text-base font-semibold text-[#9F4039] border-b border-[#EAD9D3]/30 flex items-center justify-between"
+              >
+                <span>Início</span>
+              </a>
+              <a
+                href="#servicos"
+                onClick={(e) => handleNavClick(e, 'servicos')}
+                className="py-2.5 text-base font-medium text-[#625D5A] hover:text-[#211C1B] border-b border-[#EAD9D3]/30 flex items-center justify-between"
+              >
+                <span>Serviços</span>
+              </a>
+              {portfolio && portfolio.length > 0 && (
+                <a
+                  href="#portfolio"
+                  onClick={(e) => handleNavClick(e, 'portfolio')}
+                  className="py-2.5 text-base font-medium text-[#625D5A] hover:text-[#211C1B] border-b border-[#EAD9D3]/30 flex items-center justify-between"
+                >
+                  <span>Portfólio</span>
+                </a>
+              )}
+              <a
+                href="#profissionais"
+                onClick={(e) => handleNavClick(e, 'profissionais')}
+                className="py-2.5 text-base font-medium text-[#625D5A] hover:text-[#211C1B] border-b border-[#EAD9D3]/30 flex items-center justify-between"
+              >
+                <span>Profissionais</span>
+              </a>
+              <a
+                href="#sobre"
+                onClick={(e) => handleNavClick(e, 'sobre')}
+                className="py-2.5 text-base font-medium text-[#625D5A] hover:text-[#211C1B] border-b border-[#EAD9D3]/30 flex items-center justify-between"
+              >
+                <span>Sobre</span>
+              </a>
+              <a
+                href="#contato"
+                onClick={(e) => handleNavClick(e, 'contato')}
+                className="py-2.5 text-base font-medium text-[#625D5A] hover:text-[#211C1B] flex items-center justify-between"
+              >
+                <span>Contato</span>
+              </a>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* ── 2. HERO SECTION ────────────────────────────────────────────────── */}
       {/* COMPOSIÇÃO MOBILE (até 767px): Vertical independente (Texto no topo + Foto abaixo) */}
       <section
         id="inicio"
-        className="block md:hidden w-full overflow-hidden"
+        className="block md:hidden w-full overflow-hidden scroll-mt-20 md:scroll-mt-28"
         style={{ backgroundColor: '#FCF8F5' }}
       >
         {/* A) Conteúdo Textual no Topo (fundo marfim sólido #FCF8F5) */}
@@ -238,7 +331,8 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
 
       {/* COMPOSIÇÃO DESKTOP (768px em diante): Layout Preservado Integralmente */}
       <section
-        className="hidden md:block relative w-full overflow-hidden"
+        id="inicio-desktop"
+        className="hidden md:block relative w-full overflow-hidden scroll-mt-20 md:scroll-mt-28"
         style={{
           minHeight: '560px',
           backgroundColor: '#FCF8F5',
@@ -313,7 +407,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
       {/* ── 3. BENEFÍCIOS ──────────────────────────────────────────────────── */}
       <section
         id="sobre"
-        className="w-full py-9 md:py-12 lg:py-16 border-b border-[#EAD9D3]/40"
+        className="w-full py-9 md:py-12 lg:py-16 border-b border-[#EAD9D3]/40 scroll-mt-20 md:scroll-mt-28"
         style={{ backgroundColor: '#FCF8F5' }}
       >
         <div className="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-10">
@@ -373,7 +467,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
       {/* ── 4. SERVIÇOS (SEÇÃO APROX. 760px) ─────────────────────────────────── */}
       <section
         id="servicos"
-        className="w-full py-20 lg:py-24"
+        className="w-full py-20 lg:py-24 scroll-mt-20 md:scroll-mt-28"
         style={{ backgroundColor: '#FCF8F5' }}
       >
         <div className="max-w-[1360px] mx-auto px-6 lg:px-10 space-y-12">
@@ -458,7 +552,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
       {/* ── 5. PROFISSIONAIS (SEÇÃO APROX. 540px) ────────────────────────────── */}
       <section
         id="profissionais"
-        className="w-full py-20 lg:py-24 border-t border-[#EAD9D3]/40"
+        className="w-full py-20 lg:py-24 border-t border-[#EAD9D3]/40 scroll-mt-20 md:scroll-mt-28"
         style={{ backgroundColor: '#FCF8F5' }}
       >
         <div className="max-w-[1360px] mx-auto px-6 lg:px-10">
@@ -545,7 +639,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
       {/* ── 7. FAIXA DE CONTATO / AGENDAMENTO ────────────────── */}
       <section
         id="contato"
-        className="relative w-full overflow-hidden text-white mt-auto"
+        className="relative w-full overflow-hidden text-white mt-auto scroll-mt-20 md:scroll-mt-28"
         style={{
           backgroundColor: '#BF7569',
           minHeight: '220px',
@@ -625,21 +719,26 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
 
             {/* Links Centrais */}
             <nav className="flex flex-wrap items-center justify-center gap-6 text-[14px] text-[#625D5A]">
-              <Link href="#inicio" className="hover:text-[#211C1B] transition-colors">
+              <a href="#inicio" onClick={(e) => handleNavClick(e, 'inicio')} className="hover:text-[#211C1B] transition-colors cursor-pointer">
                 Início
-              </Link>
-              <Link href="#servicos" className="hover:text-[#211C1B] transition-colors">
+              </a>
+              <a href="#servicos" onClick={(e) => handleNavClick(e, 'servicos')} className="hover:text-[#211C1B] transition-colors cursor-pointer">
                 Serviços
-              </Link>
-              <Link href="#profissionais" className="hover:text-[#211C1B] transition-colors">
+              </a>
+              {portfolio && portfolio.length > 0 && (
+                <a href="#portfolio" onClick={(e) => handleNavClick(e, 'portfolio')} className="hover:text-[#211C1B] transition-colors cursor-pointer">
+                  Portfólio
+                </a>
+              )}
+              <a href="#profissionais" onClick={(e) => handleNavClick(e, 'profissionais')} className="hover:text-[#211C1B] transition-colors cursor-pointer">
                 Profissionais
-              </Link>
-              <Link href="#sobre" className="hover:text-[#211C1B] transition-colors">
+              </a>
+              <a href="#sobre" onClick={(e) => handleNavClick(e, 'sobre')} className="hover:text-[#211C1B] transition-colors cursor-pointer">
                 Sobre
-              </Link>
-              <Link href="#contato" className="hover:text-[#211C1B] transition-colors">
+              </a>
+              <a href="#contato" onClick={(e) => handleNavClick(e, 'contato')} className="hover:text-[#211C1B] transition-colors cursor-pointer">
                 Contato
-              </Link>
+              </a>
             </nav>
 
             {/* Redes Sociais à direita (36x36px) */}
