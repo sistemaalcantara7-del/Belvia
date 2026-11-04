@@ -15,13 +15,13 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  User,
   Scissors,
   CreditCard,
   Banknote,
   Search,
   RefreshCw,
   XCircle,
+  FileText,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -209,53 +209,54 @@ export function PDVManager({
 
   return (
     <div className="space-y-6">
-      {/* Top Banner / Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/40 pb-5">
+      {/* ── 1. CABEÇALHO DO PDV ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-1">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-              <Store className="w-5 h-5 text-primary" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#FAF0EC] text-[#B87070] flex items-center justify-center shrink-0 border border-[#EADBCE]/80 shadow-2xs">
+              <Store className="w-5 h-5 stroke-[2.2]" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#1E1115]">
                 PDV de Atendimento
               </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-[#7D6B65] mt-0.5 font-normal">
                 Recepção ágil, check-in e recebimento de serviços em dinheiro, PIX ou cartão
               </p>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Status Caixa */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Status do Caixa Diário */}
           <div
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 border ${
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium border shadow-2xs ${
               activeCashRegister
-                ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
-                : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                ? 'bg-[#EBF7F0] text-[#1B873F] border-[#CEEED7]'
+                : 'bg-[#FFF8EB] text-[#C48616] border-[#FCE6BD]'
             }`}
           >
-            <Banknote className="w-3.5 h-3.5" />
-            {activeCashRegister ? 'Caixa Diário Aberto' : 'Caixa Fechado (Dinheiro restrito)'}
+            <Banknote className="w-4 h-4 shrink-0" />
+            <span>{activeCashRegister ? 'Caixa Diário Aberto' : 'Caixa Fechado (Dinheiro restrito)'}</span>
           </div>
 
           <button
             onClick={() => setIsDirectModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-white transition-all shadow-sm hover:opacity-95"
+            style={{ backgroundColor: '#B87070' }}
           >
-            <Plus className="w-4 h-4" />
-            + Atendimento Balcão
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>+ Atendimento Balcão</span>
           </button>
         </div>
       </div>
 
       {feedbackMessage && (
         <div
-          className={`p-3.5 rounded-xl text-xs sm:text-sm font-medium flex items-center justify-between border ${
+          className={`p-3.5 rounded-2xl text-xs sm:text-sm font-medium flex items-center justify-between border shadow-2xs ${
             feedbackMessage.type === 'success'
-              ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
-              : 'bg-destructive/10 text-destructive border-destructive/20'
+              ? 'bg-[#EBF7F0] text-[#1B873F] border-[#CEEED7]'
+              : 'bg-[#FDEEEE] text-[#D33E3E] border-[#F8D1D1]'
           }`}
         >
           <span>{feedbackMessage.text}</span>
@@ -268,109 +269,127 @@ export function PDVManager({
         </div>
       )}
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-card border border-border/40 rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-medium">
-            <span>Aguardando Pagamento</span>
-            <Clock className="w-4 h-4 text-amber-500" />
+      {/* ── 2. CARDS DE INDICADORES / KPIS (ESTILO ZELUNIA DASHBOARD) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+        {/* KPI 1: Aguardando Pagamento */}
+        <div className="p-5 rounded-2xl bg-white border border-[#EADBCE]/80 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-[#B87070]/60 transition-all">
+          <div className="flex items-start justify-between">
+            <div className="w-10 h-10 rounded-full bg-[#FFF8EB] text-[#C48616] flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5 stroke-[2.2]" />
+            </div>
+            <div className="text-right flex-1 pl-3">
+              <span className="text-xs font-medium text-[#7D6B65] block">Aguardando Pagamento</span>
+              <span className="text-2xl sm:text-3xl font-bold text-[#1E1115] tracking-tight block mt-1">
+                R$ {totalOpenAmount.toFixed(2).replace('.', ',')}
+              </span>
+            </div>
           </div>
-          <div className="mt-2 text-2xl font-bold tracking-tight text-foreground">
-            R$ {totalOpenAmount.toFixed(2).replace('.', ',')}
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-0.5">
+          <div className="mt-4 pt-2 border-t border-[#F5EBE6] text-[11px] font-semibold text-[#8C7A74]">
             {openCount} atendimento(s) em aberto hoje
           </div>
         </div>
 
-        <div className="bg-card border border-border/40 rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-medium">
-            <span>Recebido Hoje (Turno)</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+        {/* KPI 2: Recebido Hoje (Turno) */}
+        <div className="p-5 rounded-2xl bg-white border border-[#EADBCE]/80 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-[#B87070]/60 transition-all">
+          <div className="flex items-start justify-between">
+            <div className="w-10 h-10 rounded-full bg-[#EBF7F0] text-[#1B873F] flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5 stroke-[2.2]" />
+            </div>
+            <div className="text-right flex-1 pl-3">
+              <span className="text-xs font-medium text-[#7D6B65] block">Recebido Hoje (Turno)</span>
+              <span className="text-2xl sm:text-3xl font-bold text-[#1E1115] tracking-tight block mt-1">
+                R$ {totalPaidAmount.toFixed(2).replace('.', ',')}
+              </span>
+            </div>
           </div>
-          <div className="mt-2 text-2xl font-bold tracking-tight text-foreground">
-            R$ {totalPaidAmount.toFixed(2).replace('.', ',')}
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-0.5">
+          <div className="mt-4 pt-2 border-t border-[#F5EBE6] text-[11px] font-semibold text-[#1B873F]">
             Dinheiro, PIX e cartões conciliados
           </div>
         </div>
 
-        <div className="bg-card border border-border/40 rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-medium">
-            <span>Total de Atendimentos</span>
-            <Store className="w-4 h-4 text-primary" />
+        {/* KPI 3: Total de Atendimentos */}
+        <div className="p-5 rounded-2xl bg-white border border-[#EADBCE]/80 shadow-sm relative overflow-hidden flex flex-col justify-between group hover:border-[#B87070]/60 transition-all">
+          <div className="flex items-start justify-between">
+            <div className="w-10 h-10 rounded-full bg-[#FCEFEB] text-[#B87070] flex items-center justify-center shrink-0">
+              <Store className="w-5 h-5 stroke-[2.2]" />
+            </div>
+            <div className="text-right flex-1 pl-3">
+              <span className="text-xs font-medium text-[#7D6B65] block">Total de Atendimentos</span>
+              <span className="text-2xl sm:text-3xl font-bold text-[#1E1115] tracking-tight block mt-1">
+                {initialAttendances.length}
+              </span>
+            </div>
           </div>
-          <div className="mt-2 text-2xl font-bold tracking-tight text-foreground">
-            {initialAttendances.length}
-          </div>
-          <div className="text-[11px] text-muted-foreground mt-0.5">
+          <div className="mt-4 pt-2 border-t border-[#F5EBE6] text-[11px] font-semibold text-[#8C7A74]">
             Agendados e atendimentos de balcão
           </div>
         </div>
       </div>
 
-      {/* Filtros e Busca */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-card border border-border/40 rounded-2xl p-3 shadow-sm">
-        <div className="flex flex-1 items-center gap-2">
+      {/* ── 3. BARRA DE BUSCA, DATA E FILTROS COM CONTRASTE APERFEIÇOADO ── */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white border border-[#EADBCE]/90 rounded-2xl p-3 shadow-xs">
+        <div className="flex flex-1 items-center gap-2.5">
+          {/* Campo de Busca Estilizado */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A3928B]" />
             <input
               type="text"
               placeholder="Buscar por cliente, serviço ou profissional..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full pl-10 pr-4 py-2 rounded-xl text-xs sm:text-sm bg-[#FAF6F3] border border-[#EADBCE] text-[#2C1810] focus:border-[#B87070] focus:bg-white focus:outline-none transition-all placeholder:text-[#A3928B]"
             />
           </div>
 
-          <div className="relative">
+          {/* Seletor de Data */}
+          <div className="relative shrink-0">
             <input
               type="date"
               value={date}
               onChange={(e) => handleDateChange(e.target.value)}
-              className="px-3 py-2 rounded-xl border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-medium bg-[#FAF6F3] border border-[#EADBCE] text-[#2C1810] focus:border-[#B87070] focus:bg-white focus:outline-none transition-all cursor-pointer"
             />
           </div>
         </div>
 
+        {/* Botões de Filtro */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
           <button
             onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
               statusFilter === 'all'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                ? 'bg-[#B87070] text-white shadow-2xs'
+                : 'bg-[#FAF6F3] border border-[#EADBCE] text-[#7D6B65] hover:text-[#2C1810] hover:border-[#B87070]/60'
             }`}
           >
             Todos ({initialAttendances.length})
           </button>
           <button
             onClick={() => setStatusFilter('open')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
               statusFilter === 'open'
-                ? 'bg-amber-500 text-white'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                ? 'bg-[#C48616] text-white shadow-2xs'
+                : 'bg-[#FAF6F3] border border-[#EADBCE] text-[#7D6B65] hover:text-[#2C1810] hover:border-[#B87070]/60'
             }`}
           >
             Em Aberto ({openCount})
           </button>
           <button
             onClick={() => setStatusFilter('deferred')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
               statusFilter === 'deferred'
-                ? 'bg-sky-500 text-white'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                ? 'bg-[#3A68B8] text-white shadow-2xs'
+                : 'bg-[#FAF6F3] border border-[#EADBCE] text-[#7D6B65] hover:text-[#2C1810] hover:border-[#B87070]/60'
             }`}
           >
             Pagar Depois
           </button>
           <button
             onClick={() => setStatusFilter('paid')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
               statusFilter === 'paid'
-                ? 'bg-emerald-600 text-white'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                ? 'bg-[#1B873F] text-white shadow-2xs'
+                : 'bg-[#FAF6F3] border border-[#EADBCE] text-[#7D6B65] hover:text-[#2C1810] hover:border-[#B87070]/60'
             }`}
           >
             Pagos
@@ -379,27 +398,29 @@ export function PDVManager({
           <button
             onClick={handleRefresh}
             title="Atualizar lista"
-            className="p-2 rounded-xl border border-border text-muted-foreground hover:text-foreground transition hover:bg-muted"
+            className="p-2 rounded-xl border border-[#EADBCE] bg-[#FAF6F3] text-[#7D6B65] hover:text-[#2C1810] hover:border-[#B87070] transition-colors"
           >
             <RefreshCw className={`w-4 h-4 ${isPending ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* Lista de Atendimentos */}
-      <div className="space-y-3">
+      {/* ── 4. LISTAGEM DOS ATENDIMENTOS (ESTILO DASHBOARD CARDS) ── */}
+      <div className="space-y-4">
         {filteredAttendances.length === 0 ? (
-          <div className="bg-card border border-border/40 rounded-2xl p-12 text-center">
-            <Store className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
-            <h3 className="text-base font-semibold text-foreground">Nenhum atendimento encontrado</h3>
-            <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+          <div className="bg-white border border-[#EADBCE]/80 rounded-2xl p-12 text-center shadow-xs">
+            <div className="w-14 h-14 rounded-2xl bg-[#FAF0EC] text-[#B87070] mx-auto flex items-center justify-center mb-4 border border-[#EADBCE]/80">
+              <Store className="w-7 h-7 stroke-[2]" />
+            </div>
+            <h3 className="text-base font-bold text-[#1E1115]">Nenhum atendimento encontrado</h3>
+            <p className="text-xs sm:text-sm text-[#7D6B65] mt-1.5 max-w-md mx-auto leading-relaxed">
               {search || statusFilter !== 'all'
-                ? 'Nenhum registro corresponde aos filtros selecionados.'
-                : 'Nenhum agendamento confirmado para esta data. Clique em "+ Atendimento Balcão" para iniciar um atendimento direto.'}
+                ? 'Nenhum registro corresponde aos filtros ou à busca selecionada.'
+                : 'Nenhum agendamento para esta data. Clique no botão "+ Atendimento Balcão" acima para registrar um atendimento avulso presencial.'}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {filteredAttendances.map((item) => {
               const orderStatus = item.paymentOrder?.status;
               const isPaid = orderStatus === 'paid';
@@ -414,22 +435,22 @@ export function PDVManager({
               return (
                 <div
                   key={item.id}
-                  className={`bg-card border rounded-2xl p-4 shadow-sm flex flex-col justify-between transition-all hover:border-primary/40 ${
+                  className={`bg-white border rounded-2xl p-5 shadow-xs flex flex-col justify-between transition-all hover:shadow-sm ${
                     isPaid
-                      ? 'border-emerald-500/30 bg-emerald-500/[0.02]'
+                      ? 'border-[#CEEED7] hover:border-[#1B873F]/60'
                       : isDeferred
-                      ? 'border-sky-500/30 bg-sky-500/[0.02]'
-                      : 'border-border/60'
+                      ? 'border-[#DCE7F7] hover:border-[#3A68B8]/60'
+                      : 'border-[#EADBCE]/90 hover:border-[#B87070]/60'
                   }`}
                 >
                   <div>
                     {/* Header Card: Time + Status Badge */}
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                        <Clock className="w-3.5 h-3.5" />
+                    <div className="flex items-center justify-between gap-2 mb-3.5">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-[#7D6B65]">
+                        <Clock className="w-3.5 h-3.5 text-[#B87070]" />
                         <span>{timeStr}</span>
                         {item.isDirectWalkIn && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-secondary text-secondary-foreground">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#FAF0EC] text-[#B87070] border border-[#EADBCE]">
                             Balcão
                           </span>
                         )}
@@ -437,57 +458,59 @@ export function PDVManager({
 
                       {/* Badges de Status */}
                       {isPaid ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-                          <CheckCircle2 className="w-3 h-3" />
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#EAF7EE] text-[#1B873F] border border-[#CEEED7]">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
                           Pago
                         </span>
                       ) : isDeferred ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300">
-                          <Clock className="w-3 h-3" />
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#EFF4FB] text-[#3A68B8] border border-[#DCE7F7]">
+                          <Clock className="w-3.5 h-3.5" />
                           Pagar Depois
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-                          <AlertCircle className="w-3 h-3" />
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#FFF8EB] text-[#C48616] border border-[#FCE6BD]">
+                          <AlertCircle className="w-3.5 h-3.5" />
                           Aguardando Pagamento
                         </span>
                       )}
                     </div>
 
                     {/* Cliente e Contato */}
-                    <div className="mb-3">
+                    <div className="mb-3.5">
                       <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-primary shrink-0" />
-                        <h4 className="font-semibold text-foreground text-sm truncate">
+                        <div className="w-7 h-7 rounded-full bg-[#FAF0EC] text-[#B87070] flex items-center justify-center font-bold text-xs shrink-0 border border-[#EADBCE]/80">
+                          {item.client.full_name ? item.client.full_name.charAt(0).toUpperCase() : 'C'}
+                        </div>
+                        <h4 className="font-bold text-[#1E1115] text-sm truncate">
                           {item.client.full_name}
                         </h4>
                       </div>
                       {(item.client.whatsapp || item.client.phone) && (
-                        <p className="text-[11px] text-muted-foreground ml-6 truncate">
+                        <p className="text-[11px] text-[#8C7A74] ml-9 truncate">
                           {item.client.whatsapp || item.client.phone}
                         </p>
                       )}
                     </div>
 
                     {/* Detalhes do Serviço & Profissional */}
-                    <div className="space-y-1.5 text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-xl mb-4">
+                    <div className="space-y-2 text-xs bg-[#FAF6F3] border border-[#F0E4DE] p-3 rounded-xl mb-4">
                       <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1.5 truncate text-foreground font-medium">
-                          <Scissors className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="flex items-center gap-1.5 truncate text-[#2C1810] font-semibold">
+                          <Scissors className="w-3.5 h-3.5 text-[#B87070] shrink-0" />
                           {item.service.name}
                         </span>
-                        <span className="font-bold text-foreground">
+                        <span className="font-bold text-[#1E1115]">
                           R$ {totalAmount.toFixed(2).replace('.', ',')}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-[11px]">
+                      <div className="flex items-center justify-between text-[11px] text-[#7D6B65]">
                         <span>Profissional:</span>
-                        <span className="text-foreground font-medium truncate max-w-[150px]">
+                        <span className="text-[#2C1810] font-medium truncate max-w-[150px]">
                           {item.professional.full_name}
                         </span>
                       </div>
                       {item.paymentOrder && Number(item.paymentOrder.discount_amount) > 0 && (
-                        <div className="flex items-center justify-between text-[11px] text-emerald-600 dark:text-emerald-400">
+                        <div className="flex items-center justify-between text-[11px] text-[#1B873F] font-medium">
                           <span>Desconto aplicado:</span>
                           <span>- R$ {Number(item.paymentOrder.discount_amount).toFixed(2).replace('.', ',')}</span>
                         </div>
@@ -496,12 +519,12 @@ export function PDVManager({
                   </div>
 
                   {/* Rodapé do Card: Ações */}
-                  <div className="pt-3 border-t border-border/40 flex items-center justify-between gap-2">
+                  <div className="pt-3 border-t border-[#F5EBE6] flex items-center justify-between gap-2">
                     <div>
-                      <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                      <div className="text-[10px] uppercase font-bold text-[#8C7A74] tracking-wider">
                         {isPaid ? 'Total Quitado' : 'Saldo a Receber'}
                       </div>
-                      <div className={`text-base font-bold ${isPaid ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'}`}>
+                      <div className={`text-base font-bold ${isPaid ? 'text-[#1B873F]' : 'text-[#1E1115]'}`}>
                         R$ {(isPaid ? totalAmount : balanceDue).toFixed(2).replace('.', ',')}
                       </div>
                     </div>
@@ -510,8 +533,9 @@ export function PDVManager({
                       {isPaid ? (
                         <button
                           onClick={() => handleOpenPayment(item)}
-                          className="px-3 py-1.5 rounded-xl text-xs font-medium border border-border bg-background hover:bg-muted text-foreground transition"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-[#EADBCE] text-[#4A3B36] hover:bg-[#FAF6F3] hover:border-[#B87070] transition shadow-2xs"
                         >
+                          <FileText className="w-3.5 h-3.5 text-[#7D6B65]" />
                           Ver Recibo
                         </button>
                       ) : (
@@ -520,14 +544,15 @@ export function PDVManager({
                             onClick={() => handleDeferPayment(item)}
                             title="Marcar para pagamento posterior ('Pagar Depois')"
                             disabled={isPending}
-                            className="px-2.5 py-1.5 rounded-xl text-xs font-medium border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition"
+                            className="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-white border border-[#EADBCE] text-[#7D6B65] hover:text-[#2C1810] hover:border-[#B87070] transition shadow-2xs"
                           >
                             Pagar Depois
                           </button>
 
                           <button
                             onClick={() => handleOpenPayment(item)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition shadow-sm"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white shadow-2xs hover:opacity-95 transition"
+                            style={{ backgroundColor: '#B87070' }}
                           >
                             <CreditCard className="w-3.5 h-3.5" />
                             Receber
@@ -537,7 +562,7 @@ export function PDVManager({
                             onClick={() => handleCancelAttendance(item)}
                             title="Cancelar atendimento"
                             disabled={isPending}
-                            className="p-1.5 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"
+                            className="p-1.5 rounded-xl text-[#A3928B] hover:text-[#D33E3E] hover:bg-[#FDEEEE] transition"
                           >
                             <XCircle className="w-4 h-4" />
                           </button>
