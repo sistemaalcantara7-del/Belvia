@@ -5,6 +5,10 @@ import { getAuthenticatedTenantContext } from '@/lib/tenant/context';
 import { PortfolioItem } from '@/types/publicBooking';
 import { revalidatePath } from 'next/cache';
 
+interface PortfolioDbRow extends PortfolioItem {
+  services?: { name?: string | null } | null;
+}
+
 /**
  * Altera a URL personalizada (slug) do estabelecimento com validação rigorosa,
  * concorrência segura e preservação de histórico para redirecionamento 308 (Prompt 175/181).
@@ -183,15 +187,23 @@ export async function getTenantPortfolioAction(
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('tenant_portfolio')
-      .select('*')
+      .select('*, services:service_id(name)')
       .eq('tenant_id', context.tenantId)
-      .order('sort_order', { ascending: true });
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: false });
 
     if (error) {
       return { success: false, error: error.message };
     }
 
-    return { success: true, items: (data as PortfolioItem[]) || [] };
+    const items = ((data || []) as unknown as PortfolioDbRow[]).map((row) => ({
+      ...row,
+      service_name: row.services?.name || null,
+    }));
+
+    return { success: true, items: (items as PortfolioItem[]) || [] };
+
+
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Falha ao buscar portfólio.';
     return { success: false, error: msg };
@@ -217,56 +229,84 @@ export async function savePortfolioItemAction(
 
     const supabase = await createClient();
 
+    // Não permitir publicação ativa sem consentimento expresso do cliente
+    const isConsentGiven = item.client_consent === true;
+    const finalIsActive = isConsentGiven ? (item.is_active ?? true) : false;
+
     if (item.id) {
       // Atualização
+      const updatePayload: Record<string, unknown> = {
+        title: item.title,
+        description: item.description || null,
+        image_url: item.image_url,
+        category: item.category || 'Geral',
+        service_id: item.service_id || null,
+        sort_order: Number(item.sort_order ?? 0),
+        client_consent: isConsentGiven,
+        client_consent_at: isConsentGiven ? (item.client_consent_at || new Date().toISOString()) : null,
+        is_active: finalIsActive,
+        updated_at: new Date().toISOString(),
+      };
+
       const { data, error } = await supabase
         .from('tenant_portfolio')
-        .update({
-          title: item.title,
-          description: item.description,
-          image_url: item.image_url,
-          category: item.category,
-          sort_order: item.sort_order ?? 0,
-          is_active: item.is_active ?? true,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq('id', item.id)
         .eq('tenant_id', context.tenantId)
-        .select()
+        .select('*, services:service_id(name)')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
+
+      const formattedItem: PortfolioItem = {
+        ...data,
+        service_name: (data as unknown as PortfolioDbRow)?.services?.name || null,
+      };
+
       revalidatePath(`/${tenantSlug}`);
+      revalidatePath(`/${tenantSlug}/portfolio`);
       revalidatePath(`/p/${tenantSlug}`);
-      return { success: true, item: data as PortfolioItem };
+      return { success: true, item: formattedItem };
     } else {
       // Criação
       if (!item.title || !item.image_url) {
-        return { success: false, error: 'Título e imagem são obrigatórios.' };
+        return { success: false, error: 'Título e imagem do trabalho são obrigatórios.' };
       }
+
+      const insertPayload = {
+        tenant_id: context.tenantId,
+        title: item.title.trim(),
+        description: item.description?.trim() || null,
+        image_url: item.image_url,
+        category: item.category || 'Geral',
+        service_id: item.service_id || null,
+        sort_order: Number(item.sort_order ?? 0),
+        client_consent: isConsentGiven,
+        client_consent_at: isConsentGiven ? new Date().toISOString() : null,
+        is_active: finalIsActive,
+      };
 
       const { data, error } = await supabase
         .from('tenant_portfolio')
-        .insert({
-          tenant_id: context.tenantId,
-          title: item.title,
-          description: item.description || null,
-          image_url: item.image_url,
-          category: item.category || 'Geral',
-          sort_order: item.sort_order ?? 0,
-          is_active: item.is_active ?? true,
-        })
-        .select()
+        .insert(insertPayload)
+        .select('*, services:service_id(name)')
         .single();
 
       if (error) {
         return { success: false, error: error.message };
       }
+
+      const formattedItem: PortfolioItem = {
+        ...data,
+        service_name: (data as unknown as PortfolioDbRow)?.services?.name || null,
+      };
+
       revalidatePath(`/${tenantSlug}`);
+      revalidatePath(`/${tenantSlug}/portfolio`);
       revalidatePath(`/p/${tenantSlug}`);
-      return { success: true, item: data as PortfolioItem };
+      return { success: true, item: formattedItem };
     }
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Falha ao salvar item de portfólio.';
@@ -303,10 +343,74 @@ export async function deletePortfolioItemAction(
     }
 
     revalidatePath(`/${tenantSlug}`);
+    revalidatePath(`/${tenantSlug}/portfolio`);
     revalidatePath(`/p/${tenantSlug}`);
     return { success: true };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Falha ao excluir item.';
+    return { success: false, error: msg };
+  }
+}
+
+/**
+ * Alterna rapidamente a ativação pública de um trabalho,
+ * impedindo ativação caso não haja consentimento do cliente registrado.
+ */
+export async function togglePortfolioStatusAction(
+  tenantSlug: string,
+  itemId: string,
+  currentStatus: boolean
+): Promise<{ success: boolean; is_active?: boolean; error?: string }> {
+  try {
+    const context = await getAuthenticatedTenantContext(tenantSlug);
+    if (!context) {
+      return { success: false, error: 'Acesso negado.' };
+    }
+
+    if (!['owner', 'admin'].includes(context.role)) {
+      return { success: false, error: 'Permissão negada.' };
+    }
+
+    const supabase = await createClient();
+
+    // Se estiver tentando ativar, verifica se o consentimento está registrado
+    if (!currentStatus) {
+      const { data: itemData, error: itemErr } = await supabase
+        .from('tenant_portfolio')
+        .select('client_consent')
+        .eq('id', itemId)
+        .eq('tenant_id', context.tenantId)
+        .single();
+
+      if (itemErr || !itemData) {
+        return { success: false, error: 'Trabalho não encontrado.' };
+      }
+
+      if (!itemData.client_consent) {
+        return {
+          success: false,
+          error: 'Não é possível publicar este trabalho sem o consentimento do cliente registrado.',
+        };
+      }
+    }
+
+    const nextStatus = !currentStatus;
+    const { error: updErr } = await supabase
+      .from('tenant_portfolio')
+      .update({ is_active: nextStatus, updated_at: new Date().toISOString() })
+      .eq('id', itemId)
+      .eq('tenant_id', context.tenantId);
+
+    if (updErr) {
+      return { success: false, error: updErr.message };
+    }
+
+    revalidatePath(`/${tenantSlug}`);
+    revalidatePath(`/${tenantSlug}/portfolio`);
+    revalidatePath(`/p/${tenantSlug}`);
+    return { success: true, is_active: nextStatus };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Erro ao alterar status do trabalho.';
     return { success: false, error: msg };
   }
 }

@@ -89,6 +89,7 @@ export async function saveServiceAction(
     revalidatePath(`/${tenantSlug}/servicos`);
     revalidatePath(`/${tenantSlug}`);
     revalidatePath(`/p/${tenantSlug}`);
+    revalidatePath(`/agendar/${tenantSlug}`);
     return { success: true, service: data as Service };
   } else {
     // Criação de novo serviço
@@ -115,6 +116,7 @@ export async function saveServiceAction(
     revalidatePath(`/${tenantSlug}/servicos`);
     revalidatePath(`/${tenantSlug}`);
     revalidatePath(`/p/${tenantSlug}`);
+    revalidatePath(`/agendar/${tenantSlug}`);
     return { success: true, service: data as Service };
   }
 }

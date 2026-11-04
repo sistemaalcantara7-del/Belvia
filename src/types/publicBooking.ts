@@ -53,6 +53,10 @@ export interface PortfolioItem {
   description: string | null;
   image_url: string;
   category: string;
+  service_id?: string | null;
+  service_name?: string | null;
+  client_consent?: boolean;
+  client_consent_at?: string | null;
   sort_order: number;
   is_active: boolean;
   created_at?: string;

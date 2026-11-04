@@ -41,6 +41,7 @@ export default async function DashboardLayout({
   const primaryLinks = [
     { href: `/${tenantSlug}`, label: 'Dashboard', iconName: 'dashboard' },
     { href: `/${tenantSlug}/servicos`, label: 'Serviços', iconName: 'servicos' },
+    { href: `/${tenantSlug}/portfolio`, label: 'Portfólio', iconName: 'portfolio' },
     { href: `/${tenantSlug}/clientes`, label: 'Clientes', iconName: 'clientes' },
     { href: `/${tenantSlug}/anamnese`, label: 'Atendimento & Anamnese', iconName: 'anamnese' },
     { href: `/${tenantSlug}/agenda`, label: 'Agenda', iconName: 'agenda' },

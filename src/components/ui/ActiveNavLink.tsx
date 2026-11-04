@@ -15,6 +15,7 @@ import {
   LucideIcon,
   BarChart3,
   Store,
+  Camera,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -23,6 +24,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   pdv: Store,
   clientes: Users,
   servicos: Scissors,
+  portfolio: Camera,
   profissionais: UserCheck,
   anamnese: FileText,
   financeiro: DollarSign,

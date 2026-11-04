@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getAuthenticatedTenantContext } from '@/lib/tenant/context';
 import { assertActiveSubscription } from '@/lib/plans/entitlements';
 
-export type EntityImageType = 'services' | 'professionals';
+export type EntityImageType = 'services' | 'professionals' | 'portfolio';
 
 export interface UploadEntityImageResult {
   success: boolean;
@@ -32,6 +32,12 @@ const ENTITY_CONFIGS: Record<
     maxWidth: 600,
     maxHeight: 600,
     maxSizeBytes: 200 * 1024, // 200 KB
+    quality: 80,
+  },
+  portfolio: {
+    maxWidth: 1200,
+    maxHeight: 1200,
+    maxSizeBytes: 350 * 1024, // 350 KB
     quality: 80,
   },
 };

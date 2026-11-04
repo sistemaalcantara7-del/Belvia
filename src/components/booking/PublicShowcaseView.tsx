@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { PublicCatalogData, PublicProfessional } from '@/types/publicBooking';
 import { AIChatWidget } from './AIChatWidget';
+import { PortfolioCarouselSection } from './PortfolioCarouselSection';
 
 function InstagramIcon({ className = 'w-4 h-4' }: { className?: string }) {
   return (
@@ -131,6 +132,14 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
             >
               Serviços
             </Link>
+            {portfolio && portfolio.length > 0 && (
+              <Link
+                href="#portfolio"
+                className="hover:text-[#211C1B] transition-colors"
+              >
+                Portfólio
+              </Link>
+            )}
             <Link
               href="#profissionais"
               className="hover:text-[#211C1B] transition-colors"
@@ -453,6 +462,9 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
           )}
         </div>
       </section>
+
+      {/* ── 4.5. CARROSSEL DE PORTFÓLIO DE RESULTADOS (REGIÃO CENTRAL) ────── */}
+      <PortfolioCarouselSection portfolio={portfolio} tenantSlug={tenant.slug} />
 
       {/* ── 5. PROFISSIONAIS (SEÇÃO APROX. 540px) ────────────────────────────── */}
       <section

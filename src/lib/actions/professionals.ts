@@ -187,6 +187,7 @@ export async function saveProfessionalAction(
   revalidatePath(`/${tenantSlug}/profissionais`);
   revalidatePath(`/${tenantSlug}`);
   revalidatePath(`/p/${tenantSlug}`);
+  revalidatePath(`/agendar/${tenantSlug}`);
   return {
     success: true,
     professional: {

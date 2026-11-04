@@ -13,6 +13,7 @@ interface ImageUploadFieldProps {
   onImageChanged: (url: string | null) => void;
   aspectRatioLabel?: string;
   maxDimensionsLabel?: string;
+  label?: string;
 }
 
 export function ImageUploadField({
@@ -22,6 +23,7 @@ export function ImageUploadField({
   onImageChanged,
   aspectRatioLabel = '800×600',
   maxDimensionsLabel = 'Máx 300 KB em WebP',
+  label,
 }: ImageUploadFieldProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
@@ -35,6 +37,15 @@ export function ImageUploadField({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isProfessional = entityType === 'professionals';
+  const isPortfolio = entityType === 'portfolio';
+
+  const defaultLabel =
+    label ||
+    (entityType === 'services'
+      ? 'Foto / Imagem do Serviço'
+      : entityType === 'professionals'
+      ? 'Foto / Imagem do Profissional'
+      : 'Foto do Trabalho / Portfólio');
 
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -48,12 +59,25 @@ export function ImageUploadField({
 
     try {
       // 1. Compacta no cliente primeiro (economiza banda de upload e acelera tempo de resposta)
-      const isService = entityType === 'services';
+      let maxWidth = 800;
+      let maxHeight = 600;
+      let maxSizeBytes = 300 * 1024;
+
+      if (isPortfolio) {
+        maxWidth = 1200;
+        maxHeight = 1200;
+        maxSizeBytes = 350 * 1024;
+      } else if (isProfessional) {
+        maxWidth = 600;
+        maxHeight = 600;
+        maxSizeBytes = 200 * 1024;
+      }
+
       const compressedFile = await compressImageInBrowser(file, {
-        maxWidth: isService ? 800 : 600,
-        maxHeight: isService ? 600 : 600,
+        maxWidth,
+        maxHeight,
         quality: 0.8,
-        maxSizeBytes: (isService ? 300 : 200) * 1024,
+        maxSizeBytes,
       });
 
       // 2. Cria FormData e envia para o servidor (Sharp + Supabase Storage)
@@ -110,7 +134,7 @@ export function ImageUploadField({
   return (
     <div className="space-y-2">
       <label className="block text-xs font-semibold text-[#2C1810] dark:text-zinc-200">
-        Foto / Imagem {entityType === 'services' ? 'do Serviço' : 'do Profissional'}
+        {defaultLabel}
       </label>
 
       {errorMessage && (
@@ -140,7 +164,7 @@ export function ImageUploadField({
       {previewUrl ? (
         /* Estado com Prévia da Imagem em Miniatura Fixa Compacta (w-fit, não estica a largura inteira) */
         <div className="w-fit max-w-full flex flex-row items-center gap-4 p-3 rounded-2xl border border-[#EADBCE] dark:border-zinc-800 bg-[#FAF6F3] dark:bg-zinc-900/60 shadow-2xs">
-          {/* Miniatura com dimensões estritas: 120x120 para Profissionais | 160x120 para Serviços */}
+          {/* Miniatura com dimensões estritas: 120x120 para Profissionais | 160x120 para Serviços/Portfólio */}
           <div
             style={
               isProfessional
@@ -174,7 +198,7 @@ export function ImageUploadField({
           <div className="flex flex-col justify-center space-y-2">
             <div>
               <p className="text-xs font-bold text-[#2C1810] dark:text-zinc-200">
-                Foto cadastrada
+                Foto carregada
               </p>
               <p className="text-[11px] text-[#7D6B65] dark:text-zinc-400 mt-0.5 whitespace-nowrap">
                 {isProfessional ? '120×120 px' : '160×120 px'} • WebP
