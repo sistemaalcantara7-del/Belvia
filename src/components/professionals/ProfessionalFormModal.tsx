@@ -8,6 +8,7 @@ import { Service } from '@/types/services';
 import { saveProfessionalAction } from '@/lib/actions/professionals';
 import { maskPhone } from '@/lib/utils/masks';
 import { ActionFeedbackAlert } from '@/components/ui/ActionFeedbackAlert';
+import { ImageUploadField } from '@/components/ui/ImageUploadField';
 import { X, UserCheck, Clock, Scissors } from 'lucide-react';
 
 interface ProfessionalFormModalProps {
@@ -40,6 +41,7 @@ export function ProfessionalFormModal({
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(professionalToEdit?.avatar_url || null);
   const [whatsapp, setWhatsapp] = useState(maskPhone(professionalToEdit?.whatsapp || ''));
   const [selectedServices, setSelectedServices] = useState<string[]>(
     professionalToEdit?.service_ids || []
@@ -94,6 +96,7 @@ export function ProfessionalFormModal({
       email: (formData.get('email') as string)?.trim() || '',
       specialty: (formData.get('specialty') as string)?.trim() || 'Geral',
       bio: (formData.get('bio') as string)?.trim() || '',
+      avatar_url: avatarUrl,
       status: (formData.get('status') as 'active' | 'inactive') || 'active',
       service_ids: selectedServices,
       schedules: schedules,
@@ -156,6 +159,15 @@ export function ProfessionalFormModal({
           )}
 
           <form id="professional-form" onSubmit={handleSubmit} className="space-y-6">
+            {/* Campo de Upload de Foto do Profissional */}
+            <ImageUploadField
+              tenantSlug={tenantSlug}
+              entityType="professionals"
+              currentImageUrl={avatarUrl}
+              onImageChanged={(newUrl) => setAvatarUrl(newUrl)}
+              aspectRatioLabel="600×600 px"
+              maxDimensionsLabel="Máx 200 KB em WebP"
+            />
             {/* Dados Pessoais e Função */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">

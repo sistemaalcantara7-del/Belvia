@@ -46,6 +46,7 @@ export async function saveProfessionalAction(
   const email = formData.email?.trim().toLowerCase() || null;
   const specialty = formData.specialty?.trim() || 'Geral';
   const bio = formData.bio?.trim() || null;
+  const avatar_url = formData.avatar_url ? formData.avatar_url.trim() : null;
   const status = formData.status === 'inactive' ? 'inactive' : 'active';
 
   if (rawWhatsapp && (rawWhatsapp.length < 10 || rawWhatsapp.length > 11)) {
@@ -99,6 +100,7 @@ export async function saveProfessionalAction(
         email: email,
         specialty: specialty,
         bio: bio,
+        avatar_url: avatar_url,
         status: status,
       })
       .eq('id', profId)
@@ -118,6 +120,7 @@ export async function saveProfessionalAction(
         email: email,
         specialty: specialty,
         bio: bio,
+        avatar_url: avatar_url,
         status: status,
       })
       .select('id')
@@ -182,6 +185,8 @@ export async function saveProfessionalAction(
   }
 
   revalidatePath(`/${tenantSlug}/profissionais`);
+  revalidatePath(`/${tenantSlug}`);
+  revalidatePath(`/p/${tenantSlug}`);
   return {
     success: true,
     professional: {
@@ -193,7 +198,7 @@ export async function saveProfessionalAction(
       email: email,
       specialty: specialty,
       bio: bio,
-      avatar_url: null,
+      avatar_url: avatar_url,
       status: status,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

@@ -393,7 +393,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
           {services.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {services.map((service, idx) => {
-                const imgFallback = sampleServiceImages[idx % sampleServiceImages.length];
+                const serviceImage = service.image_url || sampleServiceImages[idx % sampleServiceImages.length];
                 return (
                   <div
                     key={service.id}
@@ -402,7 +402,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
                     {/* Imagem do Serviço (210px altura cover) */}
                     <div className="relative w-full h-[210px] bg-[#F2E0DC] overflow-hidden">
                       <Image
-                        src={imgFallback}
+                        src={serviceImage}
                         alt={service.name}
                         fill
                         className="object-cover transition-transform duration-300 hover:scale-105"
@@ -739,3 +739,4 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
     </div>
   );
 }
+

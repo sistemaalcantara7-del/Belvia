@@ -42,6 +42,7 @@ export async function saveServiceAction(
   const duration_minutes = Number(formData.duration_minutes);
   const break_minutes = Number(formData.break_minutes || 0);
   const price = Number(formData.price || 0);
+  const image_url = formData.image_url ? formData.image_url.trim() : null;
   const status = formData.status === 'inactive' ? 'inactive' : 'active';
 
   if (!name || name.length < 2) {
@@ -73,6 +74,7 @@ export async function saveServiceAction(
         duration_minutes,
         break_minutes,
         price,
+        image_url,
         status,
       })
       .eq('id', formData.id)
@@ -85,6 +87,8 @@ export async function saveServiceAction(
     }
 
     revalidatePath(`/${tenantSlug}/servicos`);
+    revalidatePath(`/${tenantSlug}`);
+    revalidatePath(`/p/${tenantSlug}`);
     return { success: true, service: data as Service };
   } else {
     // Criação de novo serviço
@@ -98,6 +102,7 @@ export async function saveServiceAction(
         duration_minutes,
         break_minutes,
         price,
+        image_url,
         status,
       })
       .select()
@@ -108,6 +113,8 @@ export async function saveServiceAction(
     }
 
     revalidatePath(`/${tenantSlug}/servicos`);
+    revalidatePath(`/${tenantSlug}`);
+    revalidatePath(`/p/${tenantSlug}`);
     return { success: true, service: data as Service };
   }
 }

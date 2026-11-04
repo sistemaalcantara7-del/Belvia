@@ -7,6 +7,7 @@ import { Service, ServiceFormData, DEFAULT_SERVICE_CATEGORIES } from '@/types/se
 import { saveServiceAction } from '@/lib/actions/services';
 import { X, Sparkles } from 'lucide-react';
 import { ActionFeedbackAlert } from '@/components/ui/ActionFeedbackAlert';
+import { ImageUploadField } from '@/components/ui/ImageUploadField';
 
 interface ServiceFormModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export function ServiceFormModal({
 }: ServiceFormModalProps) {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(serviceToEdit?.image_url || null);
 
   if (!isOpen) return null;
 
@@ -44,6 +46,7 @@ export function ServiceFormModal({
       duration_minutes: Number(formData.get('duration_minutes')),
       break_minutes: Number(formData.get('break_minutes') || 0),
       price: Number(formData.get('price')),
+      image_url: imageUrl,
       status: (formData.get('status') as 'active' | 'inactive') || 'active',
     };
 
@@ -82,7 +85,7 @@ export function ServiceFormModal({
             onClick={onClose}
             type="button"
             aria-label="Fechar"
-            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors p-1 rounded-lg"
+            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors p-1 rounded-lg cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -101,6 +104,16 @@ export function ServiceFormModal({
           )}
 
           <form id="service-form" onSubmit={handleSubmit} className="space-y-4">
+            {/* Campo de Upload de Foto com Prévia, Substituição e Remoção */}
+            <ImageUploadField
+              tenantSlug={tenantSlug}
+              entityType="services"
+              currentImageUrl={imageUrl}
+              onImageChanged={(newUrl) => setImageUrl(newUrl)}
+              aspectRatioLabel="800×600"
+              maxDimensionsLabel="Máx 300 KB em WebP"
+            />
+
             <div>
               <label className="block text-sm font-medium mb-1" htmlFor="name">
                 Nome do Serviço *
@@ -109,17 +122,17 @@ export function ServiceFormModal({
                 id="name"
                 name="name"
                 type="text"
-                defaultValue={serviceToEdit?.name || ''}
+                required
+                defaultValue={serviceToEdit?.name}
                 placeholder="Ex: Limpeza de Pele Profunda"
                 className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
-                required
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="category">
-                  Categoria *
+                  Categoria
                 </label>
                 <select
                   id="category"
@@ -137,7 +150,7 @@ export function ServiceFormModal({
 
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="price">
-                  Preço (R$) *
+                  Preço Base (R$) *
                 </label>
                 <input
                   id="price"
@@ -145,9 +158,10 @@ export function ServiceFormModal({
                   type="number"
                   step="0.01"
                   min="0"
-                  defaultValue={serviceToEdit?.price ?? 120.0}
-                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
                   required
+                  defaultValue={serviceToEdit?.price}
+                  placeholder="0,00"
+                  className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
               </div>
             </div>
@@ -164,9 +178,9 @@ export function ServiceFormModal({
                     type="number"
                     min="5"
                     step="5"
-                    defaultValue={serviceToEdit?.duration_minutes || 60}
-                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
                     required
+                    defaultValue={serviceToEdit?.duration_minutes ?? 60}
+                    className="w-full px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-md bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-rose-500"
                   />
                   <span className="ml-2 text-xs text-zinc-500">min</span>
                 </div>

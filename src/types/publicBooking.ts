@@ -85,6 +85,7 @@ export interface PublicService {
   duration_minutes: number;
   break_minutes: number;
   price: number;
+  image_url?: string | null;
 }
 
 export interface PublicProfessional {
@@ -135,3 +136,4 @@ export interface PublicBookingResult {
   message?: string;
   code?: string;
 }
+

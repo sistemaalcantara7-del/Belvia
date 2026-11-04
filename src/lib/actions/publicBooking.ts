@@ -176,7 +176,7 @@ export async function getPublicTenantCatalogAction(
     // Busca serviços ativos
     let srvQuery = supabase
       .from('services')
-      .select('id, name, description, category, duration_minutes, break_minutes, price')
+      .select('id, name, description, category, duration_minutes, break_minutes, price, image_url')
       .eq('tenant_id', tenant.id)
       .eq('status', 'active');
 
@@ -674,3 +674,4 @@ export async function createPublicBookingAction(
     return { success: false, code: 'UNEXPECTED_ERROR', message: msg };
   }
 }
+

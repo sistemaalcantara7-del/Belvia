@@ -58,6 +58,7 @@ export interface ProfessionalFormData {
   email?: string;
   specialty: string;
   bio?: string;
+  avatar_url?: string | null;
   status: ProfessionalStatus;
   user_id?: string | null;
   service_ids: string[];

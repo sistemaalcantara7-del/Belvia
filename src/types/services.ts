@@ -9,6 +9,7 @@ export interface Service {
   duration_minutes: number;
   break_minutes: number;
   price: number;
+  image_url?: string | null;
   status: ServiceStatus;
   created_at: string;
   updated_at: string;
@@ -22,6 +23,7 @@ export interface ServiceFormData {
   duration_minutes: number;
   break_minutes: number;
   price: number;
+  image_url?: string | null;
   status: ServiceStatus;
 }
 

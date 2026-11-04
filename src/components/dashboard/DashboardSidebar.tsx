@@ -96,19 +96,16 @@ export function DashboardSidebar({
 
       {/* ── Sidebar Desktop / Drawer Mobile ────────────────────────── */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col h-screen h-[100dvh] max-h-[100dvh] bg-[#2D1F27] bg-cover bg-bottom bg-no-repeat border-r border-[#433139] transition-all duration-300 ease-in-out overflow-hidden shadow-xl ${
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col h-screen h-[100dvh] max-h-[100dvh] bg-[#2D1F27] border-r border-[#433139] transition-all duration-300 ease-in-out overflow-hidden shadow-xl ${
           collapsed ? 'w-20' : 'w-64'
         } ${
           mobileOpen
             ? 'translate-x-0 shadow-2xl'
             : '-translate-x-full md:translate-x-0'
         }`}
-        style={{
-          backgroundImage: "url('/img/bg_menu.png')",
-        }}
       >
         {/* Topo: Logo ZELUNIA fixo */}
-        <div className="pt-6 pb-4 px-5 flex flex-col items-center justify-center border-b border-[#433139]/80 shrink-0 relative bg-black/15 backdrop-blur-[2px]">
+        <div className="pt-6 pb-4 px-5 flex flex-col items-center justify-center border-b border-[#433139]/80 shrink-0 relative bg-[#2D1F27]">
           {!collapsed ? (
             <Link href={`/${tenantSlug}`} className="flex flex-col items-center text-center group">
               <Image
@@ -137,8 +134,19 @@ export function DashboardSidebar({
           </button>
         </div>
 
-        {/* Links de Navegação */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-4">
+        {/* Área Central de Navegação com Background Floral (termina exatamente no início do rodapé) */}
+        <div className="flex-1 relative overflow-hidden flex flex-col min-h-0">
+          {/* Camada de Background Floral posicionada acima do rodapé */}
+          <div
+            className="absolute inset-0 bg-cover bg-no-repeat pointer-events-none"
+            style={{
+              backgroundImage: "url('/img/bg_menu.png')",
+              backgroundPosition: 'center bottom',
+            }}
+          />
+
+          {/* Links de Navegação */}
+          <nav className="relative flex-1 overflow-y-auto px-3 py-4 space-y-4 z-10">
           {/* Seção 1: Rotina Operacional Diária */}
           <div>
             {!collapsed && (
@@ -180,10 +188,11 @@ export function DashboardSidebar({
               </div>
             </div>
           )}
-        </nav>
+          </nav>
+        </div>
 
-        {/* Rodapé: Apenas Sair da Conta com espaçamento harmonioso */}
-        <div className="p-3.5 border-t border-[#433139]/80 shrink-0 bg-black/20 backdrop-blur-[2px]">
+        {/* Rodapé: Container sólido com a mesma cor roxo-escuro do container superior (#2D1F27) */}
+        <div className="p-3.5 border-t border-[#433139]/80 shrink-0 relative z-20 bg-[#2D1F27]">
           <form action={signOutAction}>
             <button
               type="submit"
