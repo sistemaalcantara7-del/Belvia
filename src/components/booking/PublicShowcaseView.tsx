@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -71,14 +71,6 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
 
   // Profissional em destaque (o primeiro ativo cadastrado)
   const featuredProf: PublicProfessional | undefined = professionals[0];
-
-  // Galeria de imagens reais cadastradas pelo tenant
-  const galleryItems = useMemo(() => {
-    if (portfolio && portfolio.length > 0) {
-      return portfolio.slice(0, 4);
-    }
-    return [];
-  }, [portfolio]);
 
   return (
     <div
@@ -549,42 +541,6 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
           </div>
         </div>
       </section>
-
-      {/* ── 6. GALERIA / NOSSO ESPAÇO (SEÇÃO APROX. 510px) ──────────────────── */}
-      {galleryItems.length > 0 && (
-        <section
-          className="w-full py-20 lg:py-24 border-t border-[#EAD9D3]/40"
-          style={{ backgroundColor: '#FCF8F5' }}
-        >
-          <div className="max-w-[1360px] mx-auto px-6 lg:px-10 space-y-12">
-            <div className="text-center space-y-2">
-              <span className="text-[13px] font-semibold tracking-[5px] uppercase text-[#BD7165]">
-                Nosso Espaço
-              </span>
-              <h2 className="font-serif text-3xl sm:text-5xl font-normal text-[#211C1B]">
-                Um ambiente pensado para o seu bem-estar
-              </h2>
-            </div>
-
-            {/* Grid de 4 imagens */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {galleryItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="relative w-full h-[220px] sm:h-[265px] rounded-[14px] overflow-hidden shadow-2xs border border-[#EAD9D3]/60 group"
-                >
-                  <Image
-                    src={item.image_url}
-                    alt={item.title}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ── 7. FAIXA DE CONTATO / AGENDAMENTO ────────────────── */}
       <section
