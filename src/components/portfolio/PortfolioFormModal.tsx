@@ -314,8 +314,14 @@ export function PortfolioFormModal({
           <Button
             type="submit"
             form="portfolio-form"
-            disabled={loading}
-            className="text-xs sm:text-sm shadow-sm bg-[#BD7165] hover:bg-[#a65f54] text-white"
+            disabled={
+              loading ||
+              !imageUrl ||
+              !title.trim() ||
+              (isActive ? !clientConsent : false) ||
+              (!itemToEdit && !clientConsent)
+            }
+            className="text-xs sm:text-sm shadow-sm bg-[#BD7165] hover:bg-[#a65f54] text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Salvando...' : itemToEdit ? 'Atualizar Trabalho' : 'Publicar no Portfólio'}
           </Button>

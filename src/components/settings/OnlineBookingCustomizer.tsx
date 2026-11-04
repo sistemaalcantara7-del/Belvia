@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useTransition } from 'react';
-import Link from 'next/link';
 import {
   Share2,
   CheckCircle2,
@@ -9,47 +8,34 @@ import {
   Sliders,
   Save,
   Loader2,
-  ImageIcon,
   Building2,
   Upload,
-  ExternalLink,
-  ShieldCheck,
-  Eye,
-  EyeOff,
-  Trash2,
-  ArrowRight,
+  ImageIcon,
 } from 'lucide-react';
-import { OnlineBookingSettings, PortfolioItem } from '@/types/publicBooking';
+import { OnlineBookingSettings } from '@/types/publicBooking';
 import { Service } from '@/types/services';
 import { Professional } from '@/types/professionals';
 import { saveOnlineBookingSettingsAction } from '@/lib/actions/bookingSettings';
-import {
-  updateTenantSlugAction,
-  deletePortfolioItemAction,
-} from '@/lib/actions/portfolio';
+import { updateTenantSlugAction } from '@/lib/actions/portfolio';
 
 interface OnlineBookingCustomizerProps {
   tenantSlug: string;
   userRole: string;
   initialSettings: OnlineBookingSettings;
-  initialPortfolio?: PortfolioItem[];
   services: Service[];
   professionals: Professional[];
 }
 
 export function OnlineBookingCustomizer(props: OnlineBookingCustomizerProps) {
-  const { tenantSlug, userRole, initialSettings, initialPortfolio = [] } = props;
+  const { tenantSlug, userRole, initialSettings } = props;
   const [currentSlug, setCurrentSlug] = useState(tenantSlug);
   const [slugInput, setSlugInput] = useState(tenantSlug);
   const [slugPending, startSlugTransition] = useTransition();
   const [slugFeedback, setSlugFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const [settings, setSettings] = useState<OnlineBookingSettings>(initialSettings);
-  const [portfolio, setPortfolio] = useState<PortfolioItem[]>(initialPortfolio);
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  const [, startPhotoTransition] = useTransition();
 
   const isOwnerOrAdmin = ['owner', 'admin'].includes(userRole);
   const shortUrl = typeof window !== 'undefined'
@@ -173,19 +159,6 @@ export function OnlineBookingCustomizer(props: OnlineBookingCustomizerProps) {
     }
   };
 
-
-
-  const handleDeletePortfolioPhoto = (id: string) => {
-    if (!confirm('Deseja realmente remover esta foto da sua vitrine pública?')) return;
-    startPhotoTransition(async () => {
-      const res = await deletePortfolioItemAction(currentSlug, id);
-      if (res.success) {
-        setPortfolio(portfolio.filter((p) => p.id !== id));
-      } else {
-        alert(res.error || 'Falha ao excluir item.');
-      }
-    });
-  };
 
 
   return (
@@ -584,126 +557,6 @@ export function OnlineBookingCustomizer(props: OnlineBookingCustomizerProps) {
             </div>
           </div>
 
-
-          {/* Card 4: Gestão Unificada do Portfólio (Integração Direta com Módulo Portfólio) */}
-          <div className="p-5 rounded-2xl bg-white border border-[#EADBCE] shadow-2xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F5EDE8] pb-3">
-              <div className="flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-[#B87070]" />
-                <div>
-                  <h3 className="text-xs uppercase tracking-wider font-bold text-[#1E1115]">
-                    Portfólio / Galeria de Trabalhos
-                  </h3>
-                  <p className="text-[11px] text-[#7D6B65]">
-                    Gerenciado de forma unificada pelo Módulo Portfólio com upload WebP otimizado e termo LGPD.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold text-[#7D6B65] bg-[#FAF6F3] px-2.5 py-1 rounded-lg border border-[#EADBCE]">
-                  {portfolio.length} trabalho(s) cadastrado(s)
-                </span>
-                <Link
-                  href={`/${currentSlug}/portfolio`}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#B87070] hover:bg-[#A86B62] text-white text-xs font-bold transition-all shadow-2xs shrink-0"
-                >
-                  <span>Gerenciar no Módulo Portfólio</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Aviso Informativo de Integração e Consentimento */}
-            <div className="p-3.5 rounded-xl bg-[#FAF6F3] border border-[#EADBCE] flex items-start gap-3">
-              <div className="w-7 h-7 rounded-lg bg-[#FAF0EC] text-[#B87070] flex items-center justify-center shrink-0 mt-0.5">
-                <ShieldCheck className="w-4 h-4 stroke-[2]" />
-              </div>
-              <div className="text-xs space-y-1">
-                <p className="font-bold text-[#1E1115]">
-                  Fonte de Dados Unificada da Vitrine Pública
-                </p>
-                <p className="text-[#7D6B65] leading-relaxed">
-                  Para proteger seu estabelecimento e cumprir a legislação (LGPD), todas as fotos publicadas no Carrossel da vitrine pública exigem consentimento prévio do cliente e são armazenadas com compactação profissional no Supabase Storage.
-                </p>
-              </div>
-            </div>
-
-            {/* Grid Resumido de Trabalhos com Status de Consentimento */}
-            {portfolio.length === 0 ? (
-              <div className="text-center py-6 border border-dashed border-[#EADBCE] rounded-xl space-y-2">
-                <p className="text-xs text-[#9B8985] italic">
-                  Nenhum trabalho cadastrado no portfólio ainda.
-                </p>
-                <Link
-                  href={`/${currentSlug}/portfolio`}
-                  className="inline-flex items-center gap-1 text-xs text-[#B87070] font-bold hover:underline"
-                >
-                  <span>Cadastrar primeiro trabalho no portfólio</span>
-                  <ExternalLink className="w-3 h-3" />
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {portfolio.map((item) => {
-                    const hasConsent = item.client_consent === true;
-                    const isVisible = item.is_active && hasConsent;
-
-                    return (
-                      <div
-                        key={item.id}
-                        className="group relative aspect-square rounded-xl overflow-hidden bg-black/5 border border-[#EADBCE] flex flex-col justify-between"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={item.image_url}
-                          alt={item.title}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
-                          <div className="flex items-center justify-between w-full">
-                            {isVisible ? (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-600 text-white">
-                                <Eye className="w-2.5 h-2.5" /> Vitrine
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-600 text-white" title="Oculto ou sem termo de consentimento registrado">
-                                <EyeOff className="w-2.5 h-2.5" /> Oculto
-                              </span>
-                            )}
-
-                            {isOwnerOrAdmin && (
-                              <button
-                                type="button"
-                                onClick={() => handleDeletePortfolioPhoto(item.id)}
-                                className="p-1 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors"
-                                title="Excluir trabalho"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-white font-semibold truncate">
-                            {item.title}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <Link
-                    href={`/${currentSlug}/portfolio`}
-                    className="inline-flex items-center gap-1.5 text-xs text-[#B87070] font-bold hover:underline"
-                  >
-                    <span>Editar títulos, vincular serviços ou atualizar consentimentos no Módulo Portfólio</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* Botão de Salvar Alterações */}
           {isOwnerOrAdmin && (

@@ -129,7 +129,7 @@ export function PortfolioCarouselSection({
       aria-label="Nosso Portfólio"
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className="relative w-full py-12 sm:py-14 border-t border-[#F0DDD7]/80 overflow-hidden select-none focus:outline-hidden"
+      className="relative w-full py-12 sm:py-14 border-t border-[#F0DDD7]/80 overflow-hidden select-none focus:outline-hidden scroll-mt-20 md:scroll-mt-28"
       style={{
         backgroundImage: "url('/img/bg_portfolio.png')",
         backgroundSize: 'cover',

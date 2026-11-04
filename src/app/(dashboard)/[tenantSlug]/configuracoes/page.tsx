@@ -7,10 +7,9 @@ import { getTenantWhatsAppConfigAction, getOfficialTemplatesAction } from '@/lib
 import {
   getOnlineBookingSettingsAction,
 } from '@/lib/actions/bookingSettings';
-import { getTenantPortfolioAction } from '@/lib/actions/portfolio';
 import { getSubscriptionOverviewAction } from '@/lib/actions/saasSubscriptions';
 import { getTenantAIUsageMetricsAction } from '@/lib/actions/aiReceptionist';
-import { DEFAULT_BOOKING_SETTINGS, PortfolioItem } from '@/types/publicBooking';
+import { DEFAULT_BOOKING_SETTINGS } from '@/types/publicBooking';
 import { SettingsTabsContainer } from '@/components/settings/SettingsTabsContainer';
 import { Service } from '@/types/services';
 import { Professional } from '@/types/professionals';
@@ -47,7 +46,6 @@ export default async function ConfiguracoesPage({ params, searchParams }: Config
     whatsappRes,
     templatesRes,
     bookingRes,
-    portfolioRes,
     subscriptionRes,
     aiMetricsRes,
     srvRes,
@@ -58,7 +56,6 @@ export default async function ConfiguracoesPage({ params, searchParams }: Config
     getTenantWhatsAppConfigAction(tenantSlug),
     getOfficialTemplatesAction(tenantSlug),
     getOnlineBookingSettingsAction(tenantSlug),
-    getTenantPortfolioAction(tenantSlug),
     getSubscriptionOverviewAction(tenantSlug),
     getTenantAIUsageMetricsAction(tenantSlug),
     supabase
@@ -103,7 +100,6 @@ export default async function ConfiguracoesPage({ params, searchParams }: Config
 
   const whatsappTemplates = templatesRes.data || [];
   const bookingSettings = bookingRes.settings || DEFAULT_BOOKING_SETTINGS;
-  const portfolioItems = (portfolioRes.items || []) as PortfolioItem[];
   const subscriptionData = subscriptionRes.data;
   const aiUsageData = aiMetricsRes.data || null;
   const services = (srvRes.data || []) as Service[];
@@ -135,7 +131,6 @@ export default async function ConfiguracoesPage({ params, searchParams }: Config
         whatsappConfig={whatsappConfig}
         whatsappTemplates={whatsappTemplates}
         bookingSettings={bookingSettings}
-        portfolioItems={portfolioItems}
         subscriptionData={subscriptionData}
         aiUsageData={aiUsageData}
         services={services}

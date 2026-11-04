@@ -9,7 +9,7 @@ import { SubscriptionTab } from './SubscriptionTab';
 import { AIUsageTab } from './AIUsageTab';
 import { TenantReminderSettings, NotificationQueueItem } from '@/types/reminders';
 import { TenantWhatsAppConfig, WhatsAppOfficialTemplate } from '@/types/whatsapp';
-import { OnlineBookingSettings, PortfolioItem } from '@/types/publicBooking';
+import { OnlineBookingSettings } from '@/types/publicBooking';
 import { SubscriptionOverviewData } from '@/types/subscriptions';
 import { Service } from '@/types/services';
 import { Professional } from '@/types/professionals';
@@ -22,7 +22,6 @@ interface SettingsTabsContainerProps {
   whatsappConfig: TenantWhatsAppConfig;
   whatsappTemplates: WhatsAppOfficialTemplate[];
   bookingSettings: OnlineBookingSettings;
-  portfolioItems?: PortfolioItem[];
   subscriptionData?: SubscriptionOverviewData;
   aiUsageData?: {
     plan: string;
@@ -46,7 +45,6 @@ export function SettingsTabsContainer({
   whatsappConfig,
   whatsappTemplates,
   bookingSettings,
-  portfolioItems = [],
   subscriptionData,
   aiUsageData,
   services,
@@ -113,7 +111,6 @@ export function SettingsTabsContainer({
           tenantSlug={tenantSlug}
           userRole={userRole}
           initialSettings={bookingSettings}
-          initialPortfolio={portfolioItems}
           services={services}
           professionals={professionals}
         />

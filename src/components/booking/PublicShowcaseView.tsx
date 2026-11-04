@@ -455,9 +455,6 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
         </div>
       </section>
 
-      {/* ── 4.5. CARROSSEL DE PORTFÓLIO DE RESULTADOS (REGIÃO CENTRAL) ────── */}
-      <PortfolioCarouselSection portfolio={portfolio} tenantSlug={tenant.slug} />
-
       {/* ── 5. PROFISSIONAIS (SEÇÃO APROX. 540px) ────────────────────────────── */}
       <section
         id="profissionais"
@@ -541,6 +538,9 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
           </div>
         </div>
       </section>
+
+      {/* ── 6. CARROSSEL DE PORTFÓLIO DE RESULTADOS (ABAIXO DE PROFISSIONAIS) ────── */}
+      <PortfolioCarouselSection portfolio={portfolio} tenantSlug={tenant.slug} />
 
       {/* ── 7. FAIXA DE CONTATO / AGENDAMENTO ────────────────── */}
       <section
