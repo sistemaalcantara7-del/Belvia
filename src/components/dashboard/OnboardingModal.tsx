@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useTransition } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Sparkles,
   Building2,
@@ -43,6 +43,7 @@ export function OnboardingModal({
   isOwner,
   progress: initialProgressProp,
 }: OnboardingModalProps) {
+  const router = useRouter();
   const initialProgress = initialProgressProp || DEFAULT_ONBOARDING_PROGRESS;
   const [progress, setProgress] = useState<OnboardingProgress>(initialProgress);
   // Abre automaticamente se for owner, não tiver sido dispensado e ainda faltar alguma etapa
@@ -60,6 +61,11 @@ export function OnboardingModal({
 
   // Se não for owner, não exibe o modal nem o gatilho de reabertura
   if (!isOwner) return null;
+
+  const handleNavigate = (path: string) => {
+    setIsOpen(false);
+    router.push(path);
+  };
 
   const handleDismiss = () => {
     startTransition(async () => {
@@ -101,7 +107,7 @@ export function OnboardingModal({
         }));
       });
     }
-    window.open(`/${tenantSlug}`, '_blank', 'noopener,noreferrer');
+    window.open(publicUrl, '_blank', 'noopener,noreferrer');
   };
 
   const percentComplete = Math.round((progress.completedCount / progress.totalSteps) * 100);
@@ -303,10 +309,10 @@ export function OnboardingModal({
                               </button>
                             </div>
                           ) : (
-                            <Link
-                              href={item.href || '#'}
-                              onClick={() => setIsOpen(false)}
-                              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                            <button
+                              type="button"
+                              onClick={() => handleNavigate(item.href || `/${tenantSlug}`)}
+                              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                                 item.completed
                                   ? 'border border-emerald-300 bg-white text-emerald-800 hover:bg-emerald-50'
                                   : 'bg-[#B87070] hover:bg-[#A86B62] text-white shadow-2xs'
@@ -314,7 +320,7 @@ export function OnboardingModal({
                             >
                               <span>{item.completed ? 'Revisar' : item.btnText}</span>
                               <ArrowRight className="w-3.5 h-3.5" />
-                            </Link>
+                            </button>
                           )}
                         </div>
                       </div>
