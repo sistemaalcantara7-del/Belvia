@@ -23,8 +23,14 @@ export function PortfolioCarouselSection({
   portfolio,
   tenantSlug,
 }: PortfolioCarouselSectionProps) {
-  // Filtra estritamente itens ativos e com consentimento válido (LGPD)
-  const validItems = portfolio.filter((item) => item.is_active && item.client_consent !== false);
+  // Filtra estritamente itens ativos e com consentimento formal do cliente (LGPD)
+  // Regra do Prompt 214:
+  // 1. A RPC get_public_tenant_catalog já filtra no banco com WHERE is_active = true AND client_consent = true.
+  // 2. A ausência de is_active na resposta JSON não descarta registros (aceita item.is_active !== false).
+  // 3. Exige rigorosamente client_consent === true (não aceita ausente, null ou undefined).
+  const validItems = (portfolio || []).filter(
+    (item) => item && item.is_active !== false && item.client_consent === true
+  );
   const total = validItems.length;
 
   const [currentIndex, setCurrentIndex] = useState(0);
