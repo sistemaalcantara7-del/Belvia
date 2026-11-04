@@ -37,16 +37,16 @@ export default async function DashboardLayout({
     redirect(`/${tenantSlug}/assinar`);
   }
 
-  // Links do painel administrativo
+  // Links do painel administrativo (Seção Operacional na ordem solicitada)
   const primaryLinks = [
     { href: `/${tenantSlug}`, label: 'Dashboard', iconName: 'dashboard' },
+    { href: `/${tenantSlug}/servicos`, label: 'Serviços', iconName: 'servicos' },
+    { href: `/${tenantSlug}/clientes`, label: 'Clientes', iconName: 'clientes' },
+    { href: `/${tenantSlug}/anamnese`, label: 'Atendimento & Anamnese', iconName: 'anamnese' },
     { href: `/${tenantSlug}/agenda`, label: 'Agenda', iconName: 'agenda' },
     ...(context.role !== 'professional'
       ? [{ href: `/${tenantSlug}/pdv`, label: 'PDV de Atendimento', iconName: 'pdv' }]
       : []),
-    { href: `/${tenantSlug}/clientes`, label: 'Clientes', iconName: 'clientes' },
-    { href: `/${tenantSlug}/servicos`, label: 'Serviços', iconName: 'servicos' },
-    { href: `/${tenantSlug}/anamnese`, label: 'Atendimento & Anamnese', iconName: 'anamnese' },
     ...(context.role !== 'professional'
       ? [{ href: `/${tenantSlug}/caixa`, label: 'Financeiro', iconName: 'financeiro' }]
       : []),
