@@ -34,7 +34,7 @@ export function ImageUploadField({
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const isSquare = entityType === 'professionals';
+  const isProfessional = entityType === 'professionals';
 
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -138,32 +138,58 @@ export function ImageUploadField({
       />
 
       {previewUrl ? (
-        /* Estado com Prévia da Imagem */
-        <div className="relative group rounded-2xl overflow-hidden border border-[#EADBCE] bg-[#FAF6F3] shadow-2xs">
+        /* Estado com Prévia da Imagem em Miniatura Fixa Compacta (w-fit, não estica a largura inteira) */
+        <div className="w-fit max-w-full flex flex-row items-center gap-4 p-3 rounded-2xl border border-[#EADBCE] dark:border-zinc-800 bg-[#FAF6F3] dark:bg-zinc-900/60 shadow-2xs">
+          {/* Miniatura com dimensões estritas: 120x120 para Profissionais | 160x120 para Serviços */}
           <div
-            className={`relative w-full ${
-              isSquare ? 'h-48 sm:h-52' : 'h-44 sm:h-48'
-            } flex items-center justify-center bg-black/5`}
+            style={
+              isProfessional
+                ? { width: '120px', height: '120px', minWidth: '120px', minHeight: '120px', maxWidth: '120px', maxHeight: '120px' }
+                : { width: '160px', height: '120px', minWidth: '160px', minHeight: '120px', maxWidth: '160px', maxHeight: '120px' }
+            }
+            className={`relative shrink-0 overflow-hidden rounded-xl border border-[#EADBCE] dark:border-zinc-700 bg-[#F5EBE6] dark:bg-zinc-800 flex items-center justify-center ${
+              isProfessional
+                ? 'w-[120px] h-[120px] min-w-[120px] max-w-[120px]'
+                : 'w-[160px] h-[120px] min-w-[160px] max-w-[160px]'
+            }`}
           >
             <Image
               src={previewUrl}
               alt="Prévia da foto"
               fill
               unoptimized
-              className="object-cover transition-transform group-hover:scale-[1.02]"
-              sizes="(max-width: 768px) 100vw, 400px"
+              className="object-contain object-center p-1"
+              sizes={isProfessional ? '120px' : '160px'}
             />
 
-            {/* Overlay com Ações */}
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+            {isProcessing && (
+              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white z-10">
+                <Loader2 className="w-5 h-5 animate-spin text-[#B87070] mb-1" />
+                <span className="text-[10px] font-medium">Enviando...</span>
+              </div>
+            )}
+          </div>
+
+          {/* Ações e Informações ao lado da miniatura */}
+          <div className="flex flex-col justify-center space-y-2">
+            <div>
+              <p className="text-xs font-bold text-[#2C1810] dark:text-zinc-200">
+                Foto cadastrada
+              </p>
+              <p className="text-[11px] text-[#7D6B65] dark:text-zinc-400 mt-0.5 whitespace-nowrap">
+                {isProfessional ? '120×120 px' : '160×120 px'} • WebP
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
               <button
                 type="button"
                 onClick={handleTriggerSelect}
                 disabled={isProcessing}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-xs font-semibold text-[#2C1810] shadow-md transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-[#FAF0EC] dark:hover:bg-zinc-700 border border-[#EADBCE] dark:border-zinc-700 text-xs font-semibold text-[#2C1810] dark:text-zinc-200 shadow-2xs transition-all cursor-pointer"
                 title="Substituir foto"
               >
-                <RefreshCw className="w-3.5 h-3.5" />
+                <RefreshCw className="w-3.5 h-3.5 text-[#B87070]" />
                 <span>Substituir</span>
               </button>
 
@@ -171,31 +197,13 @@ export function ImageUploadField({
                 type="button"
                 onClick={handleRemoveImage}
                 disabled={isProcessing}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-xs font-semibold text-white shadow-md transition-all cursor-pointer"
-                title="Remover foto"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-800 hover:bg-red-50 dark:hover:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-xs font-semibold text-red-600 dark:text-red-400 shadow-2xs transition-all cursor-pointer"
+                title="Excluir foto"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>Remover</span>
+                <span>Excluir</span>
               </button>
             </div>
-
-            {isProcessing && (
-              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white z-10">
-                <Loader2 className="w-6 h-6 animate-spin text-[#B87070] mb-1" />
-                <span className="text-xs font-medium">Otimizando e enviando...</span>
-              </div>
-            )}
-          </div>
-
-          <div className="p-2.5 bg-white border-t border-[#EADBCE] flex items-center justify-between text-[11px] text-[#7D6B65]">
-            <span>Formato: WebP otimizado</span>
-            <button
-              type="button"
-              onClick={handleRemoveImage}
-              className="text-red-600 hover:text-red-700 font-semibold hover:underline"
-            >
-              Excluir foto
-            </button>
           </div>
         </div>
       ) : (
