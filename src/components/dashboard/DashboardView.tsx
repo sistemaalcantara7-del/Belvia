@@ -27,6 +27,7 @@ import { OnboardingProgress } from '@/lib/actions/onboarding';
 import { OnboardingModal } from '@/components/dashboard/OnboardingModal';
 import { PublicPageButton } from '@/components/dashboard/PublicPageButton';
 import { PublicPageCard } from '@/components/dashboard/PublicPageCard';
+import { getDashboardRevenueChartAction } from '@/lib/actions/financialReports';
 
 interface AppointmentItem {
   id: string;
@@ -122,6 +123,24 @@ export function DashboardView({
   onboardingProgress,
 }: DashboardViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [chartRange, setChartRange] = useState<'7d' | '30d' | '12m'>('7d');
+  const [chartData, setChartData] = useState<RevenueDayItem[]>(revenueWeek);
+  const [isChartLoading, setIsChartLoading] = useState(false);
+
+  const handleRangeChange = async (newRange: '7d' | '30d' | '12m') => {
+    setChartRange(newRange);
+    setIsChartLoading(true);
+    try {
+      const res = await getDashboardRevenueChartAction(tenantSlug, newRange);
+      if (res.success && res.data) {
+        setChartData(res.data);
+      }
+    } catch {
+      // Ignora erro
+    } finally {
+      setIsChartLoading(false);
+    }
+  };
   const [showTip, setShowTip] = useState(true);
 
   // Calendário interativo
@@ -156,7 +175,7 @@ export function DashboardView({
   }
 
   // Escala para o gráfico de receita
-  const maxRevenue = Math.max(...revenueWeek.map((r) => r.amount), 500);
+  const maxRevenue = Math.max(...chartData.map((r) => r.amount), 500);
 
   return (
     <div className="min-h-full p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1520px] mx-auto">
@@ -571,9 +590,31 @@ export function DashboardView({
         {/* Painel 1: Receita dos Últimos 7 Dias (Gráfico de Barras) */}
         <div className="p-6 rounded-2xl bg-white border border-[#EADBCE]/80 shadow-sm space-y-4">
           <div className="flex items-center justify-between pb-2 border-b border-[#F5EBE6]">
-            <h3 className="text-sm font-bold text-[#1E1115]">
-              Receita dos Últimos 7 Dias
-            </h3>
+            <div>
+              <h3 className="text-sm font-bold text-[#1E1115]">
+                {chartRange === '7d'
+                  ? 'Receita dos Últimos 7 Dias'
+                  : chartRange === '30d'
+                  ? 'Receita dos Últimos 30 Dias'
+                  : 'Receita dos Últimos 12 Meses'}
+              </h3>
+              <div className="flex items-center gap-1 mt-1.5">
+                {(['7d', '30d', '12m'] as const).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => handleRangeChange(r)}
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all cursor-pointer ${
+                      chartRange === r
+                        ? 'bg-[#B87070] text-white shadow-2xs font-bold'
+                        : 'bg-[#FAF6F3] text-[#7D6B65] hover:text-[#2C1810]'
+                    }`}
+                  >
+                    {r === '7d' ? '7 dias' : r === '30d' ? '30 dias' : '12 meses'}
+                  </button>
+                ))}
+              </div>
+            </div>
             {canViewFinancial && (
               <Link
                 href={`/${tenantSlug}/caixa`}
@@ -587,7 +628,12 @@ export function DashboardView({
           {canViewFinancial ? (
             <div className="pt-2">
               <div className="h-44 flex items-end justify-between gap-2 px-1 pb-2 border-b border-[#EADBCE]/60">
-                {revenueWeek.map((item, idx) => {
+                {isChartLoading ? (
+                <div className="w-full h-full flex items-center justify-center text-xs text-[#7D6B65]">
+                  Carregando dados...
+                </div>
+              ) : (
+                chartData.map((item, idx) => {
                   const barHeight = Math.max(12, Math.round((item.amount / maxRevenue) * 100));
                   return (
                     <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
@@ -606,7 +652,8 @@ export function DashboardView({
                       </span>
                     </div>
                   );
-                })}
+                })
+              )}
               </div>
             </div>
           ) : (
