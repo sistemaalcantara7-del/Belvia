@@ -12,8 +12,8 @@ export function PublicPageCard({ tenantSlug, tenantName }: PublicPageCardProps) 
   const [copied, setCopied] = useState(false);
 
   const publicUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/${tenantSlug}`
-    : `https://zelunia.com.br/${tenantSlug}`;
+    ? `${window.location.origin}/p/${tenantSlug}`
+    : `https://zelunia.com.br/p/${tenantSlug}`;
 
   const handleCopy = async () => {
     try {
@@ -44,7 +44,7 @@ export function PublicPageCard({ tenantSlug, tenantName }: PublicPageCardProps) 
               </span>
             </div>
             <p className="text-xs text-[#7D6B65] mt-0.5 truncate">
-              {tenantName ? `${tenantName} — ` : ''}Link oficial para seus clientes agendarem: <strong className="text-[#2C1810] font-mono select-all">zelunia.com.br/{tenantSlug}</strong>
+              {tenantName ? `${tenantName} — ` : ''}Link oficial para seus clientes agendarem: <strong className="text-[#2C1810] font-mono select-all">zelunia.com.br/p/{tenantSlug}</strong>
             </p>
           </div>
         </div>

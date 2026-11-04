@@ -55,8 +55,8 @@ export function OnboardingModal({
 
   // Link público real da vitrine do tenant
   const publicUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/${tenantSlug}`
-    : `https://zelunia.com.br/${tenantSlug}`;
+    ? `${window.location.origin}/p/${tenantSlug}`
+    : `https://zelunia.com.br/p/${tenantSlug}`;
 
   // Se não for owner, não exibe o modal nem o gatilho de reabertura
   if (!isOwner) return null;
