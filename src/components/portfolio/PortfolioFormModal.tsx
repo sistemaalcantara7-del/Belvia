@@ -16,6 +16,7 @@ interface PortfolioFormModalProps {
   tenantSlug: string;
   services: Service[];
   itemToEdit?: PortfolioItem | null;
+  defaultSortOrder?: number;
   onSaved: (item: PortfolioItem) => void;
 }
 
@@ -25,6 +26,7 @@ export function PortfolioFormModal({
   tenantSlug,
   services,
   itemToEdit,
+  defaultSortOrder = 0,
   onSaved,
 }: PortfolioFormModalProps) {
   const [loading, setLoading] = useState(false);
@@ -35,22 +37,24 @@ export function PortfolioFormModal({
   const [description, setDescription] = useState(itemToEdit?.description || '');
   const [serviceId, setServiceId] = useState<string>(itemToEdit?.service_id || '');
   const [category, setCategory] = useState(itemToEdit?.category || 'Geral');
-  const [sortOrder, setSortOrder] = useState<number>(itemToEdit?.sort_order ?? 0);
+  const [sortOrder, setSortOrder] = useState<number>(itemToEdit?.sort_order ?? defaultSortOrder);
   const [clientConsent, setClientConsent] = useState<boolean>(itemToEdit?.client_consent ?? false);
-  const [isActive, setIsActive] = useState<boolean>(itemToEdit?.is_active ?? true);
+  const [isActive, setIsActive] = useState<boolean>(itemToEdit ? (itemToEdit.is_active ?? true) : false);
 
-  const [prevEditId, setPrevEditId] = useState<string | undefined>(itemToEdit?.id);
+  const [prevEditId, setPrevEditId] = useState<string | null | undefined>(itemToEdit ? itemToEdit.id : null);
 
-  if (itemToEdit?.id !== prevEditId) {
-    setPrevEditId(itemToEdit?.id);
+  // Sincronização segura de props: aciona tanto quando itemToEdit muda quanto quando vira null
+  const currentEditId = itemToEdit ? itemToEdit.id : null;
+  if (currentEditId !== prevEditId) {
+    setPrevEditId(currentEditId);
     setImageUrl(itemToEdit?.image_url || null);
     setTitle(itemToEdit?.title || '');
     setDescription(itemToEdit?.description || '');
     setServiceId(itemToEdit?.service_id || '');
     setCategory(itemToEdit?.category || 'Geral');
-    setSortOrder(itemToEdit?.sort_order ?? 0);
+    setSortOrder(itemToEdit?.sort_order ?? defaultSortOrder);
     setClientConsent(itemToEdit?.client_consent ?? false);
-    setIsActive(itemToEdit?.is_active ?? true);
+    setIsActive(itemToEdit ? (itemToEdit.is_active ?? true) : false);
   }
 
   // Se o serviço vinculado for alterado e possuir categoria, sincroniza a categoria caso ainda não preenchida

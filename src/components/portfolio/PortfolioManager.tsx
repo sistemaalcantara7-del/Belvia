@@ -437,27 +437,36 @@ export function PortfolioManager({
         </div>
       )}
 
-      {/* Modal de Cadastro / Edição */}
-      <PortfolioFormModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        tenantSlug={tenantSlug}
-        services={services}
-        itemToEdit={editingItem}
-        onSaved={(savedItem) => {
-          setItems((prev) => {
-            const exists = prev.some((i) => i.id === savedItem.id);
-            if (exists) {
-              return prev.map((i) => (i.id === savedItem.id ? savedItem : i));
-            }
-            return [savedItem, ...prev];
-          });
-          setActionSuccess('Trabalho salvo com sucesso no portfólio!');
-          startTransition(() => {
-            router.refresh();
-          });
-        }}
-      />
+      {/* Modal de Cadastro / Edição com chave única para remontagem limpa */}
+      {modalOpen && (
+        <PortfolioFormModal
+          key={editingItem ? `edit-${editingItem.id}` : 'create-new'}
+          isOpen={modalOpen}
+          onClose={() => {
+            setModalOpen(false);
+            setEditingItem(null);
+          }}
+          tenantSlug={tenantSlug}
+          services={services}
+          itemToEdit={editingItem}
+          defaultSortOrder={items.length}
+          onSaved={(savedItem) => {
+            setItems((prev) => {
+              const exists = prev.some((i) => i.id === savedItem.id);
+              if (exists) {
+                return prev.map((i) => (i.id === savedItem.id ? savedItem : i));
+              }
+              return [savedItem, ...prev];
+            });
+            setActionSuccess('Trabalho salvo com sucesso no portfólio!');
+            setModalOpen(false);
+            setEditingItem(null);
+            startTransition(() => {
+              router.refresh();
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
