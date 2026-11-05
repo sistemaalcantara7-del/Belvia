@@ -103,6 +103,8 @@ export interface AIUsageLogItem {
 
 export interface AIQuotaStatus {
   allowed: boolean;
+  can_show_assistant?: boolean;
+  is_trial?: boolean;
   plan: string;
   monthly_limit: number;
   used_tokens: number;

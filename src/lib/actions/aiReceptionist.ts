@@ -281,8 +281,9 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
     // Plano Inteligente: Realiza reserva atômica via RPC 'reserve_ai_tokens' para prevenir condições de corrida.
     let isQuotaAllowed = false;
     let reservationId: string | null = null;
+    let maxCompletionTokens: number = 600;
 
-    if (tenant.plan === 'smart') {
+    if (tenant.has_ai_access) {
       try {
         const adminClient = getServiceRoleSupabase();
         const { data: reserveRes } = await adminClient.rpc('reserve_ai_tokens', {
@@ -295,19 +296,22 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
           allowed?: boolean;
           reservation_id?: string;
           reason?: string;
+          reserved_tokens?: number;
+          max_completion_tokens?: number;
         }
         const typedReserve = reserveRes as ReserveReturn | null;
 
         if (typedReserve && typedReserve.allowed === true) {
           isQuotaAllowed = true;
           reservationId = typedReserve.reservation_id || null;
+          if (typedReserve.max_completion_tokens) maxCompletionTokens = Math.min(600, typedReserve.max_completion_tokens);
         } else {
           isQuotaAllowed = false;
           console.warn(`[AI Quota Limit] Tenant ${tenant.slug} não possui cota disponível (${typedReserve?.reason || 'esgotada'}). Ativando fallback determinístico.`);
         }
       } catch {
-        // Fallback resiliente caso a RPC 38 ainda não tenha sido executada no banco
-        isQuotaAllowed = true;
+        // Fallback seguro: se falhar na RPC, recorre ao motor determinístico sem gerar custo
+        isQuotaAllowed = false;
       }
     } else {
       // Plano Essencial: Não consome IA generativa
@@ -339,7 +343,7 @@ Se não houver chave de modelo ou ocorrer falha, sugira falar diretamente pelo W
               { role: 'user', content: cleanUserMessage },
             ],
             temperature: 0.4,
-            max_tokens: 600,
+            max_tokens: maxCompletionTokens,
           }),
         });
 

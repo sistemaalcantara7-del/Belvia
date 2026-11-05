@@ -63,7 +63,7 @@ export async function getPublicTenantCatalogAction(
 
     if (!rpcErr && rpcData) {
       if (rpcData.success) {
-        // Validação da disponibilidade de IA generativa para o tenant (Plano Smart + cota e vigência válidas)
+        // Validação da disponibilidade da assistente virtual (Trial vigente de 7 dias OU Plano Smart ativo)
         let hasAiAccess = false;
         let tenantPlan = rpcData.tenant?.plan || 'essential';
         if (rpcData.tenant?.id) {
@@ -73,7 +73,8 @@ export async function getPublicTenantCatalogAction(
             });
             if (quota) {
               if (quota.plan) tenantPlan = quota.plan;
-              hasAiAccess = quota.allowed === true && quota.plan === 'smart';
+              // can_show_assistant = true em trial vigente ou plano smart ativo
+              hasAiAccess = quota.can_show_assistant === true || (quota.allowed === true && quota.plan === 'smart') || quota.is_trial === true;
             }
           } catch {
             // Em caso de falha transitória na checagem de cota, mantém false seguro (fail-safe)
