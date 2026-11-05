@@ -59,6 +59,9 @@ export interface PortfolioItem {
   client_consent_at?: string | null;
   sort_order: number;
   is_active: boolean;
+  crop_x?: number | null; // Deslocamento horizontal focal de 0 a 100% (Prompt 217)
+  crop_y?: number | null; // Deslocamento vertical focal de 0 a 100% (Prompt 217)
+  crop_zoom?: number | null; // Nível de zoom de 1 a 3x (Prompt 217)
   created_at?: string;
   updated_at?: string;
 }

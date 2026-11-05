@@ -5,6 +5,7 @@ import { X, Sparkles, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardTitle, CardDescription } from '@/components/ui/card';
 import { ImageUploadField } from '@/components/ui/ImageUploadField';
+import { ImageFocalCropEditor, CropSettings } from './ImageFocalCropEditor';
 import { ActionFeedbackAlert } from '@/components/ui/ActionFeedbackAlert';
 import { PortfolioItem } from '@/types/publicBooking';
 import { Service } from '@/types/services';
@@ -40,6 +41,11 @@ export function PortfolioFormModal({
   const [sortOrder, setSortOrder] = useState<number>(itemToEdit?.sort_order ?? defaultSortOrder);
   const [clientConsent, setClientConsent] = useState<boolean>(itemToEdit?.client_consent ?? false);
   const [isActive, setIsActive] = useState<boolean>(itemToEdit ? (itemToEdit.is_active ?? true) : false);
+  const [crop, setCrop] = useState<CropSettings>({
+    x: itemToEdit?.crop_x ?? 50,
+    y: itemToEdit?.crop_y ?? 50,
+    zoom: itemToEdit?.crop_zoom ?? 1,
+  });
 
   const [prevEditId, setPrevEditId] = useState<string | null | undefined>(itemToEdit ? itemToEdit.id : null);
 
@@ -55,6 +61,11 @@ export function PortfolioFormModal({
     setSortOrder(itemToEdit?.sort_order ?? defaultSortOrder);
     setClientConsent(itemToEdit?.client_consent ?? false);
     setIsActive(itemToEdit ? (itemToEdit.is_active ?? true) : false);
+    setCrop({
+      x: itemToEdit?.crop_x ?? 50,
+      y: itemToEdit?.crop_y ?? 50,
+      zoom: itemToEdit?.crop_zoom ?? 1,
+    });
   }
 
   // Se o serviço vinculado for alterado e possuir categoria, sincroniza a categoria caso ainda não preenchida
@@ -104,6 +115,9 @@ export function PortfolioFormModal({
       sort_order: Number(sortOrder) || 0,
       client_consent: clientConsent,
       is_active: clientConsent ? isActive : false,
+      crop_x: crop.x,
+      crop_y: crop.y,
+      crop_zoom: crop.zoom,
     };
 
     const res = await savePortfolioItemAction(tenantSlug, payload);
@@ -163,11 +177,25 @@ export function PortfolioFormModal({
               tenantSlug={tenantSlug}
               entityType="portfolio"
               currentImageUrl={imageUrl}
-              onImageChanged={(newUrl) => setImageUrl(newUrl)}
+              onImageChanged={(newUrl) => {
+                setImageUrl(newUrl);
+                if (!newUrl) {
+                  setCrop({ x: 50, y: 50, zoom: 1 });
+                }
+              }}
               aspectRatioLabel="Máx 1200×1200"
               maxDimensionsLabel="Máx 350 KB em WebP"
               label="Fotografia do Trabalho *"
             />
+
+            {/* Editor de Enquadramento Proporção 4:5 e Zoom (Prompt 217) */}
+            {imageUrl && (
+              <ImageFocalCropEditor
+                imageUrl={imageUrl}
+                initialCrop={crop}
+                onChange={(newCrop) => setCrop(newCrop)}
+              />
+            )}
 
             {/* Título do Trabalho */}
             <div>

@@ -317,14 +317,18 @@ export function PortfolioManager({
                 className="overflow-hidden border-[#EADBCE] dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col justify-between shadow-2xs hover:shadow-md transition-all group"
               >
                 <div>
-                  {/* Foto do Trabalho: Moldura Neutra #FAF4F1, Altura 240px, Object-fit Contain (Prompt 216) */}
-                  <div className="relative w-full h-[240px] bg-[#FAF4F1] dark:bg-zinc-800/60 overflow-hidden flex items-center justify-center p-2.5">
+                  {/* Foto do Trabalho: Proporção 4:5 com Enquadramento Focal e Zoom (Prompt 217) */}
+                  <div className="relative w-full aspect-[4/5] min-h-[260px] bg-[#FAF4F1] dark:bg-zinc-800/60 overflow-hidden">
                     <Image
                       src={item.image_url}
                       alt={item.title}
                       fill
                       unoptimized
-                      className="object-contain transition-transform duration-300 group-hover:scale-[1.02] p-1"
+                      className="object-cover transition-transform duration-300 group-hover:scale-[1.025]"
+                      style={{
+                        objectPosition: `${item.crop_x ?? 50}% ${item.crop_y ?? 50}%`,
+                        transform: item.crop_zoom && item.crop_zoom > 1 ? `scale(${item.crop_zoom})` : undefined,
+                      }}
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 300px"
                     />
 

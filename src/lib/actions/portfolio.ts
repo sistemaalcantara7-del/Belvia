@@ -245,16 +245,36 @@ export async function savePortfolioItemAction(
         client_consent: isConsentGiven,
         client_consent_at: isConsentGiven ? (item.client_consent_at || new Date().toISOString()) : null,
         is_active: finalIsActive,
+        crop_x: item.crop_x != null ? Number(item.crop_x) : 50,
+        crop_y: item.crop_y != null ? Number(item.crop_y) : 50,
+        crop_zoom: item.crop_zoom != null ? Number(item.crop_zoom) : 1,
         updated_at: new Date().toISOString(),
       };
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('tenant_portfolio')
         .update(updatePayload)
         .eq('id', item.id)
         .eq('tenant_id', context.tenantId)
         .select('*, services:service_id(name)')
         .single();
+
+      // Graceful fallback: caso a migration de crop ainda não tenha sido aplicada no banco
+      if (error && error.message?.includes('crop_')) {
+        const fallbackPayload = { ...updatePayload };
+        delete fallbackPayload.crop_x;
+        delete fallbackPayload.crop_y;
+        delete fallbackPayload.crop_zoom;
+        const retry = await supabase
+          .from('tenant_portfolio')
+          .update(fallbackPayload)
+          .eq('id', item.id)
+          .eq('tenant_id', context.tenantId)
+          .select('*, services:service_id(name)')
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) {
         return { success: false, error: error.message };
@@ -286,13 +306,31 @@ export async function savePortfolioItemAction(
         client_consent: isConsentGiven,
         client_consent_at: isConsentGiven ? new Date().toISOString() : null,
         is_active: finalIsActive,
+        crop_x: item.crop_x != null ? Number(item.crop_x) : 50,
+        crop_y: item.crop_y != null ? Number(item.crop_y) : 50,
+        crop_zoom: item.crop_zoom != null ? Number(item.crop_zoom) : 1,
       };
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('tenant_portfolio')
         .insert(insertPayload)
         .select('*, services:service_id(name)')
         .single();
+
+      // Graceful fallback: caso a migration de crop ainda não tenha sido aplicada no banco
+      if (error && error.message?.includes('crop_')) {
+        const fallbackInsertPayload = { ...insertPayload };
+        delete (fallbackInsertPayload as Record<string, unknown>).crop_x;
+        delete (fallbackInsertPayload as Record<string, unknown>).crop_y;
+        delete (fallbackInsertPayload as Record<string, unknown>).crop_zoom;
+        const retry = await supabase
+          .from('tenant_portfolio')
+          .insert(fallbackInsertPayload)
+          .select('*, services:service_id(name)')
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error) {
         return { success: false, error: error.message };

@@ -185,16 +185,16 @@ export function PortfolioCarouselSection({
             </button>
           )}
 
-          {/* Container Grid dos Cards */}
+          {/* Container Grid dos Cards: Largura 290-310px no Desktop (Prompt 217) */}
           <div
             className={`w-full grid gap-5 sm:gap-6 items-stretch justify-center transition-all duration-300 ${
               total === 1
-                ? 'grid-cols-1 max-w-[380px]'
+                ? 'grid-cols-1 max-w-[310px]'
                 : visibleCount === 1
-                ? 'grid-cols-1 max-w-[380px]'
+                ? 'grid-cols-1 max-w-[310px]'
                 : visibleCount === 2
-                ? 'grid-cols-2 max-w-[780px]'
-                : 'grid-cols-3 max-w-[1240px]'
+                ? 'grid-cols-2 max-w-[640px]'
+                : 'grid-cols-3 max-w-[980px]'
             }`}
           >
             {currentVisibleItems.map((item, idx) => {
@@ -212,16 +212,20 @@ export function PortfolioCarouselSection({
                     minHeight: '320px',
                   }}
                 >
-                  {/* Foto do Trabalho: Moldura Neutra #FAF4F1 com Object-fit Contain (Prompt 215) */}
-                  <div className="relative w-full h-[220px] sm:h-[235px] lg:h-[250px] bg-[#FAF4F1] rounded-t-[18px] overflow-hidden shrink-0 flex items-center justify-center p-2 sm:p-2.5">
+                  {/* Foto do Trabalho: Proporção Vertical 4:5 e Altura 350-380px com Enquadramento Focal e Zoom (Prompt 217) */}
+                  <div className="relative w-full aspect-[4/5] min-h-[340px] sm:min-h-[360px] lg:h-[370px] bg-[#FAF4F1] rounded-t-[18px] overflow-hidden shrink-0">
                     <Image
                       src={item.image_url}
                       alt={item.title}
                       fill
                       unoptimized
                       priority={idx === 0}
-                      className="object-contain transition-transform duration-500 ease-out group-hover:scale-[1.025] p-1"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 380px"
+                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.035]"
+                      style={{
+                        objectPosition: `${item.crop_x ?? 50}% ${item.crop_y ?? 50}%`,
+                        transform: item.crop_zoom && item.crop_zoom > 1 ? `scale(${item.crop_zoom})` : undefined,
+                      }}
+                      sizes="(max-width: 768px) 310px, (max-width: 1200px) 310px, 310px"
                     />
 
                     {/* Badge "Resultado Real" no topo esquerdo */}
@@ -331,14 +335,18 @@ export function PortfolioCarouselSection({
               <X className="w-4 h-4" />
             </button>
 
-            {/* Imagem em Destaque (Moldura Contain) */}
-            <div className="relative w-full h-[320px] sm:h-[360px] bg-[#FAF4F1] p-3 flex items-center justify-center">
+            {/* Imagem em Destaque: Proporção 4:5 com Enquadramento Focal e Zoom (Prompt 217) */}
+            <div className="relative w-full aspect-[4/5] max-h-[460px] bg-[#FAF4F1] overflow-hidden">
               <Image
                 src={selectedItemForModal.image_url}
                 alt={selectedItemForModal.title}
                 fill
                 unoptimized
-                className="object-contain p-2"
+                className="object-cover"
+                style={{
+                  objectPosition: `${selectedItemForModal.crop_x ?? 50}% ${selectedItemForModal.crop_y ?? 50}%`,
+                  transform: selectedItemForModal.crop_zoom && selectedItemForModal.crop_zoom > 1 ? `scale(${selectedItemForModal.crop_zoom})` : undefined,
+                }}
               />
             </div>
 
