@@ -2,23 +2,26 @@
 -- ZELUNIA SaaS - Migration Fase 7.5.2: Franquia Cumulativa de IA para Trial de 7 Dias
 -- Arquivo: 20261105000050_enable_ai_trial_quota.sql
 --
--- Destaques de Arquitetura & Regras de Negócio (Prompt 238 & 239):
+-- Destaques de Arquitetura & Regras de Negócio (Prompt 238, 239 & 240):
 -- 1. Franquia Cumulativa de 35.000 tokens durante os 7 dias de trial:
 --    - Válido para novos tenants em período gratuito, inclusive no plano Essencial.
 --    - Marco inicial imutável do trial: COALESCE(v_sub.current_period_start, v_sub.created_at).
 --    - NÃO reinicia na virada do mês civil nem por navegação em planos.
--- 2. Precedência e Bloqueios Finais (Prompt 239):
+-- 2. Precedência e Bloqueios Estritos:
 --    - Tenants suspensos, cancelados ou com assinatura 'suspended'/'canceled'/'past_due'
 --      NUNCA recebem IA pelo fallback do plano Smart.
 --    - Trial expirado (trial_ends_at < now()): Se a assinatura estiver em status 'trial' e vencida,
 --      ou o tenant não possuir assinatura 'active' no plano Smart, bloqueia imediatamente.
 -- 3. Separação Estrita de Autorização:
 --    - can_show_assistant: Verdadeiro se o tenant estiver em trial vigente OU no plano Smart ativo.
---    - can_use_generative_ai (allowed): Verdadeiro se houver saldo restante na franquia de trial (35k) ou na cota mensal Smart (300k).
--- 4. Reserva Atômica Inteligente com Teto Dinâmico (Prompt 239):
---    - RPC reserve_ai_tokens ajustada para permitir reserva mesmo quando o saldo for inferior a 800 tokens,
---      reservando min(p_tokens_to_reserve, saldo_disponivel) com mínimo operacional seguro (ex: 100 tokens),
---      retornando max_tokens_allowed para o backend limitar a geração da OpenAI e nunca ultrapassar a franquia.
+--    - can_use_generative_ai (allowed): Verdadeiro se houver saldo restante suficiente na franquia.
+-- 4. Serialização Concorrente com Lock Transacional Explícito (Prompt 240):
+--    - Na RPC reserve_ai_tokens, adquire-se lock explícito por tenant (SELECT id FROM public.tenants WHERE id = p_tenant_id FOR UPDATE)
+--      ANTES de qualquer consulta ou cálculo de saldo, garantindo serialização estrita contra race conditions.
+--    - Validação de saldo integral (Prompt Tokens Estimados + Completion Tokens):
+--      Uma chamada generativa consome tokens de entrada e de saída. A reserva padrão estima 800 tokens (ex: 500 prompt + 300 completion).
+--      Se o saldo restante for inferior à reserva estimada necessária para a chamada (mínimo 300 tokens), recusa a reserva (allowed = false),
+--      forçando o fallback determinístico local com custo zero e impedindo que a chamada ultrapasse a franquia.
 -- ==============================================================================
 
 -- 1. RPC: CHECK DE COTA DE IA COM SUPORTE A TRIAL E PRECEDÊNCIA ESTREITA
@@ -165,8 +168,8 @@ BEGIN
 
     v_remaining_tokens := GREATEST(0, v_token_limit - (v_used_tokens + v_reserved_tokens));
 
-    -- 9. Verificação de Saldo Restante (exige no mínimo 50 tokens disponíveis)
-    v_allowed := (v_remaining_tokens >= 50);
+    -- 9. Verificação de Saldo Restante (exige no mínimo 300 tokens para suportar prompt + completion)
+    v_allowed := (v_remaining_tokens >= 300);
 
     RETURN jsonb_build_object(
         'allowed', v_allowed,
@@ -190,7 +193,7 @@ BEGIN
 END;
 $$;
 
--- 2. ATUALIZAÇÃO DA RPC: RESERVA ATÔMICA COM CAPACIDADE DINÂMICA
+-- 2. ATUALIZAÇÃO DA RPC: RESERVA ATÔMICA COM SERIALIZAÇÃO TRANSACIONAL EXPLÍCITA (FOR UPDATE)
 CREATE OR REPLACE FUNCTION public.reserve_ai_tokens(
     p_tenant_id UUID,
     p_tokens_to_reserve INTEGER DEFAULT 800,
@@ -202,16 +205,31 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 DECLARE
+    v_lock_id UUID;
     v_quota_check JSONB;
     v_reservation_id UUID;
     v_remaining BIGINT;
     v_effective_reserve INTEGER;
 BEGIN
-    -- Limpa reservas expiradas antigas
+    -- 1. SERIALIZAÇÃO TRANSACIONAL EXPLÍCITA POR TENANT (Prompt 240)
+    -- Adquire lock pessimista exclusivo na linha do tenant antes de qualquer leitura ou inserção
+    SELECT id INTO v_lock_id
+    FROM public.tenants
+    WHERE id = p_tenant_id
+    FOR UPDATE;
+
+    IF v_lock_id IS NULL THEN
+        RETURN jsonb_build_object(
+            'allowed', false,
+            'reason', 'tenant_not_found'
+        );
+    END IF;
+
+    -- 2. Limpa reservas expiradas antigas sob o lock
     DELETE FROM public.ai_token_reservations 
     WHERE expires_at <= now() AND is_settled = false;
 
-    -- Checa disponibilidade atual da cota com lock compartilhado
+    -- 3. Checa disponibilidade atual da cota sob a transação serializada
     v_quota_check := public.check_ai_monthly_quota(p_tenant_id);
 
     IF (v_quota_check->>'allowed')::BOOLEAN IS NOT TRUE THEN
@@ -224,19 +242,19 @@ BEGIN
 
     v_remaining := (v_quota_check->>'remaining_tokens')::BIGINT;
 
-    -- Se o saldo for menor que o valor padrão solicitado (ex: 800),
-    -- ajusta a reserva para o saldo restante real, garantindo teto estrito
-    v_effective_reserve := LEAST(p_tokens_to_reserve, v_remaining::INTEGER);
-
-    IF v_effective_reserve < 50 THEN
+    -- 4. Cálculo da reserva efetiva considerando tokens totais (Prompt + Completion)
+    -- Uma chamada à OpenAI requer no mínimo 300 tokens de saldo (ex: ~200 prompt + 100 completion)
+    IF v_remaining < 300 THEN
         RETURN jsonb_build_object(
             'allowed', false,
-            'reason', 'insufficient_tokens_remaining',
+            'reason', 'insufficient_tokens_for_call',
             'details', v_quota_check
         );
     END IF;
 
-    -- Cria a reserva atômica com o valor efetivo
+    v_effective_reserve := LEAST(p_tokens_to_reserve, v_remaining::INTEGER);
+
+    -- 5. Cria a reserva atômica serializada
     INSERT INTO public.ai_token_reservations (
         tenant_id,
         reserved_tokens,
@@ -255,8 +273,8 @@ BEGIN
         'allowed', true,
         'reservation_id', v_reservation_id,
         'reserved_tokens', v_effective_reserve,
-        -- Retorna o teto seguro para a conclusão da IA não estourar a franquia
-        'max_completion_tokens', GREATEST(50, v_effective_reserve - 100)
+        -- Teto dinâmico de completion: garante que prompt (~250 tokens) + completion <= v_effective_reserve
+        'max_completion_tokens', GREATEST(50, v_effective_reserve - 250)
     );
 END;
 $$;
