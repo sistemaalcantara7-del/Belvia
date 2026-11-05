@@ -86,7 +86,7 @@ BEGIN
     WHERE tenant_id = p_tenant_id;
 
     -- 4. Precedência de Assinatura: Se existir assinatura e ela estiver suspensa ou cancelada, NUNCA concede IA
-    IF v_sub IS NOT NULL AND v_sub.status IN ('suspended', 'canceled', 'past_due') THEN
+    IF v_sub IS NOT NULL AND v_sub.status IN ('suspended', 'canceled') THEN
         RETURN jsonb_build_object(
             'allowed', false,
             'can_show_assistant', false,
