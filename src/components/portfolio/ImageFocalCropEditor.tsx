@@ -11,6 +11,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getPortfolioImageStyle } from './portfolioImageUtils';
 
 export interface CropSettings {
   x: number; // Porcentagem de 0 a 100 (posição focal / deslocamento horizontal)
@@ -175,13 +176,6 @@ export function ImageFocalCropEditor({
     updateCrop(posX + deltaX, posY + deltaY, zoom);
   };
 
-  // Cálculo da translação CSS derivada das coordenadas crop_x, crop_y e zoom
-  // Quando zoom = 1 e a imagem preenche a moldura com aspect compatível, offset em % relativo ao excesso:
-  const maxTranslatePercentX = ((zoom - 1) / (2 * zoom)) * 100;
-  const maxTranslatePercentY = ((zoom - 1) / (2 * zoom)) * 100;
-  const translateX = ((50 - posX) / 50) * maxTranslatePercentX;
-  const translateY = ((50 - posY) / 50) * maxTranslatePercentY;
-
   return (
     <div className="space-y-3 bg-[#FAF6F3] dark:bg-zinc-900/60 p-4 rounded-2xl border border-[#EADBCE] dark:border-zinc-800">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#EADBCE]/60 dark:border-zinc-800 pb-2.5">
@@ -236,10 +230,11 @@ export function ImageFocalCropEditor({
             alt="Prévia de enquadramento"
             draggable={false}
             className="w-full h-full object-cover pointer-events-none transition-transform duration-75 ease-out"
-            style={{
-              objectPosition: `${posX}% ${posY}%`,
-              transform: `scale(${zoom}) translate(${translateX}%, ${translateY}%)`,
-            }}
+            style={getPortfolioImageStyle({
+              x: posX,
+              y: posY,
+              zoom,
+            })}
           />
 
           {/* Guia de grade sutil para auxílio do enquadramento da regra dos terços */}

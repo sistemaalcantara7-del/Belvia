@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ActionFeedbackAlert } from '@/components/ui/ActionFeedbackAlert';
 import { PortfolioItem } from '@/types/publicBooking';
+import { getPortfolioImageStyle } from './portfolioImageUtils';
 import { Service } from '@/types/services';
 import { PortfolioFormModal } from './PortfolioFormModal';
 import {
@@ -325,10 +326,11 @@ export function PortfolioManager({
                       fill
                       unoptimized
                       className="object-cover transition-transform duration-300 group-hover:scale-[1.025]"
-                      style={{
-                        objectPosition: `${item.crop_x ?? 50}% ${item.crop_y ?? 50}%`,
-                        transform: item.crop_zoom && item.crop_zoom > 1 ? `scale(${item.crop_zoom})` : undefined,
-                      }}
+                      style={getPortfolioImageStyle({
+                        x: item.crop_x,
+                        y: item.crop_y,
+                        zoom: item.crop_zoom,
+                      })}
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 300px"
                     />
 

@@ -13,6 +13,7 @@ import {
   Quote,
 } from 'lucide-react';
 import { PortfolioItem } from '@/types/publicBooking';
+import { getPortfolioImageStyle } from '@/components/portfolio/portfolioImageUtils';
 
 interface PortfolioCarouselSectionProps {
   portfolio: PortfolioItem[];
@@ -221,10 +222,11 @@ export function PortfolioCarouselSection({
                       unoptimized
                       priority={idx === 0}
                       className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.035]"
-                      style={{
-                        objectPosition: `${item.crop_x ?? 50}% ${item.crop_y ?? 50}%`,
-                        transform: item.crop_zoom && item.crop_zoom > 1 ? `scale(${item.crop_zoom})` : undefined,
-                      }}
+                      style={getPortfolioImageStyle({
+                        x: item.crop_x,
+                        y: item.crop_y,
+                        zoom: item.crop_zoom,
+                      })}
                       sizes="(max-width: 768px) 310px, (max-width: 1200px) 310px, 310px"
                     />
 
@@ -343,10 +345,11 @@ export function PortfolioCarouselSection({
                 fill
                 unoptimized
                 className="object-cover"
-                style={{
-                  objectPosition: `${selectedItemForModal.crop_x ?? 50}% ${selectedItemForModal.crop_y ?? 50}%`,
-                  transform: selectedItemForModal.crop_zoom && selectedItemForModal.crop_zoom > 1 ? `scale(${selectedItemForModal.crop_zoom})` : undefined,
-                }}
+                style={getPortfolioImageStyle({
+                  x: selectedItemForModal.crop_x,
+                  y: selectedItemForModal.crop_y,
+                  zoom: selectedItemForModal.crop_zoom,
+                })}
               />
             </div>
 
