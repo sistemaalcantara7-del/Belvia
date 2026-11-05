@@ -64,8 +64,8 @@ BEGIN
         );
     END IF;
 
-    -- 2. Precedência de Segurança: Tenants suspensos ou cancelados são bloqueados sumariamente
-    IF v_tenant.status IN ('suspended', 'canceled', 'inactive') THEN
+    -- 2. Precedência de Segurança: Apenas tenants com status 'active' ou 'trial' podem prosseguir
+    IF v_tenant.status NOT IN ('active', 'trial') THEN
         RETURN jsonb_build_object(
             'allowed', false,
             'can_show_assistant', false,
