@@ -1,6 +1,51 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// Lista oficial de módulos administrativos do dashboard (/[tenantSlug]/[modulo])
+const ADMIN_MODULES = [
+  'agenda',
+  'clientes',
+  'servicos',
+  'profissionais',
+  'anamnese',
+  'caixa',
+  'comissoes',
+  'relatorios',
+  'configuracoes',
+  'pdv',
+  'portfolio',
+  'assinar',
+];
+
+/**
+ * Avalia se o caminho requisitado pertence ao painel administrativo privado.
+ * Utiliza casamento exato de segmentos em vez de substring pura para evitar falsos positivos
+ * como /agendar/[tenantSlug] sendo interceptado por /agenda.
+ */
+export function isDashboardAdminRoute(pathname: string): boolean {
+  // Rotas explicitamente públicas nunca devem ser bloqueadas
+  if (
+    pathname.startsWith('/p/') ||
+    pathname.startsWith('/agendar/') ||
+    pathname === '/login' ||
+    pathname === '/register' ||
+    pathname === '/esqueci-senha' ||
+    pathname.startsWith('/auth/') ||
+    pathname.startsWith('/api/')
+  ) {
+    return false;
+  }
+
+  const segments = pathname.split('/').filter(Boolean);
+  // Formato administrativo: /[tenantSlug]/[modulo] ou /[tenantSlug]/[modulo]/[subrota...]
+  if (segments.length >= 2) {
+    const moduleName = segments[1];
+    return ADMIN_MODULES.includes(moduleName);
+  }
+
+  return false;
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -44,20 +89,8 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Rotas protegidas específicas do painel administrativo
-  const isDashboardRoute =
-    pathname.includes('/agenda') ||
-    pathname.includes('/clientes') ||
-    pathname.includes('/servicos') ||
-    pathname.includes('/profissionais') ||
-    pathname.includes('/anamnese') ||
-    pathname.includes('/caixa') ||
-    pathname.includes('/comissoes') ||
-    pathname.includes('/relatorios') ||
-    pathname.includes('/configuracoes');
-
-  // Redireciona usuários não autenticados que tentam acessar rotas protegidas
-  if (!user && isDashboardRoute) {
+  // Redireciona usuários não autenticados que tentam acessar rotas administrativas protegidas
+  if (!user && isDashboardAdminRoute(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
