@@ -41,6 +41,17 @@ export default async function PublicBookingPage({ params, searchParams }: PagePr
   const { serviceId, professionalId, date, time } = await searchParams;
   const res = await getPublicTenantCatalogAction(tenantSlug);
 
+  // Se for um alias histórico ou slug desatualizado, redireciona para o canônico preservando query params
+  if (res.success && res.canonicalSlug && res.canonicalSlug !== tenantSlug.toLowerCase()) {
+    const q = new URLSearchParams();
+    if (serviceId) q.set('serviceId', serviceId);
+    if (professionalId) q.set('professionalId', professionalId);
+    if (date) q.set('date', date);
+    if (time) q.set('time', time);
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    redirect(`/agendar/${res.canonicalSlug}${qs}`);
+  }
+
   if (!res.success || !res.data) {
     if (res.error?.includes('indisponível')) {
       return (
