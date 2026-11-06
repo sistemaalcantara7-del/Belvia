@@ -60,7 +60,7 @@ export function DashboardSidebar({
           <button
             type="button"
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-1.5 rounded-lg text-[#F2E0DC] hover:bg-[#433139] transition-colors"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-[#F2E0DC] hover:bg-[#433139] transition-colors"
             aria-label="Abrir Menu"
           >
             {mobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -196,7 +196,7 @@ export function DashboardSidebar({
           <form action={signOutAction}>
             <button
               type="submit"
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium text-[#D8C4BC] hover:text-red-200 hover:bg-red-950/30 transition-all cursor-pointer ${
+              className={`w-full min-h-[44px] flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium text-[#D8C4BC] hover:text-red-200 hover:bg-red-950/30 transition-all cursor-pointer ${
                 collapsed ? 'justify-center' : ''
               }`}
               title="Sair da Conta"

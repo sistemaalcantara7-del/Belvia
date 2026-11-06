@@ -60,6 +60,17 @@ body {
   line-height: 1.6;
 }
 
+/* ─── Mobile Usability & iOS Auto-zoom Prevention (MOB-01) ─── */
+/* Font-size mínimo de 16px no mobile impede que o Safari/WebKit no iOS faça auto-zoom */
+/* ao focar inputs/selects/textareas, preservando a capacidade de zoom manual por pinça */
+@media screen and (max-width: 768px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* ─── Scrollbar ───────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

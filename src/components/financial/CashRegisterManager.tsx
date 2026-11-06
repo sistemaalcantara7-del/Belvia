@@ -169,14 +169,14 @@ export function CashRegisterManager({
             )}
           </div>
 
-          {/* Cards de Resumo da Gaveta e Métodos Eletrônicos */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Cards de Resumo da Gaveta e Métodos Eletrônicos (MOB-03: Valores legíveis, responsivos e integrais sem truncamento em 320px) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Saldo Físico Esperado */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3.5 sm:p-4 shadow-sm min-w-0">
               <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider block mb-1">
                 Saldo Físico da Gaveta
               </span>
-              <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+              <div className="text-lg xs:text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 break-words leading-tight">
                 R$ {summary.expectedBalance.toFixed(2)}
               </div>
               <p className="text-[11px] text-zinc-400 mt-1">
@@ -185,45 +185,45 @@ export function CashRegisterManager({
             </div>
 
             {/* Entradas e Suprimentos */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3.5 sm:p-4 shadow-sm min-w-0">
               <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider block mb-1">
                 Entradas em Dinheiro
               </span>
-              <div className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+              <div className="text-lg xs:text-xl sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100 break-words leading-tight">
                 R$ {(summary.totalCashReceived + summary.totalSupplies).toFixed(2)}
               </div>
-              <p className="text-[11px] text-zinc-400 mt-1">
+              <p className="text-[11px] text-zinc-400 mt-1 break-words">
                 Recebimentos: R$ {summary.totalCashReceived.toFixed(2)} | Suprim: R$ {summary.totalSupplies.toFixed(2)}
               </p>
             </div>
 
             {/* Sangrias e Despesas */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 shadow-sm">
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3.5 sm:p-4 shadow-sm min-w-0">
               <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider block mb-1">
                 Saídas em Dinheiro
               </span>
-              <div className="text-lg font-bold text-rose-600 dark:text-rose-400">
+              <div className="text-lg xs:text-xl sm:text-2xl font-bold text-rose-600 dark:text-rose-400 break-words leading-tight">
                 R$ {(summary.totalBleeds + summary.totalExpenses).toFixed(2)}
               </div>
-              <p className="text-[11px] text-zinc-400 mt-1">
+              <p className="text-[11px] text-zinc-400 mt-1 break-words">
                 Sangrias: R$ {summary.totalBleeds.toFixed(2)} | Despesas: R$ {summary.totalExpenses.toFixed(2)}
               </p>
             </div>
 
             {/* Total Eletrônico (Informativo - NÃO entra na gaveta) */}
-            <div className="bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700/60 rounded-xl p-4 shadow-sm">
+            <div className="bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700/60 rounded-xl p-3.5 sm:p-4 shadow-sm min-w-0">
               <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider block mb-1">
                 Meios Eletrônicos (Informativo)
               </span>
-              <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+              <div className="text-lg xs:text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400 break-words leading-tight">
                 R$ {(summary.totalPixReceived + summary.totalCardReceived + summary.totalOtherReceived).toFixed(2)}
               </div>
-              <div className="flex items-center gap-3 text-[11px] text-zinc-500 mt-1">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-500 mt-1">
                 <span className="flex items-center gap-0.5">
-                  <QrCode className="w-3 h-3 text-emerald-500" /> Pix: R$ {summary.totalPixReceived.toFixed(2)}
+                  <QrCode className="w-3 h-3 text-emerald-500 shrink-0" /> Pix: R$ {summary.totalPixReceived.toFixed(2)}
                 </span>
                 <span className="flex items-center gap-0.5">
-                  <CreditCard className="w-3 h-3 text-blue-500" /> Cartão: R$ {summary.totalCardReceived.toFixed(2)}
+                  <CreditCard className="w-3 h-3 text-blue-500 shrink-0" /> Cartão: R$ {summary.totalCardReceived.toFixed(2)}
                 </span>
               </div>
             </div>

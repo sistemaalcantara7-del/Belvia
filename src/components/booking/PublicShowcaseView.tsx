@@ -350,18 +350,18 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
         {/* Camada suave semi-transparente recuada para a esquerda */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#FCF8F5]/90 via-[#FCF8F5]/40 via-35% to-transparent pointer-events-none md:max-w-[45%] lg:max-w-[38%]" />
 
-        <div className="relative max-w-[1360px] mx-auto px-6 lg:px-10 h-full min-h-[560px] lg:min-h-[660px] flex items-center">
+        <div className="relative max-w-[1360px] mx-auto px-6 lg:px-10 h-full min-h-[440px] sm:min-h-[520px] lg:min-h-[660px] flex items-center">
           {/* Área Textual: alinhada à esquerda, largura max 610px */}
-          <div className="w-full max-w-[610px] z-10 py-12 lg:py-16 space-y-5">
+          <div className="w-full max-w-[610px] z-10 py-8 sm:py-12 lg:py-16 space-y-4 sm:space-y-5">
             {/* Eyebrow */}
             <div className="inline-block">
-              <span className="text-[13px] sm:text-[14px] font-semibold tracking-[4px] uppercase text-[#BD7165] font-sans">
+              <span className="text-[12px] sm:text-[14px] font-semibold tracking-[3px] sm:tracking-[4px] uppercase text-[#BD7165] font-sans">
                 Estética • Beleza • Bem-estar
               </span>
             </div>
 
             {/* Título Principal Serifado */}
-            <h1 className="font-serif text-3xl sm:text-5xl lg:text-[62px] leading-[1.1] tracking-tight font-normal">
+            <h1 className="font-serif text-2xl sm:text-5xl lg:text-[62px] leading-[1.15] sm:leading-[1.1] tracking-tight font-normal">
               <span className="block text-[#211C1B]">Mais que estética,</span>
               <span className="block text-[#BD7165] italic font-normal">
                 um cuidado completo
@@ -370,7 +370,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
             </h1>
 
             {/* Parágrafo de Apoio */}
-            <p className="text-base sm:text-lg lg:text-[19px] text-[#625D5A] leading-[1.6] max-w-[490px] pt-1">
+            <p className="text-sm sm:text-lg lg:text-[19px] text-[#625D5A] leading-[1.5] sm:leading-[1.6] max-w-[490px] pt-1">
               Beleza, saúde e bem-estar em um só lugar. Profissionais qualificados, atendimento
               humanizado e um ambiente pensado para a sua melhor experiência.
             </p>
@@ -379,7 +379,7 @@ export function PublicShowcaseView({ catalog }: PublicShowcaseViewProps) {
             <div className="pt-2">
               <Link
                 href={`/agendar/${tenant.slug}`}
-                className="inline-flex items-center justify-between px-7 h-[58px] sm:h-[62px] w-full sm:w-[350px] rounded-[12px] text-base sm:text-[16px] font-medium text-white transition-all shadow-md hover:opacity-95 active:scale-98"
+                className="inline-flex items-center justify-between px-6 sm:px-7 h-[52px] sm:h-[62px] w-full sm:w-[350px] rounded-[12px] text-sm sm:text-[16px] font-medium text-white transition-all shadow-md hover:opacity-95 active:scale-98"
                 style={{ backgroundColor: '#BD7165' }}
               >
                 <div className="flex items-center gap-3">

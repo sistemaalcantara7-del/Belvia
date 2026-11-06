@@ -139,29 +139,31 @@ export function AnamnesisFormModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl max-w-2xl w-full my-8 flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center sm:p-4 overflow-y-auto">
+      <div className="bg-white dark:bg-zinc-900 border-0 sm:border border-zinc-200 dark:border-zinc-800 rounded-none sm:rounded-2xl shadow-2xl max-w-2xl w-full h-full sm:h-auto sm:max-h-[92vh] sm:my-8 flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
         {/* Header */}
-        <div className="p-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
+        <div className="p-4 sm:p-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between shrink-0 bg-white dark:bg-zinc-900">
           <div>
-            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-rose-600" />
-              {parentForm ? `Atualizar Anamnese (Nova Versão v${(parentForm.version || 1) + 1})` : 'Nova Ficha de Anamnese'}
+            <h2 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-rose-600 shrink-0" />
+              <span>{parentForm ? `Atualizar Anamnese (v${(parentForm.version || 1) + 1})` : 'Nova Ficha de Anamnese'}</span>
             </h2>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+            <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
               Coleta de dados clínicos, alergias e consentimento informado (LGPD).
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1 rounded-md"
+            className="min-h-[40px] min-w-[40px] flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            title="Fechar"
+            aria-label="Fechar"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Formulário com Scroll Interno */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto p-5 space-y-6 flex-1">
+        <form onSubmit={handleSubmit} className="overflow-y-auto p-4 sm:p-5 space-y-5 sm:space-y-6 flex-1">
           {error && (
             <div className="p-3 text-xs bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-300 rounded-md border border-red-200 dark:border-red-900 flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 shrink-0" />

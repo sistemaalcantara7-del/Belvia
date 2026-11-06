@@ -82,9 +82,9 @@ export function QuickNewCategoryModal({
   };
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in">
+    <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-xs animate-in fade-in overflow-y-auto">
       <div
-        className="w-full max-w-sm rounded-2xl bg-white border border-[#EADBCE] shadow-2xl p-5 space-y-4"
+        className="w-full max-w-sm rounded-2xl bg-white border border-[#EADBCE] shadow-2xl p-5 space-y-4 max-h-[90dvh] overflow-y-auto my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[#F5EDE8] pb-3">
@@ -101,7 +101,9 @@ export function QuickNewCategoryModal({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="p-1 rounded-lg text-[#7D6B65] hover:text-[#1E1115] transition-colors"
+            className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-lg text-[#7D6B65] hover:text-[#1E1115] hover:bg-stone-100 transition-colors"
+            title="Fechar"
+            aria-label="Fechar"
           >
             <X className="w-4 h-4" />
           </button>
@@ -136,14 +138,14 @@ export function QuickNewCategoryModal({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-3 py-2 text-xs font-semibold text-[#7D6B65] hover:bg-stone-100 rounded-xl transition-all"
+              className="min-h-[40px] px-3.5 py-2 text-xs font-semibold text-[#7D6B65] hover:bg-stone-100 rounded-xl transition-all cursor-pointer"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#B87070] hover:bg-[#A56363] rounded-xl shadow-xs transition-all active:scale-98 disabled:opacity-60"
+              className="min-h-[40px] flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#B87070] hover:bg-[#A56363] rounded-xl shadow-xs transition-all active:scale-98 disabled:opacity-60 cursor-pointer"
             >
               {isSubmitting ? (
                 <>

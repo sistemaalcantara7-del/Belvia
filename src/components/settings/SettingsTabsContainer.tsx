@@ -57,22 +57,22 @@ export function SettingsTabsContainer({
 
   return (
     <div className="space-y-6">
-      {/* Navegação de Abas do Módulo de Configurações */}
-      <div className="flex flex-wrap items-center gap-2 p-1 rounded-2xl bg-white border border-[#EADBCE] shadow-2xs w-fit">
+      {/* Navegação de Abas do Módulo de Configurações (MOB-02: Scroll horizontal suave no mobile sem wrapping desordenado) */}
+      <div className="flex sm:flex-wrap items-center gap-2 p-1 rounded-2xl bg-white border border-[#EADBCE] shadow-2xs w-full sm:w-fit overflow-x-auto no-scrollbar scroll-smooth">
         {/* Aba 1: Dados Cadastrais */}
         <button
           type="button"
           onClick={() => setCurrentTab('booking')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer ${
             currentTab === 'booking'
               ? 'bg-[#B87070] text-white shadow-2xs font-bold'
               : 'text-[#7D6B65] hover:text-[#2C1810]'
           }`}
         >
-          <Building2 className="w-3.5 h-3.5" />
-          <span>Dados Cadastrais</span>
+          <Building2 className="w-3.5 h-3.5 shrink-0" />
+          <span className="whitespace-nowrap">Dados Cadastrais</span>
           {bookingSettings.enabled && (
-            <span className="w-2 h-2 rounded-full bg-emerald-500" title="Vitrine Ativa" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Vitrine Ativa" />
           )}
         </button>
 
@@ -81,25 +81,25 @@ export function SettingsTabsContainer({
           <button
             type="button"
             onClick={() => setCurrentTab('subscription')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer ${
               currentTab === 'subscription'
                 ? 'bg-[#B87070] text-white shadow-2xs font-bold'
                 : 'text-[#7D6B65] hover:text-[#2C1810]'
             }`}
           >
-            <CreditCard className="w-3.5 h-3.5 text-[#B87070]" />
-            <span>Minha Assinatura</span>
+            <CreditCard className="w-3.5 h-3.5 text-[#B87070] shrink-0" />
+            <span className="whitespace-nowrap">Minha Assinatura</span>
           </button>
         )}
 
         {/* Aba 3 (Futura): Integração Financeira (Estrutura visual preparada para lançamento) */}
         <div
           title="Em breve: Gateway de pagamentos, conciliação e split bancário"
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[#A8948D] bg-stone-50/70 border border-dashed border-[#EADBCE] cursor-not-allowed select-none opacity-80"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#A8948D] bg-stone-50/70 border border-dashed border-[#EADBCE] cursor-not-allowed select-none opacity-80 shrink-0"
         >
-          <Wallet className="w-3.5 h-3.5 text-[#A8948D]" />
-          <span>Integração Financeira</span>
-          <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-sm bg-[#FAF0EC] text-[#B87070] border border-[#F2DDD9]">
+          <Wallet className="w-3.5 h-3.5 text-[#A8948D] shrink-0" />
+          <span className="whitespace-nowrap">Integração Financeira</span>
+          <span className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-sm bg-[#FAF0EC] text-[#B87070] border border-[#F2DDD9] shrink-0">
             Em breve
           </span>
         </div>
