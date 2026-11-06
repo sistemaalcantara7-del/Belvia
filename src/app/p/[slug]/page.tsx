@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { getPublicTenantCatalogAction } from '@/lib/actions/publicBooking';
 import { PublicShowcaseView } from '@/components/booking/PublicShowcaseView';
 
@@ -44,6 +44,11 @@ export default async function ShowcasePage({ params }: ShowcasePageProps) {
 
   // Carrega os dados públicos do estabelecimento
   const res = await getPublicTenantCatalogAction(slug);
+
+  // Se for um alias histórico ou slug desatualizado, redireciona permanentemente para o canônico
+  if (res.success && res.canonicalSlug && res.canonicalSlug !== slug.toLowerCase()) {
+    redirect('/p/' + res.canonicalSlug);
+  }
 
   if (!res.success || !res.data) {
     if (res.error?.includes('indisponível')) {

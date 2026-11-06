@@ -129,14 +129,14 @@ export async function registerTenantAction(formData: FormData): Promise<AuthActi
     return { error: 'Todos os campos são obrigatórios.' };
   }
 
-  // Gera slug canônico a partir do nome da clínica
+  // Gera slug limpo e legível a partir do nome da clínica (sem sufixos aleatórios artificiais)
   const slug = clinicName
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]/g, '-')
     .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '') + '-' + Math.random().toString(36).substring(2, 6);
+    .replace(/^-|-$/g, '') || 'clinica';
 
   const supabase = await createClient();
 

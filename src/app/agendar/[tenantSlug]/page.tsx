@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { getPublicTenantCatalogAction } from '@/lib/actions/publicBooking';
 import { PublicBookingFlow } from '@/components/booking/PublicBookingFlow';
 
@@ -16,6 +16,11 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { tenantSlug } = await params;
   const res = await getPublicTenantCatalogAction(tenantSlug);
+
+  // Se for um alias histórico ou slug desatualizado, redireciona para o canônico preservando query params
+  if (res.success && res.canonicalSlug && res.canonicalSlug !== tenantSlug.toLowerCase()) {
+    redirect('/agendar/' + res.canonicalSlug);
+  }
 
   if (!res.success || !res.data) {
     return {
